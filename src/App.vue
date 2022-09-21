@@ -1,7 +1,11 @@
 <script setup lang="ts">
-  import { onMounted } from 'vue';
+  import { onMounted, ref } from 'vue';
   import { ZoomAxis } from './js/ZoomAxis'
+
   let zoomAxis: ZoomAxis|null;
+  let initScrollContentWidth = 12000
+  const scrollContentWidth = ref(initScrollContentWidth)
+  // 左右滚动
   const handleScroll = (e: UIEvent) => {
     if(!e){
       return
@@ -9,9 +13,17 @@
     const dom = e.target as HTMLElement
     const scrollRatio = dom.scrollLeft / (dom.scrollWidth - 1040)
     const axisLeft = scrollRatio * (20 * 80 * 10)
-    zoomAxis?.scrollLeft(-axisLeft)
+    zoomAxis?.scrollX(-axisLeft)
   }
-
+  // 滚轮缩放
+  const handleWheel = (e: WheelEvent) => {
+    e.deltaY > 0 ? zoomAxis?.zoomIn() : zoomAxis?.zoomOut()
+    if(zoomAxis?.zoomRatio){
+      scrollContentWidth.value = initScrollContentWidth * zoomAxis?.zoomRatio
+      console.log(zoomAxis?.zoomRatio, scrollContentWidth.value)
+    }
+  }
+  
   onMounted(()=> {
     zoomAxis = new ZoomAxis('canvasStage')
   })
@@ -19,12 +31,12 @@
 </script>
 
 <template>
-  <div class="ruler-container">
+  <div class="ruler-container" @wheel="handleWheel">
     <div class="ruler">
       <canvas class="canvas-stage" id="canvasStage" height="48"></canvas>  
     </div>
     <div class="scroll-container" @scroll="handleScroll">
-      <div class="scroll-content"></div>
+      <div class="scroll-content" :style="{width: `${scrollContentWidth}px`}"></div>
     </div>
   </div>
   
