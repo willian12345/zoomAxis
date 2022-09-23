@@ -4,6 +4,7 @@
 
   let zoomAxis: ZoomAxis|null;
   let initScrollContentWidth = 12000
+  const totalTime = 60
   const scrollContentWidth = ref(initScrollContentWidth)
   // 左右滚动
   const handleScroll = (e: UIEvent) => {
@@ -12,8 +13,9 @@
     }
     const dom = e.target as HTMLElement
     const scrollRatio = dom.scrollLeft / (dom.scrollWidth - 1040)
-    const axisLeft = scrollRatio * (20 * 80 * 10)
-    zoomAxis?.scrollX(-axisLeft)
+    const axisLeft = scrollRatio * (totalTime * 80 * 10)
+    const zoomRatio = zoomAxis?.zoomRatio ?? 1
+    zoomAxis?.scrollX(-axisLeft * zoomRatio)
   }
   // 滚轮缩放
   const handleWheel = (e: WheelEvent) => {
@@ -25,7 +27,10 @@
   }
   
   onMounted(()=> {
-    zoomAxis = new ZoomAxis('canvasStage')
+    zoomAxis = new ZoomAxis({
+      el: 'canvasStage',
+      totalTime,
+    })
   })
   
 </script>
@@ -33,7 +38,8 @@
 <template>
   <div class="ruler-container" @wheel="handleWheel">
     <div class="ruler">
-      <canvas class="canvas-stage" id="canvasStage" height="48"></canvas>  
+      <div id="canvasStage"></div>
+      <!-- <canvas class="canvas-stage" id="canvasStage" height="48"></canvas>   -->
     </div>
     <div class="scroll-container" @scroll="handleScroll">
       <div class="scroll-content" :style="{width: `${scrollContentWidth}px`}"></div>
@@ -51,11 +57,6 @@
   .ruler{
     width: 1040px;
     background-color: #242424;
-  }
-  .canvas-stage{
-    width: 100%;
-    height: 24px;
-    vertical-align: middle;
   }
   .scroll-container{
     width:  100vh;

@@ -9,12 +9,16 @@ function secondToDate(result: number) {
 const SPACE_FRAME_WIDTH = 80; // 刻度间距
 const SPACE_FRAME_WIDTH_MIN = 8; // 刻度最小间距
 const SPACE_FRAME_WIDTH_MAX = 100; // 刻度最大间距
-
+interface ConstructorArgs {
+    el: string;
+    totalTime: number;
+}
 export class ZoomAxis {
   private canvas?: HTMLCanvasElement | null = null;
   private ctx?: CanvasRenderingContext2D | null = null;
   private stageWidth = 600; // 最小宽度 600px
-  private stageHeight = 48;
+  private stageHeightOut = 24
+  private stageHeight = this.stageHeightOut * 2;
   private lineColor = "rgba(255, 255, 255, 0.12)";
   private lineWidth = 2; // 刻度线宽度
   private lineHeight = 24; // 刻度线高度
@@ -25,23 +29,42 @@ export class ZoomAxis {
   private spaceFrameIndex = 0; // 刻度表帧数数计
   private lineX = 0;
   private lineY = 0;
-  private totalTime = 20; // 时间轴总秒数
+  totalTime = 0; // 时间轴总秒数
   spaceFrameWidth = SPACE_FRAME_WIDTH; // 刻度间距
   zoomRatio = 1; // 缩放比例
-  constructor(canvasId: string) {
-    if (!canvasId) {
+  constructor({el, totalTime}:ConstructorArgs) {
+    if (!el) {
+        console.warn('挂载对象 id 必传')
       return;
     }
-    this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
-    this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
-    if (!this.canvas) {
-      return;
+    this.canvas = this.createStage(el)
+    if(!this.canvas){
+        console.warn('创建canvas失败')
+        return
     }
     this.setStageWidth();
-
+    this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
+    
     this.ctx.font = "22px PingFang SC";
     this.ctx.textBaseline = "top";
+    this.totalTime = totalTime
     this.drawLine();
+  }
+  private createStage(el: string) {
+    const elHook = document.getElementById(el) as HTMLCanvasElement;
+    if (!elHook) {
+        console.warn(`找不到id为${el}的 HTML元素挂载`)
+        return;
+    }
+    const div = document.createElement('div')    
+    div.innerHTML = `<canvas style="
+        width: 100%;
+        height: ${this.stageHeightOut}px;
+        vertical-align: middle;
+      " height="${this.stageHeight}"></canvas>`
+    const canvas = div.querySelector('canvas') as HTMLCanvasElement
+    elHook.replaceWith(canvas)
+    return canvas
   }
   private setStageWidth() {
     // 获取父级宽度
@@ -106,6 +129,9 @@ export class ZoomAxis {
   private calcZoomRatio() {
     this.zoomRatio = this.spaceFrameWidth / SPACE_FRAME_WIDTH;
   }
+  setTotalTime(sec: number){
+    this.totalTime = sec
+  }
   scrollX(x: number) {
     this.lineX = x;
     this.spaceCycleIndex = 0;
@@ -113,9 +139,9 @@ export class ZoomAxis {
     this.redraw();
   }
   zoomIn() {
-    if (this.spaceFrameWidth <= SPACE_FRAME_WIDTH_MIN) {
-      return;
-    }
+    // if (this.spaceFrameWidth <= SPACE_FRAME_WIDTH_MIN) {
+    //   return;
+    // }
     this.lineX = 0;
     this.spaceCycleIndex = 0;
     this.spaceFrameIndex = 0;
@@ -124,9 +150,9 @@ export class ZoomAxis {
     this.redraw();
   }
   zoomOut() {
-    if (this.spaceFrameWidth >= SPACE_FRAME_WIDTH_MAX) {
-      return;
-    }
+    // if (this.spaceFrameWidth >= SPACE_FRAME_WIDTH_MAX) {
+    //   return;
+    // }
     this.lineX = 0;
     this.spaceCycleIndex = 0;
     this.spaceFrameIndex = 0;
