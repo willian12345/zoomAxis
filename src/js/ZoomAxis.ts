@@ -1,3 +1,14 @@
+const SPACE_FRAME_WIDTH = 80; // 刻度间距
+const SPACE_FRAME_WIDTH_MIN = 8; // 刻度最小间距
+const SPACE_FRAME_WIDTH_MAX = 100; // 刻度最大间距
+const ratioStep = [1, 2, 3, 5, 10]; // 秒数步进变化
+const ratioMap = new Map([[0.1, 10], [0.2, 5], [0.7, 3], [.8, 2], [.9, 1]])
+
+interface ConstructorArgs {
+    el: string|HTMLElement;
+    totalTime: number;
+}
+
 //秒转化成 时分秒
 function secondToDate(result: number) {
   // var h = Math.floor(result / 3600);
@@ -6,12 +17,10 @@ function secondToDate(result: number) {
   return `${m}:${s}`;
   // return result = h + "小时" + m + "分钟" + s + "秒";
 }
-const SPACE_FRAME_WIDTH = 80; // 刻度间距
-const SPACE_FRAME_WIDTH_MIN = 8; // 刻度最小间距
-const SPACE_FRAME_WIDTH_MAX = 100; // 刻度最大间距
-interface ConstructorArgs {
-    el: string;
-    totalTime: number;
+
+//保留n位小数
+function roundFun(value: number, n: number) {
+return Math.round(value*Math.pow(10,n))/Math.pow(10,n);
 }
 export class ZoomAxis {
   private canvas?: HTMLCanvasElement | null = null;
@@ -32,6 +41,7 @@ export class ZoomAxis {
   totalTime = 0; // 时间轴总秒数
   spaceFrameWidth = SPACE_FRAME_WIDTH; // 刻度间距
   zoomRatio = 1; // 缩放比例
+  width = 600; // 标尺总宽度
   constructor({el, totalTime}:ConstructorArgs) {
     if (!el) {
         console.warn('挂载对象 id 必传')
@@ -42,16 +52,20 @@ export class ZoomAxis {
         console.warn('创建canvas失败')
         return
     }
-    this.setStageWidth();
-    this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
     
+    this.setStageWidth();
+
+    this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
     this.ctx.font = "22px PingFang SC";
     this.ctx.textBaseline = "top";
     this.totalTime = totalTime
+    this.setWidth()
+
     this.drawLine();
+
   }
-  private createStage(el: string) {
-    const elHook = document.getElementById(el) as HTMLCanvasElement;
+  private createStage(el: string|HTMLElement) {
+    const elHook = typeof el === 'string' ? document.getElementById(el) as HTMLCanvasElement : el
     if (!elHook) {
         console.warn(`找不到id为${el}的 HTML元素挂载`)
         return;
@@ -68,13 +82,15 @@ export class ZoomAxis {
   }
   private setStageWidth() {
     // 获取父级宽度
-    const stageWidth =
-      this.canvas?.parentElement?.getBoundingClientRect()?.width;
+    const stageWidth = this.canvas?.parentElement?.getBoundingClientRect()?.width;
     if (stageWidth) {
       this.stageWidth = stageWidth * 2;
     }
     //为了清晰度 canvas dom 属性宽度是 css 内设置宽度的 2 倍
     this.canvas?.setAttribute("width", this.stageWidth + "");
+  }
+  private setWidth() {
+    this.width = this.totalTime * this.spaceFrameWidth * this.spacecycle
   }
   private getTimeText(sec: number): string {
     return secondToDate(sec); // `${m}:${s}`
@@ -119,7 +135,6 @@ export class ZoomAxis {
     }
   }
   private redraw() {
-    console.log(this.spaceFrameWidth);
     this.clearStage();
     this.drawLine();
   }
@@ -127,36 +142,51 @@ export class ZoomAxis {
     this.ctx?.clearRect(0, 0, this.stageWidth, this.stageHeight);
   }
   private calcZoomRatio() {
-    this.zoomRatio = this.spaceFrameWidth / SPACE_FRAME_WIDTH;
+    console.log(this.zoomRatio)
+    this.spaceFrameWidth = SPACE_FRAME_WIDTH * this.zoomRatio;
+    this.setWidth()
+    // this.spaceTimeSecond
+    // this.zoomRatio = this.spaceFrameWidth / SPACE_FRAME_WIDTH;
   }
   setTotalTime(sec: number){
     this.totalTime = sec
   }
-  scrollX(x: number) {
-    this.lineX = x;
+  /**
+   * 
+   * @param scrollRatio  滚动条滚动比例
+   * @returns 
+   */
+  scrollByRatio(scrollRatio: number) {
+    // 如果实际尺子宽度小于舞台(窗口)宽度,不需要再滚动
+    if(this.width <= this.stageWidth){
+        return
+    }
+    // 实际尺子宽度 - 舞台宽度 * 缩放比例
+    const x = (this.width - this.stageWidth) * scrollRatio
+    this.lineX = -x;
     this.spaceCycleIndex = 0;
     this.spaceFrameIndex = 0;
     this.redraw();
   }
   zoomIn() {
-    // if (this.spaceFrameWidth <= SPACE_FRAME_WIDTH_MIN) {
-    //   return;
-    // }
+    if (this.zoomRatio <= 0.1) {
+      return;
+    }
     this.lineX = 0;
     this.spaceCycleIndex = 0;
     this.spaceFrameIndex = 0;
-    this.spaceFrameWidth -= 1;
+    this.zoomRatio = roundFun(this.zoomRatio - 0.1, 2)
     this.calcZoomRatio();
     this.redraw();
   }
   zoomOut() {
-    // if (this.spaceFrameWidth >= SPACE_FRAME_WIDTH_MAX) {
-    //   return;
-    // }
+    if (this.zoomRatio > 1.2) {
+      return;
+    }
     this.lineX = 0;
     this.spaceCycleIndex = 0;
     this.spaceFrameIndex = 0;
-    this.spaceFrameWidth += 1;
+    this.zoomRatio = roundFun(this.zoomRatio + 0.1, 2)
     this.calcZoomRatio();
     this.redraw();
   }
