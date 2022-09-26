@@ -29,7 +29,7 @@
     top: 16px;
     margin-left: -1px;
     height: 100%;
-    width: 1.5px;
+    width: 1px;
     font-size: 0;
     background-color: white;
   }
