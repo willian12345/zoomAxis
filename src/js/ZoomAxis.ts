@@ -1,12 +1,15 @@
 const SPACE_FRAME_WIDTH = 80; // 刻度间距
 const SPACE_FRAME_WIDTH_MIN = 8; // 刻度最小间距
 const SPACE_FRAME_WIDTH_MAX = 100; // 刻度最大间距
-const ratioStep = [1, 2, 3, 5, 10]; // 秒数步进变化
-const ratioMap = new Map([[0.1, 10], [0.2, 5], [0.7, 3], [.8, 2], [.9, 1]])
+
+// 默认
+const DEFAULT_RATIO_STEP:number[][] = [[0.1, 10], [0.2, 5], [0.7, 3], [.8, 2], [.9, 1]];
+
 
 interface ConstructorArgs {
     el: string|HTMLElement;
     totalTime: number;
+    ratioMap?: number[][]
 }
 
 //秒转化成 时分秒
@@ -15,12 +18,11 @@ function secondToDate(result: number) {
   var m = Math.floor((result / 60) % 60);
   var s = Math.floor(result % 60);
   return `${m}:${s}`;
-  // return result = h + "小时" + m + "分钟" + s + "秒";
 }
 
 //保留n位小数
 function roundFun(value: number, n: number) {
-return Math.round(value*Math.pow(10,n))/Math.pow(10,n);
+  return Math.round(value*Math.pow(10,n))/Math.pow(10,n);
 }
 export class ZoomAxis {
   private canvas?: HTMLCanvasElement | null = null;
@@ -34,15 +36,16 @@ export class ZoomAxis {
   private lineShortHeight = 16; // 短刻度线高度
   private spacecycle = 10; // 每 10 个最小刻度为一组分割
   private spaceCycleIndex = 0; // 刻度大间隔周期累计
-  private spaceTimeSecond = 1; // 刻度间隔秒数
+  private spaceTimeSecond = 1; // 刻度间隔秒数单位（一个周期时间单位）
   private spaceFrameIndex = 0; // 刻度表帧数数计
   private lineX = 0;
   private lineY = 0;
+  private ratioMap = new Map()
   totalTime = 0; // 时间轴总秒数
   spaceFrameWidth = SPACE_FRAME_WIDTH; // 刻度间距
   zoomRatio = 1; // 缩放比例
   width = 600; // 标尺总宽度
-  constructor({el, totalTime}:ConstructorArgs) {
+  constructor({el, totalTime, ratioMap}:ConstructorArgs) {
     if (!el) {
         console.warn('挂载对象 id 必传')
       return;
@@ -52,7 +55,7 @@ export class ZoomAxis {
         console.warn('创建canvas失败')
         return
     }
-    
+    this.setRatioStep(ratioMap)
     this.setStageWidth();
 
     this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -64,6 +67,14 @@ export class ZoomAxis {
     this.drawLine();
 
   }
+  // 设置缩放等级对应缩放显示时间
+  private setRatioStep(ratioMap: number[][] = DEFAULT_RATIO_STEP) {
+    this.ratioMap.clear()
+    ratioMap.forEach(element => {
+      this.ratioMap.set(element[0], element[1])
+    });
+  }
+  // 创建舞台
   private createStage(el: string|HTMLElement) {
     const elHook = typeof el === 'string' ? document.getElementById(el) as HTMLCanvasElement : el
     if (!elHook) {
@@ -80,6 +91,7 @@ export class ZoomAxis {
     elHook.replaceWith(canvas)
     return canvas
   }
+  // 设置舞台宽度
   private setStageWidth() {
     // 获取父级宽度
     const stageWidth = this.canvas?.parentElement?.getBoundingClientRect()?.width;
@@ -90,11 +102,14 @@ export class ZoomAxis {
     this.canvas?.setAttribute("width", this.stageWidth + "");
   }
   private setWidth() {
-    this.width = this.totalTime * this.spaceFrameWidth * this.spacecycle
+    // 总宽度 = 总秒数/时间间隔 * 每刻度宽度 * 多少个周期 + 额外加一个周期的宽度用于显示尾部
+    this.width = (this.totalTime / this.spaceTimeSecond) * this.spaceFrameWidth * this.spacecycle + (this.spaceTimeSecond * this.spaceFrameWidth * this.spacecycle)
   }
+  // 转换显示分:秒
   private getTimeText(sec: number): string {
     return secondToDate(sec); // `${m}:${s}`
   }
+  // 显示周期标尺上的分秒文本
   private drawCyclePointText() {
     if (!this.ctx) {
       return;
@@ -104,9 +119,11 @@ export class ZoomAxis {
     const timeText = this.getTimeText(this.spaceCycleIndex);
     this.ctx.fillText(timeText, this.lineX + 6, 0);
   }
+  // 是否处于周期值
   private checkIsCyclePoint() {
     return this.spaceFrameIndex % this.spacecycle === 0;
   }
+  // 绘制刻度线
   private drawLine() {
     const isCyclePoint = this.checkIsCyclePoint();
     const lineHeight = isCyclePoint ? this.lineHeight : this.lineShortHeight;
@@ -117,8 +134,8 @@ export class ZoomAxis {
       ? "rgba(255, 255, 255, 0.2)"
       : "rgba(255, 255, 255, 0.12)";
     this.ctx.fillRect(this.lineX, this.lineY, this.lineWidth, lineHeight);
+    // 如果处于标尺周期，则要显示分:秒，且刻度线更长一些
     if (isCyclePoint) {
-      // console.log(this.spaceFrameIndex, this.spacecycle)
       this.drawCyclePointText();
       // 大间隔计数加 1
       this.spaceCycleIndex += this.spaceTimeSecond;
@@ -128,10 +145,8 @@ export class ZoomAxis {
     this.lineX += this.spaceFrameWidth;
     // 刻度累计
     this.spaceFrameIndex++;
-    if (this.spaceCycleIndex <= this.totalTime) {
+    if (this.spaceCycleIndex <= this.totalTime + (this.spaceTimeSecond)) {
       this.drawLine();
-    } else {
-      // console.log(this.spaceFrameIndex)
     }
   }
   private redraw() {
@@ -141,13 +156,21 @@ export class ZoomAxis {
   private clearStage() {
     this.ctx?.clearRect(0, 0, this.stageWidth, this.stageHeight);
   }
-  private calcZoomRatio() {
-    console.log(this.zoomRatio)
+  // 按比例缩放刻度
+  private zoomByRatio() {
     this.spaceFrameWidth = SPACE_FRAME_WIDTH * this.zoomRatio;
     this.setWidth()
-    // this.spaceTimeSecond
-    // this.zoomRatio = this.spaceFrameWidth / SPACE_FRAME_WIDTH;
+    const ratio = roundFun(this.zoomRatio, 1)
+    // 时间显示单位 分成好几档
+    const spaceTimeSecond = this.ratioMap.get(ratio)
+    if(spaceTimeSecond){
+      this.spaceTimeSecond = spaceTimeSecond
+    }
   }
+  /**
+   * 设置总时长
+   * @param sec 
+   */
   setTotalTime(sec: number){
     this.totalTime = sec
   }
@@ -176,7 +199,7 @@ export class ZoomAxis {
     this.spaceCycleIndex = 0;
     this.spaceFrameIndex = 0;
     this.zoomRatio = roundFun(this.zoomRatio - 0.1, 2)
-    this.calcZoomRatio();
+    this.zoomByRatio();
     this.redraw();
   }
   zoomOut() {
@@ -187,7 +210,7 @@ export class ZoomAxis {
     this.spaceCycleIndex = 0;
     this.spaceFrameIndex = 0;
     this.zoomRatio = roundFun(this.zoomRatio + 0.1, 2)
-    this.calcZoomRatio();
+    this.zoomByRatio();
     this.redraw();
   }
 }

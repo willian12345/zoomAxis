@@ -5,7 +5,7 @@ import Cursor from "./components/Cursor.vue";
 
 let zoomAxis: ZoomAxis | null;
 let initScrollContentWidth = 12000;
-const totalTime = 20;
+const totalTime = 300;
 const scrollContentWidth = ref(initScrollContentWidth);
 const cursorRef = ref(null);
 const timelineContainerRef = ref(null);
@@ -20,7 +20,7 @@ const handleScroll = (e: UIEvent) => {
 };
 // 滚轮缩放
 const handleWheel = (e: WheelEvent) => {
-  e.preventDefault()
+  e.preventDefault();
   e.deltaY > 0 ? zoomAxis?.zoomIn() : zoomAxis?.zoomOut();
   if (zoomAxis?.zoomRatio) {
     scrollContentWidth.value = initScrollContentWidth * zoomAxis?.zoomRatio;
@@ -28,12 +28,12 @@ const handleWheel = (e: WheelEvent) => {
 };
 
 function getTranslateXY(element: HTMLElement) {
-    const style = window.getComputedStyle(element)
-    const matrix = new DOMMatrixReadOnly(style.transform)
-    return {
-        translateX: matrix.m41,
-        translateY: matrix.m42
-    }
+  const style = window.getComputedStyle(element);
+  const matrix = new DOMMatrixReadOnly(style.transform);
+  return {
+    translateX: matrix.m41,
+    translateY: matrix.m42,
+  };
 }
 
 // 初始化游标
@@ -42,11 +42,11 @@ const initCursor = () => {
     return;
   }
   const cursorDom: HTMLElement = cursorRef.value;
-  const containerDom: HTMLElement = timelineContainerRef.value
-  const rightBorder = 1040 + cursorDom.offsetWidth
+  const containerDom: HTMLElement = timelineContainerRef.value;
+  const rightBorder = 1040 + cursorDom.offsetWidth;
   // 游标拖动
   cursorDom.addEventListener("mousedown", (e: MouseEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     let startX = e.clientX;
     const handleMouseup = (e: MouseEvent) => {
       startX = e.clientX;
@@ -55,30 +55,30 @@ const initCursor = () => {
     };
     const handleMousemove = (e: MouseEvent) => {
       const movedX = e.clientX - startX;
-      const { translateX } = getTranslateXY(cursorDom)
-      let x = translateX + movedX
-      if(x < 0){
-        x = 0
-      }else if(x > rightBorder){
-        x = rightBorder
+      const { translateX } = getTranslateXY(cursorDom);
+      let x = translateX + movedX;
+      if (x < 0) {
+        x = 0;
+      } else if (x > rightBorder) {
+        x = rightBorder;
       }
-      cursorDom.style.transform = `translateX(${x}px)`
+      cursorDom.style.transform = `translateX(${x}px)`;
       startX = e.clientX;
     };
     document.addEventListener("mouseup", handleMouseup);
-    cursorDom.addEventListener('mouseup', handleMouseup);
+    cursorDom.addEventListener("mouseup", handleMouseup);
     document.addEventListener("mousemove", handleMousemove);
   });
   // 滚动区域点击
-  containerDom.addEventListener("mousedown", (e: MouseEvent) => {
-    let x = e.clientX - containerDom.getBoundingClientRect().left
-    if(x < 0){
-        x = 0
-      }else if(x > rightBorder){
-        x = rightBorder
-      }
-    cursorDom.style.transform = `translateX(${x}px)`
-  })
+  containerDom.addEventListener("mouseup", (e: MouseEvent) => {
+    let x = e.clientX - containerDom.getBoundingClientRect().left + 1;
+    if (x < 0) {
+      x = 0;
+    } else if (x > rightBorder) {
+      x = rightBorder;
+    }
+    cursorDom.style.transform = `translateX(${x}px)`;
+  });
 };
 
 onMounted(() => {
@@ -92,14 +92,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="timeline-container" @wheel="handleWheel">
+  <div class="timeline-container" @wheel.ctrl="handleWheel">
     <div class="timeline-ruler">
       <div id="canvasStage"></div>
     </div>
-    <div class="scroll-container" @scroll="handleScroll">
+    <div class="webkit-scrollbar scroll-container" @scroll="handleScroll" ref="timelineContainerRef">
       <div
         class="scroll-content"
-        ref="timelineContainerRef"
         :style="{ width: `${scrollContentWidth}px` }"
       ></div>
     </div>
