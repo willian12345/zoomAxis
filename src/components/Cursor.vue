@@ -10,8 +10,11 @@
 <style scoped>
   .cursor-pointer{
     position: absolute;
+    top: 0px;
+    left: -9px;
+    z-index: 3;
     width: 20px;
-    height: 140px;
+    height: 180px;
     background-color: rgba(255, 255, 255, 0);
     overflow-y: hidden;
   }

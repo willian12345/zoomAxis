@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { ZoomAxis } from "./js/ZoomAxis";
+import { TimelineAxis } from "./js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
 
-let zoomAxis: ZoomAxis | null;
-let initScrollContentWidth = 12000;
-const totalTime = 300;
+let timelineAxis: TimelineAxis | null;
+let initScrollContentWidth = 36000;
+const totalTime = 2;
 const scrollContentWidth = ref(initScrollContentWidth);
-const cursorRef = ref(null);
-const timelineContainerRef = ref(null);
+const cursorRef = ref<InstanceType<typeof Cursor> |null>(null);
+const scrollContentRef = ref(null);
+const currentCursorFrame = 0;
 // 左右滚动
 const handleScroll = (e: UIEvent) => {
   if (!e) {
@@ -16,14 +17,14 @@ const handleScroll = (e: UIEvent) => {
   }
   const dom = e.target as HTMLElement;
   const scrollRatio = dom.scrollLeft / (dom.scrollWidth - 1040); // 滚动比例
-  zoomAxis?.scrollByRatio(scrollRatio);
+  timelineAxis?.scrollByRatio(scrollRatio);
 };
 // 滚轮缩放
 const handleWheel = (e: WheelEvent) => {
   e.preventDefault();
-  e.deltaY > 0 ? zoomAxis?.zoomIn() : zoomAxis?.zoomOut();
-  if (zoomAxis?.zoomRatio) {
-    scrollContentWidth.value = initScrollContentWidth * zoomAxis?.zoomRatio;
+  e.deltaY > 0 ? timelineAxis?.zoomIn() : timelineAxis?.zoomOut();
+  if (timelineAxis?.zoomRatio) {
+    scrollContentWidth.value = initScrollContentWidth * timelineAxis?.zoomRatio;
   }
 };
 
@@ -38,12 +39,14 @@ function getTranslateXY(element: HTMLElement) {
 
 // 初始化游标
 const initCursor = () => {
-  if (!cursorRef.value || !timelineContainerRef.value) {
+  if (!cursorRef.value?.$el || !scrollContentRef.value) {
     return;
   }
-  const cursorDom: HTMLElement = cursorRef.value;
-  const containerDom: HTMLElement = timelineContainerRef.value;
-  const rightBorder = 1040 + cursorDom.offsetWidth;
+  const cursorDom: HTMLElement = cursorRef.value.$el;
+  const scrollContentDom: HTMLElement = scrollContentRef.value;
+  const cursorWidth = cursorDom.getBoundingClientRect().width;
+  const rightBoundary = scrollContentDom.offsetWidth - 1;
+  const leftBoundary = 0
   // 游标拖动
   cursorDom.addEventListener("mousedown", (e: MouseEvent) => {
     e.preventDefault();
@@ -57,10 +60,10 @@ const initCursor = () => {
       const movedX = e.clientX - startX;
       const { translateX } = getTranslateXY(cursorDom);
       let x = translateX + movedX;
-      if (x < 0) {
-        x = 0;
-      } else if (x > rightBorder) {
-        x = rightBorder;
+      if (x < leftBoundary) {
+        x = leftBoundary;
+      } else if (x > rightBoundary) {
+        x = rightBoundary;
       }
       cursorDom.style.transform = `translateX(${x}px)`;
       startX = e.clientX;
@@ -70,19 +73,24 @@ const initCursor = () => {
     document.addEventListener("mousemove", handleMousemove);
   });
   // 滚动区域点击
-  containerDom.addEventListener("mouseup", (e: MouseEvent) => {
-    let x = e.clientX - containerDom.getBoundingClientRect().left + 1;
-    if (x < 0) {
-      x = 0;
-    } else if (x > rightBorder) {
-      x = rightBorder;
+  scrollContentDom.addEventListener("mouseup", (e: MouseEvent) => {
+    let x = e.clientX - scrollContentDom.getBoundingClientRect().left;
+    if (x < leftBoundary) {
+      x = leftBoundary;
+    } else if (x > rightBoundary) {
+      x = rightBoundary;
     }
     cursorDom.style.transform = `translateX(${x}px)`;
   });
 };
 
+const handlePlay = ()=> {
+  timelineAxis?.paused ? timelineAxis?.play() : timelineAxis?.pause()
+  
+}
+
 onMounted(() => {
-  zoomAxis = new ZoomAxis({
+  timelineAxis = new TimelineAxis({
     el: "canvasStage",
     totalTime,
   });
@@ -92,49 +100,62 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="timeline-container" @wheel.ctrl="handleWheel">
-    <div class="timeline-ruler">
-      <div id="canvasStage"></div>
+  <div class="wrapper">
+    <div class="timeline-container" @wheel.ctrl="handleWheel">
+      <div class="webkit-scrollbar scroll-container" @scroll="handleScroll">
+        <div class="timeline-ruler">
+          <div id="canvasStage"></div>
+        </div>
+        <div
+          class="scroll-content"
+          ref="scrollContentRef"
+          :style="{ width: `${scrollContentWidth}px` }"
+        ></div>
+        <Cursor ref="cursorRef" />
+        
+      </div>
+      
     </div>
-    <div class="webkit-scrollbar scroll-container" @scroll="handleScroll" ref="timelineContainerRef">
-      <div
-        class="scroll-content"
-        :style="{ width: `${scrollContentWidth}px` }"
-      ></div>
-    </div>
-    <div class="cursor" ref="cursorRef">
-      <Cursor />
-    </div>
+    <button @click="handlePlay">play</button>
   </div>
 </template>
 
 <style scoped>
+.wrapper{
+  padding: 40px;
+}
 .timeline-container {
   position: relative;
-  margin: 40px;
+  margin: 180px 40px;
   width: 100vh;
-  height: 80px;
+  height: 180px;
 }
 .timeline-ruler {
+  position: sticky;
+  left: 0;
+  top: 0;
   width: 1040px;
+  z-index: 2;
   background-color: #242424;
   pointer-events: none;
 }
 .scroll-container {
+  position: relative;
+  left: 0;
+  top: 0;
+  right: 0;
   width: 1040px;
-  height: 80px;
+  height: 100%;
   overflow-y: hidden;
   overflow-x: auto;
+  overflow-x: overlay;
 }
 .scroll-content {
-  width: 12000px;
-  height: 100px;
-  background: rgba(255, 255, 255, 0.5);
-}
-.cursor {
   position: absolute;
-  top: 0px;
-  left: -10px;
-  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 12000px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.5);
 }
 </style>
