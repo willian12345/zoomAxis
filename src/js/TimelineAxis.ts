@@ -1,16 +1,11 @@
-import { ZoomAxis, ConstructorArgs } from "./ZoomAxis";
+import { ZoomAxis, ZoomAxisArgs } from "./ZoomAxis";
 export class TimelineAxis extends ZoomAxis{
   private frameIntervalTime = 0;
   private preTimestamp = 0;
   paused = true;
-  constructor({ el, totalTime, ratioMap }: ConstructorArgs){
-    super({ el, totalTime, ratioMap })
-    this.setTotalFrame();
+  constructor({ el, totalMarks, ratioMap }: ZoomAxisArgs){
+    super({ el, totalMarks, ratioMap })
     this.setFrameIntervalTime();
-  }
-  // 设置总帧数
-  private setTotalFrame() {
-    this.totalFrames = this.totalTime * this.frameRate;
   }
   // 每一帧间隔时间
   private setFrameIntervalTime() {
