@@ -2,9 +2,10 @@
 import { onMounted, ref } from "vue";
 import { TimelineAxis } from "./js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
+import { ZoomAxis } from "./js/ZoomAxis";
 
-let timelineAxis: TimelineAxis | null;
-let initScrollContentWidth = 36000;
+let timelineAxis: ZoomAxis | null;
+let initScrollContentWidth = 10;
 const totalTime = 2;
 const scrollContentWidth = ref(initScrollContentWidth);
 const cursorRef = ref<InstanceType<typeof Cursor> |null>(null);
@@ -85,14 +86,15 @@ const initCursor = () => {
 };
 
 const handlePlay = ()=> {
-  timelineAxis?.paused ? timelineAxis?.play() : timelineAxis?.pause()
+  // timelineAxis?.paused ? timelineAxis?.play() : timelineAxis?.pause()
   
 }
 
 onMounted(() => {
-  timelineAxis = new TimelineAxis({
+  timelineAxis = new ZoomAxis({
     el: "canvasStage",
     totalTime,
+    totalMarks: 3000,
   });
 
   initCursor();
