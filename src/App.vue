@@ -5,8 +5,7 @@ import Cursor from "./components/Cursor.vue";
 import { ZoomAxis } from "./js/ZoomAxis";
 
 let timelineAxis: ZoomAxis | null;
-let initScrollContentWidth = 10;
-const totalTime = 2;
+let initScrollContentWidth = 20000;
 const scrollContentWidth = ref(initScrollContentWidth);
 const cursorRef = ref<InstanceType<typeof Cursor> |null>(null);
 const scrollContentRef = ref(null);
@@ -18,7 +17,8 @@ const handleScroll = (e: UIEvent) => {
   }
   const dom = e.target as HTMLElement;
   const scrollRatio = dom.scrollLeft / (dom.scrollWidth - 1040); // 滚动比例
-  timelineAxis?.scrollByRatio(scrollRatio);
+  console.log(dom.scrollLeft)
+  timelineAxis?.scrollLeft(-dom.scrollLeft);
 };
 // 滚轮缩放
 const handleWheel = (e: WheelEvent) => {
@@ -93,8 +93,7 @@ const handlePlay = ()=> {
 onMounted(() => {
   timelineAxis = new ZoomAxis({
     el: "canvasStage",
-    totalTime,
-    totalMarks: 3000,
+    totalMarks: 40000,
   });
 
   initCursor();

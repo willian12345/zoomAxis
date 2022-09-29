@@ -138,28 +138,33 @@ export class ZoomAxis {
   }
   // 绘制刻度线
   private drawLine() {
-    const isCyclePoint = this.checkIsCyclePoint();
-    const lineHeight = isCyclePoint ? this.lineHeight : this.lineShortHeight;
     if (!this.ctx) {
       return;
     }
-    this.ctx.fillStyle = isCyclePoint
-      ? "rgba(255, 255, 255, 0.2)"
-      : "rgba(255, 255, 255, 0.12)";
-    this.ctx.fillRect(this.lineX, this.lineY, this.lineWidth, lineHeight);
-    // 如果处于标尺周期，则要显示分:秒，且刻度线更长一些
-    if (isCyclePoint) {
-      this.drawCyclePointText();
-      // 大间隔计数加 1
-      this.spaceCycleIndex += this.spaceTimeSecond;
+    if (this.markIndex > this.totalMarks) {
+      return
     }
+    // !!此处不能用递归数量超过 8000 后会 RangeError: Maximum call stack size exceeded
+    // 直接用简单的 for 循环
+    for(let i=0; i <= this.totalMarks; i++){
+      const isCyclePoint = this.checkIsCyclePoint();
+      const lineHeight = isCyclePoint ? this.lineHeight : this.lineShortHeight;
 
-    // 刻度线 x 轴增加
-    this.lineX += this.markWidth;
-    // 刻度累计
-    this.markIndex++;
-    if (this.markIndex <= this.totalMarks) {
-      this.drawLine();
+      this.ctx.fillStyle = isCyclePoint
+        ? "rgba(255, 255, 255, 0.2)"
+        : "rgba(255, 255, 255, 0.12)";
+      this.ctx.fillRect(this.lineX, this.lineY, this.lineWidth, lineHeight);
+      // 如果处于标尺周期，则要显示分:秒，且刻度线更长一些
+      if (isCyclePoint) {
+        this.drawCyclePointText();
+        // 大间隔计数加 1
+        this.spaceCycleIndex += this.spaceTimeSecond;
+      }
+
+      // 刻度线 x 轴增加
+      this.lineX += this.markWidth;
+      // 刻度累计
+      this.markIndex++;
     }
   }
   private redraw() {
@@ -187,6 +192,12 @@ export class ZoomAxis {
    */
   setTotalMarks(marksNum: number) {
     this.totalMarks = marksNum;
+  }
+  scrollLeft(left: number){
+    this.lineX = left;
+    this.spaceCycleIndex = 0;
+    this.markIndex = 0;
+    this.redraw();
   }
   /**
    *
