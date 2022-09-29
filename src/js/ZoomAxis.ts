@@ -46,8 +46,11 @@ export class ZoomAxis {
   private lineX = 0;
   private lineY = 0;
   private ratioMap = new Map();
+  protected _markWidth = SPACE_FRAME_WIDTH; // 刻度间距
   totalMarks = 0;
-  markWidth = SPACE_FRAME_WIDTH; // 刻度间距
+  get markWidth(): number{
+    return this._markWidth * .5; // 刻度实际显示像素
+  }
   zoomRatio = 1; // 缩放比例
   width = 600; // 标尺总宽度
   currentFrame = 0; // 当前帧
@@ -116,7 +119,7 @@ export class ZoomAxis {
   }
   private setWidth() {
     // 总宽度 = 总秒数/时间间隔 * 每刻度宽度 * 多少个周期 + 额外加一个周期的宽度用于显示尾部
-    this.width = this.totalMarks * this.markWidth
+    this.width = this.totalMarks * this._markWidth
   }
   // 转换显示分:秒
   private getTimeText(sec: number): string {
@@ -162,7 +165,7 @@ export class ZoomAxis {
       }
 
       // 刻度线 x 轴增加
-      this.lineX += this.markWidth;
+      this.lineX += this._markWidth;
       // 刻度累计
       this.markIndex++;
     }
@@ -176,7 +179,7 @@ export class ZoomAxis {
   }
   // 按比例缩放刻度
   private zoomByRatio() {
-    this.markWidth = SPACE_FRAME_WIDTH * this.zoomRatio;
+    this._markWidth = SPACE_FRAME_WIDTH * this.zoomRatio;
     this.setWidth();
     const ratio = roundFun(this.zoomRatio, 1);
     // 时间显示单位 分成好几档
@@ -185,18 +188,23 @@ export class ZoomAxis {
       this.spaceTimeSecond = spaceTimeSecond;
     }
   }
-  
+  private resetToDraw(){
+    this.lineX = 0;
+    this.spaceCycleIndex = 0;
+    this.markIndex = 0;
+  }
   /**
    * 设置总刻度数
    * @param marksNum
    */
   setTotalMarks(marksNum: number) {
     this.totalMarks = marksNum;
+    this.resetToDraw();
+    this.redraw();
   }
   scrollLeft(left: number){
+    this.resetToDraw();
     this.lineX = left;
-    this.spaceCycleIndex = 0;
-    this.markIndex = 0;
     this.redraw();
   }
   /**
@@ -211,18 +219,15 @@ export class ZoomAxis {
     }
     // 实际尺子宽度 - 舞台宽度 * 缩放比例
     const x = (this.width - this.stageWidth) * scrollRatio;
+    this.resetToDraw();
     this.lineX = -x;
-    this.spaceCycleIndex = 0;
-    this.markIndex = 0;
     this.redraw();
   }
   zoomIn() {
     if (this.zoomRatio <= 0.1) {
       return;
     }
-    this.lineX = 0;
-    this.spaceCycleIndex = 0;
-    this.markIndex = 0;
+    this.resetToDraw();
     this.zoomRatio = roundFun(this.zoomRatio - 0.1, 2);
     this.zoomByRatio();
     this.redraw();
@@ -231,9 +236,7 @@ export class ZoomAxis {
     if (this.zoomRatio > 1.2) {
       return;
     }
-    this.lineX = 0;
-    this.spaceCycleIndex = 0;
-    this.markIndex = 0;
+    this.resetToDraw();
     this.zoomRatio = roundFun(this.zoomRatio + 0.1, 2);
     this.zoomByRatio();
     this.redraw();

@@ -5,7 +5,8 @@ import Cursor from "./components/Cursor.vue";
 import { ZoomAxis } from "./js/ZoomAxis";
 
 let timelineAxis: ZoomAxis | null;
-let initScrollContentWidth = 20000;
+let initScrollContentWidth = 1040;
+const stageWidth = 1040
 const scrollContentWidth = ref(initScrollContentWidth);
 const cursorRef = ref<InstanceType<typeof Cursor> |null>(null);
 const scrollContentRef = ref(null);
@@ -16,7 +17,7 @@ const handleScroll = (e: UIEvent) => {
     return;
   }
   const dom = e.target as HTMLElement;
-  const scrollRatio = dom.scrollLeft / (dom.scrollWidth - 1040); // 滚动比例
+  const scrollRatio = dom.scrollLeft / (dom.scrollWidth - stageWidth); // 滚动比例
   console.log(dom.scrollLeft)
   timelineAxis?.scrollLeft(-dom.scrollLeft);
 };
@@ -24,8 +25,10 @@ const handleScroll = (e: UIEvent) => {
 const handleWheel = (e: WheelEvent) => {
   e.preventDefault();
   e.deltaY > 0 ? timelineAxis?.zoomIn() : timelineAxis?.zoomOut();
+  console.log(timelineAxis?.markWidth)
   if (timelineAxis?.zoomRatio) {
-    scrollContentWidth.value = initScrollContentWidth * timelineAxis?.zoomRatio;
+    const scaleWidth = initScrollContentWidth * timelineAxis?.zoomRatio;
+    scrollContentWidth.value = (scaleWidth >= stageWidth) ? scaleWidth : stageWidth
   }
 };
 
@@ -85,15 +88,15 @@ const initCursor = () => {
   });
 };
 
-const handlePlay = ()=> {
+const handlePlay = () => {
   // timelineAxis?.paused ? timelineAxis?.play() : timelineAxis?.pause()
-  
+  timelineAxis?.setTotalMarks(10)
 }
 
 onMounted(() => {
   timelineAxis = new ZoomAxis({
     el: "canvasStage",
-    totalMarks: 40000,
+    totalMarks: 500,
   });
 
   initCursor();
