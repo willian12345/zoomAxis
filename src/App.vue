@@ -8,10 +8,12 @@ let timelineAxis: TimelineAxis | null;
 let initScrollContentWidth = 1040;
 let stageWidth = 1040;
 const scrollContentWidth = ref(initScrollContentWidth);
-const cursorRef = ref<InstanceType<typeof Cursor> |null>(null);
+const cursorRef = ref<InstanceType<typeof Cursor> | null>(null);
 const scrollContentRef = ref(null);
-const trackListRef = ref<HTMLElement|null>(null);
+const trackListRef = ref<HTMLElement | null>(null);
 const currentCursorFrame = 0;
+const CLOSE_ENOUPH_DISTANCE = 20; // 距离是否够近
+let segmentDragging = false;
 // 左右滚动
 const handleScroll = (e: UIEvent) => {
   if (!e) {
@@ -19,17 +21,18 @@ const handleScroll = (e: UIEvent) => {
   }
   const dom = e.target as HTMLElement;
   const scrollRatio = dom.scrollLeft / (dom.scrollWidth - stageWidth); // 滚动比例
-  console.log(dom.scrollLeft)
+  console.log(dom.scrollLeft);
   timelineAxis?.scrollLeft(-dom.scrollLeft);
 };
 // 滚轮缩放
 const handleWheel = (e: WheelEvent) => {
   e.preventDefault();
   e.deltaY > 0 ? timelineAxis?.zoomIn() : timelineAxis?.zoomOut();
-  console.log(timelineAxis?.markWidth)
+  console.log(timelineAxis?.markWidth);
   if (timelineAxis?.zoomRatio) {
     const scaleWidth = initScrollContentWidth * timelineAxis?.zoomRatio;
-    scrollContentWidth.value = (scaleWidth >= stageWidth) ? scaleWidth : stageWidth
+    scrollContentWidth.value =
+      scaleWidth >= stageWidth ? scaleWidth : stageWidth;
   }
 };
 
@@ -51,12 +54,13 @@ const initCursor = () => {
   const scrollContentDom: HTMLElement = scrollContentRef.value;
   const cursorWidth = cursorDom.getBoundingClientRect().width;
   const rightBoundary = scrollContentDom.offsetWidth - 1;
-  const leftBoundary = 0
+  const leftBoundary = 0;
   // 游标拖动
   cursorDom.addEventListener("mousedown", (e: MouseEvent) => {
     e.preventDefault();
     let startX = e.clientX;
     const handleMouseup = (e: MouseEvent) => {
+      e.stopPropagation();
       startX = e.clientX;
       document.removeEventListener("mouseup", handleMouseup);
       document.removeEventListener("mousemove", handleMousemove);
@@ -79,6 +83,9 @@ const initCursor = () => {
   });
   // 滚动区域点击
   scrollContentDom.addEventListener("mouseup", (e: MouseEvent) => {
+    if(segmentDragging){
+      return
+    }
     let x = e.clientX - scrollContentDom.getBoundingClientRect().left;
     if (x < leftBoundary) {
       x = leftBoundary;
@@ -90,94 +97,111 @@ const initCursor = () => {
 };
 
 const handlePlay = () => {
-  timelineAxis?.paused ? timelineAxis?.play() : timelineAxis?.pause()
-}
+  timelineAxis?.paused ? timelineAxis?.play() : timelineAxis?.pause();
+};
 const createDragTrackContainer = () => {
-  const div = document.createElement('div')
-  div.className = 'track-drag-container'
-  document.body.appendChild(div)
-  return div
-}
+  const div = document.createElement("div");
+  div.className = "track-drag-container";
+  document.body.appendChild(div);
+  return div;
+};
 const getDragTrackCotainer = () => {
-  let div = Array.from(document.body.children).find(element => {
-    return element.className === 'track-drag-container'
-  }) ?? createDragTrackContainer();
-  return div
-}
+  let div =
+    Array.from(document.body.children).find((element) => {
+      return element.className === "track-drag-container";
+    }) ?? createDragTrackContainer();
+  return div;
+};
+const isCloseTrackEnouph = (track: HTMLElement, mouseY: number) => {
+  const trackRect = track.getBoundingClientRect();
+  const distanceY = Math.abs(trackRect.top + trackRect.height * 0.5 - mouseY);
+  return distanceY < CLOSE_ENOUPH_DISTANCE;
+};
 const initTrackItem = (trackItem: HTMLElement, tracks: HTMLElement[]) => {
-  if(!trackListRef.value){
-    return
+  if (!trackListRef.value) {
+    return;
   }
   const trackListRects = trackListRef.value?.getBoundingClientRect();
-  const dragTrackContainer = getDragTrackCotainer() as HTMLElement
-  const trackPlaceHolder = trackItem.querySelector('.track-placeholder') as HTMLElement
-  const trackItemRect = trackItem.getBoundingClientRect()
-  let originTrack:HTMLElement|null = null
-  const segment = trackItem.querySelector('.segment') as HTMLElement
+  // 全局拖动容器
+  const dragTrackContainer = getDragTrackCotainer() as HTMLElement;
+  const trackPlaceHolder = trackItem.querySelector(
+    ".track-placeholder"
+  ) as HTMLElement;
+  const trackItemRect = trackItem.getBoundingClientRect();
+  let originTrack: HTMLElement | null = null;
+  // 可拖动片断
+  const segment = trackItem.querySelector(".segment") as HTMLElement;
   segment.addEventListener("mousedown", (e: MouseEvent) => {
     e.preventDefault();
     let startX = e.clientX;
     let startY = e.clientY;
-    originTrack = segment.parentElement
-    const { left, top } = segment.getBoundingClientRect()
-    dragTrackContainer.style.left = `${left}px`; 
+    // 拖动前原轨道
+    originTrack = segment.parentElement;
+    const { left, top } = segment.getBoundingClientRect();
+    dragTrackContainer.style.left = `${left}px`;
     dragTrackContainer.style.top = `${top}px`;
-    dragTrackContainer.appendChild(segment)
+    // 将 segment 暂时放到 dragTracContainer 内
+    dragTrackContainer.appendChild(segment);
+    
     const handleMouseup = (e: MouseEvent) => {
       e.stopPropagation();
       startX = e.clientX;
       startY = e.clientY;
-      const movedX = e.clientX - startX;
-      console.log(movedX)
-      tracks.forEach( track => {
-        track.classList.remove('dragover')
-        const trackRect = track.getBoundingClientRect()
-        const distanceY = Math.abs(trackRect.top + (trackRect.height * .5) - e.clientY)
-        if(distanceY < 10){
-          const {left, top} = dragTrackContainer.getBoundingClientRect()
-          segment.style.left = `${left - trackListRects.left}px`
-          track.appendChild(segment)
-          console.log(track)
+      const { left, top } = dragTrackContainer.getBoundingClientRect();
+      // 判断所有轨道与鼠标当前Y轴距离
+      tracks.forEach((track) => {
+        track.classList.remove("dragover");
+        // 如果小于 10 则代表用户想拖到此轨道上
+        if (isCloseTrackEnouph(track, e.clientY)) {
+          segment.style.left = `${left - trackListRects.left}px`;
+          track.appendChild(segment);
         }
-      })
-      if(dragTrackContainer.children.length){
-        originTrack?.appendChild(segment)
-      }
+      });
+      // 如果没有跨轨道拖动成功，则 x 轴移动
+      setTimeout(()=> {
+        if (segmentDragging) {
+          originTrack?.appendChild(segment);
+          segment.style.left = `${left - trackListRects.left}px`;
+        }
+      }, 0)
+      
+      segmentDragging = false;
       document.removeEventListener("mouseup", handleMouseup);
       document.removeEventListener("mousemove", handleMousemove);
     };
     const handleMousemove = (e: MouseEvent) => {
+      // 拖动时拖动的是 dragTrackContainer
       const movedX = e.clientX - startX;
       const movedY = e.clientY - startY;
-      const {left, top} = dragTrackContainer.getBoundingClientRect()
+      const { left, top } = dragTrackContainer.getBoundingClientRect();
       let x = left + movedX;
       let y = top + movedY;
-      dragTrackContainer.style.left = `${x}px`; 
+      dragTrackContainer.style.left = `${x}px`;
       dragTrackContainer.style.top = `${y}px`;
-      tracks.forEach( track => {
-        const trackRect = track.getBoundingClientRect()
-        const distanceY = Math.abs(trackRect.top + (trackRect.height * .5) - e.clientY)
-        if(distanceY < 10){
+      tracks.forEach((track) => {
+        // 离轨道足够近
+        if (isCloseTrackEnouph(track, e.clientY)) {
           tracks.forEach((element: HTMLElement) => {
-            element.classList.remove('dragover')
+            element.classList.remove("dragover");
           });
-          track.classList.add('dragover')
+          track.classList.add("dragover");
         }
-      })
-      
+      });
+      segmentDragging = true;
+
       startX = e.clientX;
       startY = e.clientY;
     };
     document.addEventListener("mouseup", handleMouseup);
     document.addEventListener("mousemove", handleMousemove);
   });
-}
+};
 const initTracks = () => {
-  const tracks: HTMLElement[] = Array.from(document.querySelectorAll('.track'))
-  tracks.forEach(trackItem => {
-    initTrackItem(trackItem, tracks)
-  })
-}
+  const tracks: HTMLElement[] = Array.from(document.querySelectorAll(".track"));
+  tracks.forEach((trackItem) => {
+    initTrackItem(trackItem, tracks);
+  });
+};
 const initApp = () => {
   if (!cursorRef.value?.$el || !scrollContentRef.value) {
     return;
@@ -188,21 +212,23 @@ const initApp = () => {
     totalMarks: 500,
     totalFrames: 10,
   });
-  timelineAxis.addEventListener(TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME, function(this:TimelineAxis, curentFrame, eventType){
-    console.log(this, curentFrame, eventType)
-    const frameWidth = this.markWidth ?? 0
-    const frameRate = this.frameRate
-    const left = curentFrame * frameWidth - frameWidth
-    cursorDom.style.transform = `translateX(${left}px)`;
-  })
+  timelineAxis.addEventListener(
+    TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME,
+    function (this: TimelineAxis, curentFrame, eventType) {
+      console.log(this, curentFrame, eventType);
+      const frameWidth = this.markWidth ?? 0;
+      const frameRate = this.frameRate;
+      const left = curentFrame * frameWidth - frameWidth;
+      cursorDom.style.transform = `translateX(${left}px)`;
+    }
+  );
 
-
-  // initCursor();
   initTracks();
-}
+  initCursor();
+};
 
 onMounted(() => {
-  initApp()
+  initApp();
 });
 </script>
 
@@ -210,34 +236,34 @@ onMounted(() => {
   <div class="wrapper">
     <div class="timeline-container" @wheel.ctrl="handleWheel">
       <div class="track-operation">
-        <div class="track-operation-item">
-
-        </div>
+        <div class="track-operation-item"></div>
       </div>
       <div class="webkit-scrollbar scroll-container" @scroll="handleScroll">
         <div class="timeline-markers">
           <div id="canvasStage"></div>
         </div>
-        <div
-          class="scroll-content"
-          ref="scrollContentRef"
-        >
+        <div class="scroll-content" ref="scrollContentRef">
           <!-- :style="{ width: `${scrollContentWidth}px` }" -->
           <!-- :style="{ width: `${stageWidth}px` }" -->
-          <div class="track-list" ref="trackListRef" >
+          <div class="track-list" ref="trackListRef">
             <div class="track">
               <div class="track-placeholder"></div>
-              <div class="segment segment-action" :style="{width: `164px`}"></div>
+              <div
+                class="segment segment-action"
+                :style="{ width: `164px` }"
+              ></div>
             </div>
             <div class="track actived">
               <div class="track-placeholder"></div>
-              <div class="segment segment-action" :style="{width: `80px`}"></div>
+              <div
+                class="segment segment-action"
+                :style="{ width: `80px` }"
+              ></div>
             </div>
           </div>
         </div>
         <Cursor ref="cursorRef" />
       </div>
-      
     </div>
     <button @click="handlePlay">play</button>
   </div>
@@ -254,9 +280,9 @@ onMounted(() => {
   top: 0;
   height: 24px;
   border-radius: 4px;
-  background-color:rgba(aquamarine, .8);
+  background-color: rgba(aquamarine, 0.8);
 }
-.wrapper{
+.wrapper {
   padding: 40px;
 }
 .timeline-container {
@@ -292,32 +318,32 @@ onMounted(() => {
   height: 100%;
   // background: rgba(255, 255, 255, 0.5);
 }
-.track-operation{
+.track-operation {
   padding-top: @markHeight;
   flex-basis: 120px;
-  .track-operation-item{
-    background-color: rgba(white, .05);
-    height: @markHeight;  
+  .track-operation-item {
+    background-color: rgba(white, 0.05);
+    height: @markHeight;
   }
 }
-.segment-wrapper{
+.segment-wrapper {
   height: @trackHeight;
   pointer-events: all;
   position: absolute;
 }
-.track-list{
+.track-list {
   padding-top: @markHeight;
-  .track{
+  .track {
     pointer-events: none;
     position: relative;
     width: 100%;
     height: @trackHeight;
-    background-color: rgba(white, .15);
+    background-color: rgba(white, 0.15);
   }
-  .track{
+  .track {
     margin-bottom: 2px;
   }
-  .track-placeholder{
+  .track-placeholder {
     bottom: 0;
     left: 0;
     overflow: hidden;
@@ -325,29 +351,29 @@ onMounted(() => {
     right: 0;
     top: 0;
   }
-  
-  .segment{
+
+  .segment {
     position: absolute;
     left: 0;
     top: 1px;
     right: 0;
     bottom: 0;
-    z-index: 100;
+    z-index: 1;
     height: 24px;
     border-radius: 4px;
     pointer-events: all;
     border: 1px solid transparent;
   }
-  .segment-action{
-    background-color: #C66136;
+  .segment-action {
+    background-color: #c66136;
   }
-  .actived{
-    .segment{
+  .actived {
+    .segment {
       border: 1px solid white;
     }
   }
-  .dragover{
-    background-color: rgba(aquamarine, .04);
+  .dragover {
+    background-color: rgba(aquamarine, 0.04);
   }
 }
 </style>
