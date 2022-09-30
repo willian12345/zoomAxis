@@ -118,8 +118,6 @@ const initTrackItem = (trackItem: HTMLElement, tracks: HTMLElement[]) => {
     e.preventDefault();
     let startX = e.clientX;
     let startY = e.clientY;
-    let movedX = 0;
-    let movedY = 0;
     originTrack = segment.parentElement
     const { left, top } = segment.getBoundingClientRect()
     dragTrackContainer.style.left = `${left}px`; 
@@ -127,30 +125,30 @@ const initTrackItem = (trackItem: HTMLElement, tracks: HTMLElement[]) => {
     dragTrackContainer.appendChild(segment)
     const handleMouseup = (e: MouseEvent) => {
       e.stopPropagation();
-
+      startX = e.clientX;
+      startY = e.clientY;
+      const movedX = e.clientX - startX;
+      console.log(movedX)
       tracks.forEach( track => {
         track.classList.remove('dragover')
         const trackRect = track.getBoundingClientRect()
         const distanceY = Math.abs(trackRect.top + (trackRect.height * .5) - e.clientY)
         if(distanceY < 10){
-          console.log(movedX)
-          const {left, top} = segment.getBoundingClientRect()
-          // segment.style.left = `${movedX}px`
-          // track.appendChild(segment)
+          const {left, top} = dragTrackContainer.getBoundingClientRect()
+          segment.style.left = `${left - trackListRects.left}px`
+          track.appendChild(segment)
           console.log(track)
         }
       })
       if(dragTrackContainer.children.length){
-        // originTrack?.appendChild(segment)
+        originTrack?.appendChild(segment)
       }
-      startX = e.clientX;
-      startY = e.clientY;
       document.removeEventListener("mouseup", handleMouseup);
       document.removeEventListener("mousemove", handleMousemove);
     };
     const handleMousemove = (e: MouseEvent) => {
-      movedX = e.clientX - startX;
-      movedY = e.clientY - startY;
+      const movedX = e.clientX - startX;
+      const movedY = e.clientY - startY;
       const {left, top} = dragTrackContainer.getBoundingClientRect()
       let x = left + movedX;
       let y = top + movedY;
@@ -255,6 +253,7 @@ onMounted(() => {
   left: 0;
   top: 0;
   height: 24px;
+  border-radius: 4px;
   background-color:rgba(aquamarine, .8);
 }
 .wrapper{
