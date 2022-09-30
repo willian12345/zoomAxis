@@ -1,10 +1,31 @@
 import { ZoomAxis, ZoomAxisArgs } from "./ZoomAxis";
+
+export interface TimelineAxisArgs extends ZoomAxisArgs{
+  totalFrames: number;
+  frameRate?: number;
+}
+export enum TIMELINE_AXIS_EVENT_TYPE {
+  ENTER_FRAME,
+}
+interface EventCallback {
+  (eventType: TIMELINE_AXIS_EVENT_TYPE): any
+}
+interface ENTER_FRAME_CALLBACK {
+  (currentFrame: number, eventType: TIMELINE_AXIS_EVENT_TYPE): any
+}
+const FRAME_RATE = 30
 export class TimelineAxis extends ZoomAxis{
   private frameIntervalTime = 0;
   private preTimestamp = 0;
-  paused = true;
-  constructor({ el, totalMarks, ratioMap }: ZoomAxisArgs){
-    super({ el, totalMarks, ratioMap })
+  private enterframeSet: Set<EventCallback>|null = null;
+  paused = true; 
+  currentFrame = 0; // 当前帧
+  totalFrames = 0; // 全部帧数
+  frameRate = FRAME_RATE; // 帧频
+  constructor({ el, totalFrames = 0, totalMarks, frameRate, ratioMap }: TimelineAxisArgs){
+    super({ el, totalMarks,  ratioMap })
+    this.totalFrames = totalFrames
+    this.frameRate = frameRate ?? FRAME_RATE
     this.setFrameIntervalTime();
   }
   // 每一帧间隔时间
@@ -23,7 +44,9 @@ export class TimelineAxis extends ZoomAxis{
     if(interval >= this.frameIntervalTime){
       this.currentFrame++;
       this.preTimestamp = timestamp;
-      console.log('当前帧:', this.currentFrame);
+      if(this.enterframeSet?.size){
+        this.enterframeSet.forEach( (cb: ENTER_FRAME_CALLBACK) => cb.call(this, this.currentFrame, TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME))
+      }
     }
     // 
     // console.log(elapsed);
@@ -36,5 +59,13 @@ export class TimelineAxis extends ZoomAxis{
   play() {
     this.paused = false;
     this.enterFrame(0);
+  }
+  addEventListener(eventType: TIMELINE_AXIS_EVENT_TYPE, callback: ENTER_FRAME_CALLBACK){
+    if(eventType === TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME){
+      if(!this.enterframeSet){
+        this.enterframeSet  = new Set()
+      }
+      this.enterframeSet.add(callback)
+    }
   }
 }

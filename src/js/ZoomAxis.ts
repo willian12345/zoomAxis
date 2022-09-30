@@ -53,9 +53,6 @@ export class ZoomAxis {
   }
   zoomRatio = 1; // 缩放比例
   width = 600; // 标尺总宽度
-  currentFrame = 0; // 当前帧
-  totalFrames = 0; // 全部帧数
-  frameRate = 30; // 帧频
 
   constructor({ el, totalMarks, ratioMap }: ZoomAxisArgs) {
     if (!el) {
