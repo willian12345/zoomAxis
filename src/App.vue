@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { TimelineAxis } from "./js/TimelineAxis";
+import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "./js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
-import { ZoomAxis } from "./js/ZoomAxis";
 
-let timelineAxis: ZoomAxis | null;
+let timelineAxis: TimelineAxis | null;
 let initScrollContentWidth = 1040;
 const stageWidth = 1040
 const scrollContentWidth = ref(initScrollContentWidth);
@@ -89,15 +88,26 @@ const initCursor = () => {
 };
 
 const handlePlay = () => {
-  // timelineAxis?.paused ? timelineAxis?.play() : timelineAxis?.pause()
-  timelineAxis?.setTotalMarks(10)
+  timelineAxis?.paused ? timelineAxis?.play() : timelineAxis?.pause()
 }
 
 onMounted(() => {
-  timelineAxis = new ZoomAxis({
+  if (!cursorRef.value?.$el || !scrollContentRef.value) {
+    return;
+  }
+  const cursorDom: HTMLElement = cursorRef.value.$el;
+  timelineAxis = new TimelineAxis({
     el: "canvasStage",
     totalMarks: 500,
+    totalFrames: 10,
   });
+  timelineAxis.addEventListener(TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME, function(this:TimelineAxis, curentFrame, eventType){
+    console.log(this, curentFrame, eventType)
+    const frameWidth = this.markWidth ?? 0
+    const frameRate = this.frameRate
+    const left = curentFrame * frameWidth - frameWidth
+    cursorDom.style.transform = `translateX(${left}px)`;
+  })
 
   initCursor();
 });
