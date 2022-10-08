@@ -5,13 +5,13 @@ import Cursor from "./components/Cursor.vue";
 import { isStaticProperty } from "@vue/compiler-core";
 
 let timelineAxis: TimelineAxis | null;
-let initScrollContentWidth = 1040;
+let initScrollContentWidth = 3240;
 let stageWidth = 1040;
 const scrollContentWidth = ref(initScrollContentWidth);
+const scrollContainerRef = ref(null);
 const cursorRef = ref<InstanceType<typeof Cursor> | null>(null);
 const scrollContentRef = ref(null);
 const trackListRef = ref<HTMLElement | null>(null);
-const currentCursorFrame = 0;
 const CLOSE_ENOUPH_DISTANCE = 20; // 距离是否够近
 let segmentDragging = false;
 // 左右滚动
@@ -83,8 +83,8 @@ const initCursor = () => {
   });
   // 滚动区域点击
   scrollContentDom.addEventListener("mouseup", (e: MouseEvent) => {
-    if(segmentDragging){
-      return
+    if (segmentDragging) {
+      return;
     }
     let x = e.clientX - scrollContentDom.getBoundingClientRect().left;
     if (x < leftBoundary) {
@@ -112,27 +112,59 @@ const getDragTrackCotainer = () => {
     }) ?? createDragTrackContainer();
   return div;
 };
-const isCloseTrackEnouph = (track: HTMLElement, mouseY: number) => {
+const isYCloseEnouph = (track: HTMLElement, mouseY: number) => {
   const trackRect = track.getBoundingClientRect();
   const distanceY = Math.abs(trackRect.top + trackRect.height * 0.5 - mouseY);
   return distanceY < CLOSE_ENOUPH_DISTANCE;
 };
+
+const isXCloseEnouph = (
+  dragContainerRect: DOMRect,
+  dragSegment: HTMLElement,
+  track: HTMLElement,
+  mouseX: number
+) => {
+  const segments: HTMLElement[] = Array.from(
+    track.querySelectorAll(".segment")
+  );
+  if (!segments.length) {
+    return;
+  }
+  segments.forEach((segment) => {
+    const segmentRect = segment.getBoundingClientRect();
+
+    if (
+      dragContainerRect.left + (mouseX - dragContainerRect.left) >
+      segmentRect.left + segmentRect.width * 0.5
+    ) {
+      // console.log('后')
+    }
+    if (
+      (dragContainerRect.left >= segmentRect.left - dragContainerRect.width &&
+        dragContainerRect.left <= segmentRect.right) 
+    ) {
+      console.log("碰");
+    }
+  });
+};
 const initTrackItem = (trackItem: HTMLElement, tracks: HTMLElement[]) => {
-  if (!trackListRef.value) {
+  if (!trackListRef.value || !scrollContainerRef.value) {
     return;
   }
   const trackListRects = trackListRef.value?.getBoundingClientRect();
+  const scrollContainerDom: HTMLElement = scrollContainerRef.value;
   // 全局拖动容器
   const dragTrackContainer = getDragTrackCotainer() as HTMLElement;
-  const trackPlaceHolder = trackItem.querySelector(
-    ".track-placeholder"
-  ) as HTMLElement;
+  // const trackPlaceHolder = trackItem.querySelector(
+  //   ".track-placeholder"
+  // ) as HTMLElement;
   const trackItemRect = trackItem.getBoundingClientRect();
   let originTrack: HTMLElement | null = null;
   // 可拖动片断
   const segment = trackItem.querySelector(".segment") as HTMLElement;
   segment.addEventListener("mousedown", (e: MouseEvent) => {
     e.preventDefault();
+
     let startX = e.clientX;
     let startY = e.clientY;
     // 拖动前原轨道
@@ -142,29 +174,30 @@ const initTrackItem = (trackItem: HTMLElement, tracks: HTMLElement[]) => {
     dragTrackContainer.style.top = `${top}px`;
     // 将 segment 暂时放到 dragTracContainer 内
     dragTrackContainer.appendChild(segment);
-    
+
     const handleMouseup = (e: MouseEvent) => {
       e.stopPropagation();
       startX = e.clientX;
       startY = e.clientY;
       const { left, top } = dragTrackContainer.getBoundingClientRect();
+      const scrollLeft = scrollContainerDom.scrollLeft;
+      const segmentLeft = left - trackListRects.left + scrollLeft; // segmentLeft = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
       // 判断所有轨道与鼠标当前Y轴距离
       tracks.forEach((track) => {
         track.classList.remove("dragover");
         // 如果小于 10 则代表用户想拖到此轨道上
-        if (isCloseTrackEnouph(track, e.clientY)) {
-          segment.style.left = `${left - trackListRects.left}px`;
+        if (isYCloseEnouph(track, e.clientY)) {
+          segment.style.left = `${segmentLeft}px`;
           track.appendChild(segment);
         }
       });
       // 如果没有跨轨道拖动成功，则 x 轴移动
-      setTimeout(()=> {
-        if (segmentDragging) {
+      setTimeout(() => {
+        if (dragTrackContainer.children.length) {
           originTrack?.appendChild(segment);
-          segment.style.left = `${left - trackListRects.left}px`;
+          segment.style.left = `${segmentLeft}px`;
         }
-      }, 0)
-      
+      }, 0);
       segmentDragging = false;
       document.removeEventListener("mouseup", handleMouseup);
       document.removeEventListener("mousemove", handleMousemove);
@@ -173,18 +206,19 @@ const initTrackItem = (trackItem: HTMLElement, tracks: HTMLElement[]) => {
       // 拖动时拖动的是 dragTrackContainer
       const movedX = e.clientX - startX;
       const movedY = e.clientY - startY;
-      const { left, top } = dragTrackContainer.getBoundingClientRect();
-      let x = left + movedX;
-      let y = top + movedY;
-      dragTrackContainer.style.left = `${x}px`;
-      dragTrackContainer.style.top = `${y}px`;
+      const dragTrackContainerRect = dragTrackContainer.getBoundingClientRect();
+      let left = dragTrackContainerRect.left + movedX;
+      let top = dragTrackContainerRect.top + movedY;
+      dragTrackContainer.style.left = `${left}px`;
+      dragTrackContainer.style.top = `${top}px`;
       tracks.forEach((track) => {
         // 离轨道足够近
-        if (isCloseTrackEnouph(track, e.clientY)) {
+        if (isYCloseEnouph(track, e.clientY)) {
           tracks.forEach((element: HTMLElement) => {
             element.classList.remove("dragover");
           });
           track.classList.add("dragover");
+          isXCloseEnouph(dragTrackContainerRect, segment, track, e.clientX);
         }
       });
       segmentDragging = true;
@@ -238,12 +272,19 @@ onMounted(() => {
       <div class="track-operation">
         <div class="track-operation-item"></div>
       </div>
-      <div class="webkit-scrollbar scroll-container" @scroll="handleScroll">
+      <div
+        class="webkit-scrollbar scroll-container"
+        @scroll="handleScroll"
+        ref="scrollContainerRef"
+      >
         <div class="timeline-markers">
           <div id="canvasStage"></div>
         </div>
-        <div class="scroll-content" ref="scrollContentRef">
-          <!-- :style="{ width: `${scrollContentWidth}px` }" -->
+        <div
+          class="scroll-content"
+          ref="scrollContentRef"
+          :style="{ width: `${scrollContentWidth}px` }"
+        >
           <!-- :style="{ width: `${stageWidth}px` }" -->
           <div class="track-list" ref="trackListRef">
             <div class="track">
