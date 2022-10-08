@@ -115,6 +115,12 @@ const getDragTrackCotainer = () => {
 const collisionCheck = () => {
   
 }
+const getLeftValue = (dom: HTMLElement|undefined) => {
+  if(!dom){
+    return 0
+  }
+  return parseFloat(dom.style.left) ?? 0
+}
 const isYCloseEnouph = (track: HTMLElement, mouseY: number) => {
   const trackRect = track.getBoundingClientRect();
   const distanceY = Math.abs(trackRect.top + trackRect.height * 0.5 - mouseY);
@@ -149,8 +155,7 @@ const isXCloseEnouph = debounce((
       if (
         dragContainerRect.left >= segmentRect.left + (segmentRect.width * .5) && dragContainerRect.left <= segmentRect.right
       ) {
-        // 重叠靠右
-        
+        // 靠右
         // 获取所有拖动位置右侧的 segments
         allRightSiblings = segments.filter(( sg ) => {
           return sg.getBoundingClientRect().left > dragContainerRect.left;
@@ -159,40 +164,52 @@ const isXCloseEnouph = debounce((
           return a.getBoundingClientRect().left - b.getBoundingClientRect().left;
         })
         console.log('右',allRightSiblings);
-        const ns = allRightSiblings[0];
+        const ns = allRightSiblings.at(0);
         if(ns){
-          const nsRect = ns.getBoundingClientRect();
+          const nsLeft =  getLeftValue(ns)
+          console.log(nsLeft)
           // 需要空间
-          const spaceNeed = segmentRect.left + segmentRect.width + dragContainerRect.width;
+          const spaceNeed = getLeftValue(segment) + segmentRect.width + dragContainerRect.width;
           // 剩余空间
-          const spaceLeft = spaceNeed - nsRect.left;
-          // console.log(spaceLeft)
+          const spaceLeft = spaceNeed - nsLeft;
           if(spaceLeft > 0){
             // 如果空间不够，需要所有右侧的 segment 向右挤
             allRightSiblings.forEach( sb => {
-              sb.style.left = `${parseFloat(sb.style.left) + Math.abs(spaceLeft)}px`
+              sb.style.left = `${getLeftValue(sb) + Math.abs(spaceLeft)}px`
             })
           }
         }
       }else if(dragContainerRect.left + dragContainerRect.width < segmentRect.left + (segmentRect.width * .5)){
-        // 重叠靠左
+        // 靠左
         allRightSiblings = segments.filter(( sg ) => {
           return sg.getBoundingClientRect().left + sg.getBoundingClientRect().width > dragContainerRect.left
         })
+        .sort((a:HTMLElement, b: HTMLElement)=> {
+          return a.getBoundingClientRect().left - b.getBoundingClientRect().left;
+        })
+        const allLeft = segments.filter(( sg ) => {
+          return sg.getBoundingClientRect().left + sg.getBoundingClientRect().width <= dragContainerRect.left
+        })
+        .sort((a:HTMLElement, b: HTMLElement)=> {
+          return a.getBoundingClientRect().left - b.getBoundingClientRect().left;
+        })
+        // const allLeftSiblings = segments.filter(( sg ) => {
+        //   return sg.getBoundingClientRect().left + sg.getBoundingClientRect().width <= dragContainerRect.left
+        // })
         console.log('左', allRightSiblings);
-        const ns = allRightSiblings[0];
+        const ns = allRightSiblings.at(0);
+        const prev = allLeft.at(-1);
         if(ns){
-          const nsRect = ns.getBoundingClientRect();
-          const dragContainerLeft = dragContainerRect.left > 0 ? dragContainerRect.left : 0
+          const nsLeft = getLeftValue(ns);
+          const prevLeft = getLeftValue(prev);
           // 需要空间
           const spaceNeed = dragContainerRect.width;
-          // 剩余空间
-          const spaceLeft = spaceNeed - nsRect.left;
-          console.log(dragContainerRect.width,dragContainerLeft, nsRect.left, spaceLeft)
+          const prevWidth = prev?.getBoundingClientRect()?.width ?? 0
+          // 剩余空间  = 需求宽度 - 后与前之间的间隔
+          const spaceLeft = spaceNeed - (nsLeft - prevLeft - prevWidth);
           if(spaceLeft > 0){
             allRightSiblings.forEach( sb => {
-              // console.log(parseFloat(sb.style.left) + spaceLeft)
-              sb.style.left = `${parseFloat(sb.style.left) + Math.abs(spaceLeft)}px`
+              sb.style.left = `${getLeftValue(sb) + Math.abs(spaceLeft)}px`
             })
           }
         }
