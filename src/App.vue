@@ -139,13 +139,13 @@ const getSegmentPlaceholder = (track: HTMLElement) => {
   return dom;
 };
 // 离Y轴是否足够近
-const isCloseEnouphToY = (track: HTMLElement, mouseY: number) => {
+const isCloseEnouphToY = (tracks:HTMLElement[],track: HTMLElement, mouseY: number) => {
   const trackRect = track.getBoundingClientRect();
   const distanceY = Math.abs(trackRect.top + trackRect.height * 0.5 - mouseY);
   return distanceY < CLOSE_ENOUPH_DISTANCE;
 };
 
-// x 轴横向碰撞检测
+// 轨道内 segment x 轴横向碰撞检测
 const collisionCheckX = (placeholder: HTMLElement, track: HTMLElement) => {
   const placeholderRect = placeholder.getBoundingClientRect();
   const segments: HTMLElement[] = Array.from(
@@ -170,6 +170,36 @@ const collisionCheckX = (placeholder: HTMLElement, track: HTMLElement) => {
   }
   return false;
 };
+// 轨道 y 轴 碰撞检测
+const trackCollisionCheckY = (dragTrackContainerRect: DOMRect, tracks: HTMLElement[], scrollContainerX: number, mouseY: number) => {
+  tracks.forEach((track) => {
+    // 离轨道足够近
+    const placeHolder = getSegmentPlaceholder(track);
+    if (isCloseEnouphToY(tracks, track, mouseY)) {
+      if (!placeHolder) {
+        return;
+      }
+      tracks.forEach((element: HTMLElement) => {
+        element.classList.remove("dragover");
+      });
+      track.classList.add("dragover");
+      // 拖动时轨道内占位元素
+      placeHolder.style.width = `${dragTrackContainerRect.width}px`;
+      placeHolder.style.left = `${dragTrackContainerRect.left - scrollContainerX}px`;
+      const isCollistion = collisionCheckX(placeHolder, track);
+      // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
+      if (isCollistion) {
+        placeHolder.style.opacity = "0";
+      } else {
+        placeHolder.style.opacity = "1";
+      }
+    } else {
+      if (placeHolder) {
+        placeHolder.style.opacity = "0";
+      }
+    }
+  });
+}
 
 const initTrackItem = (trackItem: HTMLElement, tracks: HTMLElement[]) => {
   if (!trackListRef.value || !scrollContainerRef.value) {
@@ -199,6 +229,7 @@ const initTrackItem = (trackItem: HTMLElement, tracks: HTMLElement[]) => {
       dragTrackContainer.appendChild(segment);
       const scrollContainerScrollLeft = scrollContainerDom.scrollLeft;
       const scrollContainerRect = scrollContainerDom.getBoundingClientRect();
+      const scrollContainerX = scrollContainerRect.left + scrollContainerScrollLeft
       const handleMouseup = (e: MouseEvent) => {
         e.stopPropagation();
         startX = e.clientX;
@@ -207,9 +238,8 @@ const initTrackItem = (trackItem: HTMLElement, tracks: HTMLElement[]) => {
         const segmentLeft = left - trackListRects.left + scrollContainerScrollLeft; // segmentLeft = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
         // 判断所有轨道与鼠标当前Y轴距离
         tracks.forEach((track) => {
-          track.classList.remove("dragover");
           // 如果足够近代表用户想拖到此轨道上
-          if (isCloseEnouphToY(track, e.clientY)) {
+          if (isCloseEnouphToY(tracks, track, e.clientY)) {
             const placeHolder = getSegmentPlaceholder(track);
             if(!placeHolder){
               return
@@ -255,33 +285,8 @@ const initTrackItem = (trackItem: HTMLElement, tracks: HTMLElement[]) => {
         let top = dragTrackContainerRect.top + movedY;
         dragTrackContainer.style.left = `${left}px`;
         dragTrackContainer.style.top = `${top}px`;
-        tracks.forEach((track) => {
-          // 离轨道足够近
-          const placeHolder = getSegmentPlaceholder(track);
-          if (isCloseEnouphToY(track, e.clientY)) {
-            tracks.forEach((element: HTMLElement) => {
-              element.classList.remove("dragover");
-            });
-            track.classList.add("dragover");
-            if (!placeHolder) {
-              return;
-            }
-            // 拖动时轨道内占位元素
-            placeHolder.style.width = `${dragTrackContainerRect.width}px`;
-            placeHolder.style.left = `${dragTrackContainerRect.left - scrollContainerRect.left + scrollContainerScrollLeft}px`;
-            const isCollistion = collisionCheckX(placeHolder, track);
-            // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
-            if (isCollistion) {
-              placeHolder.style.opacity = "0";
-            } else {
-              placeHolder.style.opacity = "1";
-            }
-          } else {
-            if (placeHolder) {
-              placeHolder.style.opacity = "0";
-            }
-          }
-        });
+        
+        trackCollisionCheckY(dragTrackContainerRect, tracks, scrollContainerX, e.clientY);
         segmentDragging = true;
         startX = e.clientX;
         startY = e.clientY;
@@ -297,6 +302,93 @@ const initTracks = () => {
     initTrackItem(trackItem, tracks);
   });
 };
+const createSegmentItem = (rect: DOMRect) => {
+  const dom = document.createElement("div");
+  dom.className = 'segment-fake';
+  dom.style.width = `${rect.width}px`;
+  dom.style.height = `${rect.height}px`;
+  dom.style.borderRadius = '4px';
+  return dom;
+}
+enum SegmentType {
+  BODY_ANIMATION,
+  FACE_ANIMATION,
+}
+const createSegment = (type: SegmentType) => {
+  const dom = document.createElement('div');
+  dom.className = 'segment segment-action';
+  dom.style.width = '80px';
+  dom.style.height = '28px';
+  dom.style.left = '0';
+  return dom;
+}
+const initSegmentItemList = () => {
+  const segmentItems: HTMLElement[] = Array.from(document.querySelectorAll('.segment-item'))
+  if (!trackListRef.value || !scrollContainerRef.value) {
+    return;
+  }
+  const scrollContainerDom: HTMLElement = scrollContainerRef.value;
+  const trackListRects = trackListRef.value?.getBoundingClientRect();
+  const scrollContainerScrollLeft = scrollContainerDom.scrollLeft;
+  const scrollContainerRect = scrollContainerDom.getBoundingClientRect();
+  const scrollContainerX = scrollContainerRect.left + scrollContainerScrollLeft
+  segmentItems.forEach((segmentItem) => {
+    const mousedown = (e: MouseEvent) => {
+      e.preventDefault();
+      let startX = e.clientX;
+      let startY = e.clientY;
+      // 全局拖动容器
+      const dragTrackContainer = getDragTrackCotainer() as HTMLElement;
+      const segmentItemRect = segmentItem.getBoundingClientRect();
+      dragTrackContainer.style.left = `${segmentItemRect.left}px`;
+      dragTrackContainer.style.top = `${segmentItemRect.top}px`;
+      const segmentCopy = createSegmentItem(segmentItemRect);
+      dragTrackContainer.appendChild(segmentCopy)
+      const tracks: HTMLElement[] = Array.from(document.querySelectorAll('.track'));
+      const mousemove =  (e: MouseEvent) => {
+        // 拖动时拖动的是 dragTrackContainer
+        const movedX = e.clientX - startX;
+        const movedY = e.clientY - startY;
+        const dragTrackContainerRect = dragTrackContainer.getBoundingClientRect();
+        let left = dragTrackContainerRect.left + movedX;
+        let top = dragTrackContainerRect.top + movedY;
+        dragTrackContainer.style.left = `${left}px`;
+        dragTrackContainer.style.top = `${top}px`;
+        startX = e.clientX;
+        startY = e.clientY;
+        trackCollisionCheckY(dragTrackContainerRect, tracks, scrollContainerX, e.clientY);
+      }
+      const mouseup =  (e: MouseEvent) => {
+        e.stopPropagation();
+        startX = e.clientX;
+        startY = e.clientY;
+        const { left, top } = dragTrackContainer.getBoundingClientRect();
+        const segmentLeft = left - trackListRects.left + scrollContainerScrollLeft; // segmentLeft = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
+        tracks.forEach((track) => {
+          // 如果足够近代表用户想拖到此轨道上
+          if (isCloseEnouphToY(tracks, track, e.clientY)) {
+            const placeHolder = getSegmentPlaceholder(track);
+            if(!placeHolder){
+              return
+            }
+            placeHolder.style.opacity = "0";
+            const isCollistion = collisionCheckX(placeHolder, track);
+            if (!isCollistion) {
+              // segment.style.left = `${segmentLeft}px`;
+              // track.appendChild(segment);
+            }
+          }
+        });
+        dragTrackContainer.removeChild(segmentCopy);
+        document.removeEventListener('mouseup', mouseup);
+        document.removeEventListener('mousemove', mousemove);
+      }
+      document.addEventListener('mouseup', mouseup);
+      document.addEventListener('mousemove', mousemove);
+    }
+    segmentItem.addEventListener('mousedown', mousedown);
+  })
+}
 // 最右侧 segment 片断
 const findEndestSegment = () => {
   let end: HTMLElement|null = null;
@@ -334,6 +426,7 @@ const initApp = () => {
   );
 
   initTracks();
+  initSegmentItemList();
   initCursor();
 };
 
@@ -344,6 +437,13 @@ onMounted(() => {
 
 <template>
   <div class="wrapper">
+    <div class="segment-item-list">
+      <div class="segment-item"></div>
+      <div class="segment-item"></div>
+      <div class="segment-item"></div>
+      <div class="segment-item"></div>
+      <div class="segment-item"></div>
+    </div>
     <div class="timeline-container" @wheel.ctrl="handleWheel">
       <div class="track-operation">
         <div class="track-operation-item"></div>
@@ -372,8 +472,10 @@ onMounted(() => {
         <Cursor ref="cursorRef" />
       </div>
     </div>
-    <button @click="handlePlay">play</button>
-    <button @click="findEndestSegment">最右侧片断</button>
+    <div style="display: flex; gap: 10px;">
+      <button @click="handlePlay">play</button>
+      <button @click="findEndestSegment">最右侧片断</button>
+    </div>
   </div>
 </template>
 
@@ -508,5 +610,20 @@ onMounted(() => {
     border-radius: 4px;
     background-color: rgba(aquamarine, 0.3);
   }
+}
+.segment-item-list{
+  display: flex;
+  gap: 20px;
+  .segment-item{
+    width: 80px;
+    height: 80px;
+    border-radius: 4px;
+    background-color: bisque;
+  }
+}
+.segment-fake{
+  width: 80px;
+  height: 28px;
+  background-color: #c66136;
 }
 </style>
