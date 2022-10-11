@@ -17,7 +17,7 @@ const FRAME_RATE = 30
 export class TimelineAxis extends ZoomAxis{
   private frameIntervalTime = 0;
   private preTimestamp = 0;
-  private enterframeSet: Set<EventCallback>|null = null;
+  private enterframeSet: Set<ENTER_FRAME_CALLBACK>|null = null;
   paused = true; 
   currentFrame = 0; // 当前帧
   totalFrames = 0; // 全部帧数
