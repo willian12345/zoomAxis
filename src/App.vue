@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, Ref } from "vue";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "./js/TimelineAxis";
-import { debounce } from "lodash-es";
 import Cursor from "./components/Cursor.vue";
-import { nextTick } from "@vue/runtime-core";
+import { useCursor } from './components/cursor';
 
 let timelineAxis: TimelineAxis | null;
 let initScrollContentWidth = 3240;
 let stageWidth = 1040;
 const scrollContentWidth = ref(initScrollContentWidth);
-const scrollContainerRef = ref(null);
+const scrollContainerRef = ref<HTMLElement|null>(null);
 const cursorRef = ref<InstanceType<typeof Cursor> | null>(null);
-const scrollContentRef = ref(null);
+const scrollContentRef = ref<HTMLElement | null>(null);
 const trackListRef = ref<HTMLElement | null>(null);
 const segmentItemListRef = ref<HTMLElement | null>(null);
 const CLOSE_ENOUPH_DISTANCE = 10; // 距离是否够近
@@ -38,66 +37,10 @@ const handleWheel = (e: WheelEvent) => {
   }
 };
 
-function getTranslateXY(element: HTMLElement) {
-  const style = window.getComputedStyle(element);
-  const matrix = new DOMMatrixReadOnly(style.transform);
-  return {
-    translateX: matrix.m41,
-    translateY: matrix.m42,
-  };
-}
 
-// 初始化游标
-const initCursor = () => {
-  if (!cursorRef.value?.$el || !scrollContentRef.value) {
-    return;
-  }
-  const cursorDom: HTMLElement = cursorRef.value.$el;
-  const scrollContentDom: HTMLElement = scrollContentRef.value;
-  const cursorWidth = cursorDom.getBoundingClientRect().width;
-  const rightBoundary = scrollContentDom.offsetWidth - 1;
-  const leftBoundary = 0;
-  // 游标拖动
-  cursorDom.addEventListener("mousedown", (e: MouseEvent) => {
-    e.preventDefault();
-    let startX = e.clientX;
-    const handleMouseup = (e: MouseEvent) => {
-      e.stopPropagation();
-      startX = e.clientX;
-      cursorDom.removeEventListener("mouseup", handleMouseup);
-      document.removeEventListener("mouseup", handleMouseup);
-      document.removeEventListener("mousemove", handleMousemove);
-    };
-    const handleMousemove = (e: MouseEvent) => {
-      const movedX = e.clientX - startX;
-      const { translateX } = getTranslateXY(cursorDom);
-      let x = translateX + movedX;
-      if (x < leftBoundary) {
-        x = leftBoundary;
-      } else if (x > rightBoundary) {
-        x = rightBoundary;
-      }
-      cursorDom.style.transform = `translateX(${x}px)`;
-      startX = e.clientX;
-    };
-    document.addEventListener("mouseup", handleMouseup);
-    cursorDom.addEventListener("mouseup", handleMouseup);
-    document.addEventListener("mousemove", handleMousemove);
-  });
-  // 滚动区域点击
-  scrollContentDom.addEventListener("mouseup", (e: MouseEvent) => {
-    if (segmentDragging) {
-      return;
-    }
-    let x = e.clientX - scrollContentDom.getBoundingClientRect().left;
-    if (x < leftBoundary) {
-      x = leftBoundary;
-    } else if (x > rightBoundary) {
-      x = rightBoundary;
-    }
-    cursorDom.style.transform = `translateX(${x}px)`;
-  });
-};
+
+
+
 
 const handlePlay = () => {
   timelineAxis?.paused ? timelineAxis?.play() : timelineAxis?.pause();
@@ -246,9 +189,9 @@ const dragStart = async (e: MouseEvent, segment: HTMLElement, isCopySegment:bool
     dragTrackContainer.style.transition = 'height .2s ease .1s';  
   }, 0);
   
-  const scrollContainerScrollLeft = scrollContainer.scrollLeft;
+  
   const scrollContainerRect = scrollContainer.getBoundingClientRect();
-  const scrollContainerX = scrollContainerRect.left + scrollContainerScrollLeft
+  
   const mousemove = (e: MouseEvent) => {
     // 拖动时拖动的是 dragTrackContainer
     const movedX = e.clientX - startX;
@@ -259,6 +202,8 @@ const dragStart = async (e: MouseEvent, segment: HTMLElement, isCopySegment:bool
     let top = dragTrackContainerRect.top + movedY;
     dragTrackContainer.style.left = `${left}px`;
     dragTrackContainer.style.top = `${top}px`;
+    const scrollContainerScrollLeft = scrollContainer.scrollLeft;
+    const scrollContainerX = scrollContainerRect.left + scrollContainerScrollLeft
     const isCollisionY = trackCollisionCheckY(dragTrackContainerRect, tracks, scrollContainerX, e.clientY);
     if(isCopySegment){
       // 如果是复制，则需要形变成标准轨道内 segment 形状
@@ -279,6 +224,7 @@ const dragStart = async (e: MouseEvent, segment: HTMLElement, isCopySegment:bool
     e.stopPropagation();
     startX = e.clientX;
     startY = e.clientY;
+    const scrollContainerScrollLeft = scrollContainer.scrollLeft;
     const { left, top } = dragTrackContainer.getBoundingClientRect();
     dragTrackContainer.style.transition = 'none';
     // segmentLeft = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
@@ -325,6 +271,7 @@ const dragStart = async (e: MouseEvent, segment: HTMLElement, isCopySegment:bool
         const isCollistion = collisionCheckX(placeHolder, originTrack);
         if (!isCollistion) {
           segment.style.left = `${segmentLeft}px`;
+          console.log(3333333, segmentLeft)
         }
       }
       segmentDragging = false;
@@ -440,7 +387,10 @@ const initApp = () => {
 
   initTracks();
   initSegmentItemList();
-  initCursor();
+  if(scrollContentRef.value && cursorRef.value){
+    // useCursor(scrollContentRef.value as HTMLElement, cursorRef.value.$el);
+  }
+  
 };
 
 onMounted(() => {
