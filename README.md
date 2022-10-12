@@ -1,15 +1,15 @@
 # 刻度
-可缩放刻度迟
+可缩放刻度尺
 
-## Recommended IDE Setup
+## 运行环境
+- pnpm 6.11.0
+- nodejs v16.13.1
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
+## 运行
+- pnpm dev 开发
+- pnpm build 构建
 
-## Type Support For `.vue` Imports in TS
+## 刻度尺应用一 demo
 
-Since TypeScript cannot handle type information for `.vue` imports, they are shimmed to be a generic Vue component type by default. In most cases this is fine if you don't really care about component prop types outside of templates. However, if you wish to get actual prop types in `.vue` imports (for example to get props validation when using manual `h(...)` calls), you can enable Volar's Take Over mode by following these steps:
-
-1. Run `Extensions: Show Built-in Extensions` from VS Code's command palette, look for `TypeScript and JavaScript Language Features`, then right click and select `Disable (Workspace)`. By default, Take Over mode will enable itself if the default TypeScript extension is disabled.
-2. Reload the VS Code window by running `Developer: Reload Window` from the command palette.
-
-https://github.com/SortableJS/vue.draggable.next
+- 时间轴轨道 vue3.0 版本
+- todo: 时间轴轨道 react 版本
