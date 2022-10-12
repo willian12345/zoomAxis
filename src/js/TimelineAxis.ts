@@ -22,10 +22,12 @@ export class TimelineAxis extends ZoomAxis{
   currentFrame = 0; // 当前帧
   totalFrames = 0; // 全部帧数
   frameRate = FRAME_RATE; // 帧频
+  frameWidth = 0;
   constructor({ el, totalFrames = 0, totalMarks, frameRate, ratioMap }: TimelineAxisArgs){
     super({ el, totalMarks,  ratioMap })
     this.totalFrames = totalFrames
     this.frameRate = frameRate ?? FRAME_RATE
+    this.frameWidth = this.markWidth
     this.setFrameIntervalTime();
   }
   // 每一帧间隔时间

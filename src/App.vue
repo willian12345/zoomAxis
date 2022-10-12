@@ -2,19 +2,19 @@
 import { onMounted, ref, Ref } from "vue";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "./js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
-import { useCursor } from './components/cursor';
+import { TrackCursor } from './js/cursor'
 
 let timelineAxis: TimelineAxis | null;
-let initScrollContentWidth = 3240;
+let initScrollContentWidth:number = 3240;
 let stageWidth = 1040;
-const scrollContentWidth = ref(initScrollContentWidth);
+const scrollContentWidth = ref(1040);
 const scrollContainerRef = ref<HTMLElement|null>(null);
 const cursorRef = ref<InstanceType<typeof Cursor> | null>(null);
 const scrollContentRef = ref<HTMLElement | null>(null);
 const trackListRef = ref<HTMLElement | null>(null);
 const segmentItemListRef = ref<HTMLElement | null>(null);
 const CLOSE_ENOUPH_DISTANCE = 10; // 距离是否够近
-let segmentDragging = false;
+let trackCursor: InstanceType<typeof TrackCursor>;
 // 左右滚动
 const handleScroll = (e: UIEvent) => {
   if (!e) {
@@ -22,14 +22,13 @@ const handleScroll = (e: UIEvent) => {
   }
   const dom = e.target as HTMLElement;
   const scrollRatio = dom.scrollLeft / (dom.scrollWidth - stageWidth); // 滚动比例
-  console.log(dom.scrollLeft);
   timelineAxis?.scrollLeft(-dom.scrollLeft);
 };
 // 滚轮缩放
 const handleWheel = (e: WheelEvent) => {
   e.preventDefault();
+  return;
   e.deltaY > 0 ? timelineAxis?.zoomIn() : timelineAxis?.zoomOut();
-  console.log(timelineAxis?.markWidth);
   if (timelineAxis?.zoomRatio) {
     const scaleWidth = initScrollContentWidth * timelineAxis?.zoomRatio;
     scrollContentWidth.value =
@@ -133,7 +132,7 @@ const trackCollisionCheckY = (dragTrackContainerRect: DOMRect, tracks: HTMLEleme
       track.classList.add("dragover");
       // 拖动时轨道内占位元素
       placeHolder.style.width = `${dragTrackContainerRect.width}px`;
-      placeHolder.style.left = `${dragTrackContainerRect.left - scrollContainerX}px`;
+      placeHolder.style.left = `${dragTrackContainerRect.left + scrollContainerX}px`;
       const isCollistion = collisionCheckX(placeHolder, track);
       // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
       if (isCollistion) {
@@ -162,8 +161,6 @@ const dragStart = async (e: MouseEvent, segment: HTMLElement, isCopySegment:bool
   }
   // 获取所有轨道
   const tracks: HTMLElement[] = Array.from(document.querySelectorAll(".track"));
-  // 轨道容器 Rect
-  const trackListRect = trackListRef.value?.getBoundingClientRect();
   // 全局拖动容器
   const dragTrackContainer = getDragTrackCotainer() as HTMLElement;
   // 拖动前原轨道
@@ -203,7 +200,7 @@ const dragStart = async (e: MouseEvent, segment: HTMLElement, isCopySegment:bool
     dragTrackContainer.style.left = `${left}px`;
     dragTrackContainer.style.top = `${top}px`;
     const scrollContainerScrollLeft = scrollContainer.scrollLeft;
-    const scrollContainerX = scrollContainerRect.left + scrollContainerScrollLeft
+    const scrollContainerX = scrollContainerScrollLeft - scrollContainerRect.left;
     const isCollisionY = trackCollisionCheckY(dragTrackContainerRect, tracks, scrollContainerX, e.clientY);
     if(isCopySegment){
       // 如果是复制，则需要形变成标准轨道内 segment 形状
@@ -215,7 +212,7 @@ const dragStart = async (e: MouseEvent, segment: HTMLElement, isCopySegment:bool
         dragTrackContainer.style.height = `${segmentRect.height}px`;
       }
     }
-    segmentDragging = true;
+    trackCursor.enable = false;
     startX = e.clientX;
     startY = e.clientY;
   };
@@ -228,7 +225,7 @@ const dragStart = async (e: MouseEvent, segment: HTMLElement, isCopySegment:bool
     const { left, top } = dragTrackContainer.getBoundingClientRect();
     dragTrackContainer.style.transition = 'none';
     // segmentLeft = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
-    const segmentLeft = left - trackListRect.left + scrollContainerScrollLeft;
+    const segmentLeft = left - scrollContainerRect.left + scrollContainerScrollLeft;
     // 判断所有轨道与鼠标当前Y轴距离
     tracks.forEach((track) => {
       // 如果足够近代表用户想拖到此轨道上
@@ -271,10 +268,9 @@ const dragStart = async (e: MouseEvent, segment: HTMLElement, isCopySegment:bool
         const isCollistion = collisionCheckX(placeHolder, originTrack);
         if (!isCollistion) {
           segment.style.left = `${segmentLeft}px`;
-          console.log(3333333, segmentLeft)
         }
       }
-      segmentDragging = false;
+      trackCursor.enable = true;
     }, 0);
     
     document.removeEventListener("mouseup", mouseup);
@@ -288,9 +284,13 @@ const initTracks = () => {
   if(!scrollContainerRef.value){
     return
   }
-  const scrollContainer: HTMLElement = scrollContainerRef.value
+  const scrollContainer: HTMLElement = scrollContainerRef.value;
   if (!trackListRef.value || !scrollContainerRef.value) {
     return;
+  }
+  if(timelineAxis){
+    // 根据帧数算出滚动内容宽度
+    scrollContentWidth.value = timelineAxis.totalFrames * timelineAxis.frameWidth;
   }
   const mousedown = (e: MouseEvent) => {
     e.preventDefault();
@@ -311,7 +311,6 @@ const createSegmentFake = (rect: DOMRect) => {
   const dom = document.createElement("div");
   dom.className = 'segment-fake';
   dom.style.width = `${rect.width}px`;
-  // dom.style.height = `${rect.height}px`;
   dom.style.borderRadius = '4px';
   return dom;
 }
@@ -361,7 +360,6 @@ const findEndestSegment = () => {
       end = segment
     }
   })
-  console.log(end)
   return end;
 }
 const initApp = () => {
@@ -369,27 +367,30 @@ const initApp = () => {
     return;
   }
   const cursorDom: HTMLElement = cursorRef.value.$el;
+
+  // 初始化时间轴
   timelineAxis = new TimelineAxis({
     el: "canvasStage",
     totalMarks: 500,
-    totalFrames: 10,
+    totalFrames: 100,
   });
   timelineAxis.addEventListener(
     TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME,
     function (this: TimelineAxis, curentFrame, eventType) {
-      console.log(this, curentFrame, eventType);
+      console.log(curentFrame, eventType, this.frameRate);
       const frameWidth = this.markWidth ?? 0;
       const frameRate = this.frameRate;
       const left = curentFrame * frameWidth - frameWidth;
       cursorDom.style.transform = `translateX(${left}px)`;
     }
   );
-
+  
+  // 初始化轨道
   initTracks();
+  // 初始化可拖 segment 片断
   initSegmentItemList();
-  if(scrollContentRef.value && cursorRef.value){
-    // useCursor(scrollContentRef.value as HTMLElement, cursorRef.value.$el);
-  }
+  // 初始化游标
+  trackCursor = new TrackCursor(scrollContentRef.value as HTMLElement, cursorDom);
   
 };
 
