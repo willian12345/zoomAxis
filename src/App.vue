@@ -5,7 +5,7 @@ import Cursor from "./components/Cursor.vue";
 import { CursorPointer } from "./js/cursorPointer";
 import {
   findEndestSegment,
-  initSegmentItemList,
+  initSegmentList,
   initTracks,
 } from "./js/track";
 
@@ -87,8 +87,8 @@ const initApp = () => {
     scrollContentWidth.value =
       timelineAxis.totalFrames * timelineAxis.frameWidth;
   }
-  // 初始化可拖 segment 片断
-  initSegmentItemList(trackCursor, scrollContainer, segmentItemList);
+  // 初始化轨道外可拖 segment 片断
+  initSegmentList(trackCursor, scrollContainer, segmentItemList);
 };
 
 onMounted(() => {
@@ -98,7 +98,7 @@ onMounted(() => {
 
 <template>
   <div class="wrapper">
-    <div class="segment-item-list" ref="segmentItemListRef">
+    <div class="segment-list" ref="segmentItemListRef">
       <div class="segment-item"></div>
       <div class="segment-item"></div>
       <div class="segment-item"></div>
@@ -293,7 +293,7 @@ onMounted(() => {
   }
 }
 
-.segment-item-list {
+.segment-list {
   display: flex;
   gap: 20px;
 

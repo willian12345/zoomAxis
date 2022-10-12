@@ -319,7 +319,7 @@ export const initTracks = (trackCursor: InstanceType<typeof CursorPointer>, scro
   scrollContainer.addEventListener("mousedown", mousedown);
 };
 // 初始化轨道外可拖入轨道的 segment 
-export const initSegmentItemList = (trackCursor: InstanceType<typeof CursorPointer>, scrollContainer: HTMLElement, segmentItemList: HTMLElement) => {
+export const initSegmentList = (trackCursor: InstanceType<typeof CursorPointer>, scrollContainer: HTMLElement, segmentItemList: HTMLElement) => {
   const mousedown = (e: MouseEvent) => {
     e.preventDefault();
     const target = e.target as HTMLElement;
