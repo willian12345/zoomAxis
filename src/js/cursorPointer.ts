@@ -7,10 +7,10 @@ export function getTranslateXY(element: HTMLElement) {
     translateY: matrix.m42,
   };
 }
-export class TrackCursor{
+export class CursorPointer{
   private _enable = true
   get enable(){
-    return this._enable;
+    return this._enable
   }
   set enable(bool){
     this._enable = bool
@@ -65,5 +65,10 @@ export class TrackCursor{
       cursorEl.style.transform = `translateX(${x}px)`;
     });
   }
-  
+  freeze(){
+    this._enable = false;
+  }
+  unfreeze(){
+    this._enable = true;
+  }
 }
