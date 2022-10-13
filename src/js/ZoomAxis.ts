@@ -201,7 +201,7 @@ export class ZoomAxis {
   }
   scrollLeft(left: number){
     this.resetToDraw();
-    this.lineX = left;
+    this.lineX = left * 2; // canvas 内所有物体都是1倍，所以 left 需要被放大一倍
     this.redraw();
   }
   /**

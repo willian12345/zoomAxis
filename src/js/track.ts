@@ -175,7 +175,7 @@ class Tracks {
         this.dragEndCallback = new Set()
       }
       this.dragEndCallback.add(callback)
-      return 
+      return;
     }
   }
   dragStart(e: MouseEvent,
