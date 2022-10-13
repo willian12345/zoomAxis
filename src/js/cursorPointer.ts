@@ -36,6 +36,7 @@ export class CursorPointer{
         document.removeEventListener("mousemove", handleMousemove);
       };
       const handleMousemove = (e: MouseEvent) => {
+        const rightBoundary = scrollContentDom.offsetWidth;
         const movedX = e.clientX - startX;
         const { translateX } = getTranslateXY(cursorEl);
         let x = translateX + movedX;
@@ -56,7 +57,8 @@ export class CursorPointer{
       if (!this._enable) {
         return;
       }
-      let x = e.clientX - scrollContentDom.getBoundingClientRect().left;
+      let x = e.clientX - scrollContentDom.getBoundingClientRect().left + scrollContentDom.scrollLeft; 
+      const rightBoundary = scrollContentDom.offsetWidth;
       if (x < leftBoundary) {
         x = leftBoundary;
       } else if (x > rightBoundary) {

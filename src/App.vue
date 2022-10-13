@@ -56,28 +56,26 @@ const initApp = () => {
 
   const cursor: HTMLElement = cursorRef.value.$el;
   const scrollContainer: HTMLElement = scrollContainerRef.value
+  const scrollContent: HTMLElement = scrollContentRef.value
 
   // 初始化时间轴
   timelineAxis = new TimelineAxis({
     el: "canvasStage",
     totalMarks: 500,
-    totalFrames: 100,
+    totalFrames: 10,
   });
   timelineAxis.addEventListener(
     TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME,
     function (this: TimelineAxis, curentFrame, eventType) {
-      console.log(curentFrame, eventType, this.frameRate);
-      const frameWidth = this.markWidth ?? 0;
-      const frameRate = this.frameRate;
-      const left = curentFrame * frameWidth - frameWidth;
+      console.log(curentFrame, eventType, this.frameRate, this.frameWidth);
+      const left = curentFrame * (this.spacecycle / this.frameRate) * this.frameWidth;
       cursor.style.transform = `translateX(${left}px)`;
     }
   );
-
   
   // 初始化游标
   trackCursor = new CursorPointer(
-    scrollContainer,
+    scrollContent,
     cursor
   );
   // 初始化轨道

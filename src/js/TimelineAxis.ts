@@ -44,11 +44,12 @@ export class TimelineAxis extends ZoomAxis{
     // const elapsed = timestamp - this.startTime;
     const interval = timestamp - this.preTimestamp
     if(interval >= this.frameIntervalTime){
-      this.currentFrame++;
+      
       this.preTimestamp = timestamp;
       if(this.enterframeSet?.size){
         this.enterframeSet.forEach( (cb: ENTER_FRAME_CALLBACK) => cb.call(this, this.currentFrame, TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME))
       }
+      this.currentFrame++;
     }
     // 
     // console.log(elapsed);

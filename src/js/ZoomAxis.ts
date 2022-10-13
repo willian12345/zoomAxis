@@ -39,7 +39,7 @@ export class ZoomAxis {
   private lineWidth = 2; // 刻度线宽度
   private lineHeight = 24; // 刻度线高度
   private lineShortHeight = 16; // 短刻度线高度
-  private spacecycle = 10; // 每 10 个最小刻度为一组分割
+  protected spacecycle = 10; // 每 10 个最小刻度为一组分割
   private spaceCycleIndex = 0; // 刻度大间隔周期累计
   private spaceTimeSecond = 1; // 刻度间隔秒数单位（一个周期时间单位）
   private markIndex = 0; // 刻度表帧数数计
