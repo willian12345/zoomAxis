@@ -11,7 +11,7 @@ import {
 } from "./js/track";
 
 let timelineAxis: TimelineAxis | null;
-let initScrollContentWidth: number = 3240;
+let initScrollContentWidth: number = 1040;
 let stageWidth = 1040;
 const scrollContentWidth = ref(1040);
 const scrollContainerRef = ref<HTMLElement | null>(null);
@@ -27,7 +27,6 @@ const handleScroll = (e: UIEvent) => {
     return;
   }
   const dom = e.target as HTMLElement;
-  const scrollRatio = dom.scrollLeft / (dom.scrollWidth - stageWidth); // 滚动比例
   timelineAxis?.scrollLeft(-dom.scrollLeft);
 };
 // 滚轮缩放
@@ -58,24 +57,27 @@ const initApp = () => {
   const cursor: HTMLElement = cursorRef.value.$el;
   const scrollContainer: HTMLElement = scrollContainerRef.value
   const scrollContent: HTMLElement = scrollContentRef.value
+  stageWidth = scrollContainer.getBoundingClientRect().width;
 
   // 初始化时间轴
   timelineAxis = new TimelineAxis({
     el: "canvasStage",
     totalMarks: 500,
-    totalFrames: 60,
+    totalFrames: 120,
   });
 
   let a = (+ new Date())
   timelineAxis.addEventListener(
     TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME,
     function (this: TimelineAxis, curentFrame, eventType) {
+      console.log(this.frameWidth);
+
       const left = curentFrame * (this.spacecycle / this.frameRate) * this.frameWidth;
       cursor.style.transform = `translateX(${left}px)`;
       if(this.currentFrame === 0){
         a = (+ new Date())
       }
-      console.log(this.currentFrame, +new Date() - a);
+      // console.log(this.currentFrame, +new Date() - a);
     }
   );
   
@@ -99,8 +101,8 @@ const initApp = () => {
   
   if (timelineAxis) {
     // 根据帧数算出滚动内容宽度
-    scrollContentWidth.value =
-      timelineAxis.totalFrames * timelineAxis.frameWidth;
+    // scrollContentWidth.value =
+    //   timelineAxis.totalFrames * timelineAxis.frameWidth;
   }
   // 初始化轨道外可拖 segment 片断
   const sto =  new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList});
@@ -139,7 +141,7 @@ onMounted(() => {
         @scroll="handleScroll"
         ref="scrollContainerRef"
       >
-        <div class="timeline-markers">
+        <div class="timeline-markers" :style="{ width: `${stageWidth}px` }">
           <div id="canvasStage"></div>
         </div>
         <div
