@@ -5,8 +5,9 @@ import Cursor from "./components/Cursor.vue";
 import { CursorPointer } from "./js/cursorPointer";
 import {
   findEndestSegment,
-  initSegmentList,
-  initTracks,
+  SegmentTracksOut,
+  TRACKS_EVENT_CALLBACK_TYPES,
+  SegmentTracks,
 } from "./js/track";
 
 let timelineAxis: TimelineAxis | null;
@@ -62,14 +63,19 @@ const initApp = () => {
   timelineAxis = new TimelineAxis({
     el: "canvasStage",
     totalMarks: 500,
-    totalFrames: 10,
+    totalFrames: 60,
   });
+
+  let a = (+ new Date())
   timelineAxis.addEventListener(
     TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME,
     function (this: TimelineAxis, curentFrame, eventType) {
-      console.log(curentFrame, eventType, this.frameRate, this.frameWidth);
       const left = curentFrame * (this.spacecycle / this.frameRate) * this.frameWidth;
       cursor.style.transform = `translateX(${left}px)`;
+      if(this.currentFrame === 0){
+        a = (+ new Date())
+      }
+      console.log(this.currentFrame, +new Date() - a);
     }
   );
   
@@ -79,14 +85,35 @@ const initApp = () => {
     cursor
   );
   // 初始化轨道
-  initTracks(trackCursor, scrollContainer);
+  const st = new SegmentTracks({trackCursor, scrollContainer})
+  st.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
+    const [segment, right] = findEndestSegment()
+    if(!segment){
+      return
+    }
+    if(scrollContentWidth.value < right){
+      scrollContentWidth.value = scrollContentWidth.value + 800;
+      trackCursor.refresh();
+    }
+  })
+  
   if (timelineAxis) {
     // 根据帧数算出滚动内容宽度
     scrollContentWidth.value =
       timelineAxis.totalFrames * timelineAxis.frameWidth;
   }
   // 初始化轨道外可拖 segment 片断
-  initSegmentList(trackCursor, scrollContainer, segmentItemList);
+  const sto =  new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList});
+  sto.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
+    const [segment, right] = findEndestSegment()
+    if(!segment){
+      return
+    }
+    if(scrollContentWidth.value < right){
+      scrollContentWidth.value = scrollContentWidth.value + 800;
+      trackCursor.refresh();
+    }
+  })
 };
 
 onMounted(() => {

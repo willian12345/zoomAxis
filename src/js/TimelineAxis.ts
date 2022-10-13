@@ -6,18 +6,23 @@ export interface TimelineAxisArgs extends ZoomAxisArgs{
 }
 export enum TIMELINE_AXIS_EVENT_TYPE {
   ENTER_FRAME,
+  PLAY_START,
+  PLAY_END,
 }
 interface EventCallback {
   (eventType: TIMELINE_AXIS_EVENT_TYPE): any
 }
 interface ENTER_FRAME_CALLBACK {
-  (currentFrame: number, eventType: TIMELINE_AXIS_EVENT_TYPE): any
+  (this: TimelineAxis, currentFrame: number, eventType: TIMELINE_AXIS_EVENT_TYPE): void
 }
 const FRAME_RATE = 30
+let a:number;
 export class TimelineAxis extends ZoomAxis{
-  private frameIntervalTime = 0;
+  private fps = 0;
   private preTimestamp = 0;
-  private enterframeSet: Set<ENTER_FRAME_CALLBACK>|null = null;
+  private enterframeCallbackSet: Set<ENTER_FRAME_CALLBACK>|null = null;
+  private playStartCallbackSet: Set<ENTER_FRAME_CALLBACK>|null = null;
+  private playEndCallbackSet: Set<ENTER_FRAME_CALLBACK>|null = null;
   paused = true; 
   currentFrame = 0; // 当前帧
   totalFrames = 0; // 全部帧数
@@ -32,28 +37,29 @@ export class TimelineAxis extends ZoomAxis{
   }
   // 每一帧间隔时间
   private setFrameIntervalTime() {
-    this.frameIntervalTime = 1000 / this.frameRate; // 毫秒
+    // FPS = 1000 毫秒 / 帧频
+    this.fps = 1000 / this.frameRate;
   }
-  private enterFrame(timestamp: number) {
+  private enterFrame() {
+    if(this.currentFrame === 0){
+      // todo: 开始播放回调
+    }
     if (this.paused) {
       return;
     }
     if (this.currentFrame > this.totalFrames) {
+      // todo: 结束播放回调
       return;
     }
-    // const elapsed = timestamp - this.startTime;
-    const interval = timestamp - this.preTimestamp
-    if(interval >= this.frameIntervalTime){
-      
-      this.preTimestamp = timestamp;
-      if(this.enterframeSet?.size){
-        this.enterframeSet.forEach( (cb: ENTER_FRAME_CALLBACK) => cb.call(this, this.currentFrame, TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME))
+    const now = + new Date()
+    const interval = now - this.preTimestamp
+    if(interval >= this.fps){
+      this.preTimestamp = now - (interval % this.fps);
+      if(this.enterframeCallbackSet?.size){
+        this.enterframeCallbackSet.forEach( (cb: ENTER_FRAME_CALLBACK) => cb.call(this, this.currentFrame, TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME))
       }
       this.currentFrame++;
     }
-    // 
-    // console.log(elapsed);
-    
     window.requestAnimationFrame(this.enterFrame.bind(this));
   }
   pause() {
@@ -61,14 +67,29 @@ export class TimelineAxis extends ZoomAxis{
   }
   play() {
     this.paused = false;
-    this.enterFrame(0);
+    this.enterFrame();
   }
   addEventListener(eventType: TIMELINE_AXIS_EVENT_TYPE, callback: ENTER_FRAME_CALLBACK){
     if(eventType === TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME){
-      if(!this.enterframeSet){
-        this.enterframeSet  = new Set()
+      if(!this.enterframeCallbackSet){
+        this.enterframeCallbackSet  = new Set()
       }
-      this.enterframeSet.add(callback)
+      this.enterframeCallbackSet.add(callback)
+      return this
+    }
+    if(eventType === TIMELINE_AXIS_EVENT_TYPE.PLAY_START){
+      if(!this.playStartCallbackSet){
+        this.playStartCallbackSet  = new Set()
+      }
+      this.playStartCallbackSet.add(callback)
+      return this
+    }
+    if(eventType === TIMELINE_AXIS_EVENT_TYPE.PLAY_END){
+      if(!this.playEndCallbackSet){
+        this.playEndCallbackSet  = new Set()
+      }
+      this.playEndCallbackSet.add(callback)
+      return this
     }
   }
 }

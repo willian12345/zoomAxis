@@ -19,7 +19,6 @@ export class CursorPointer{
     if (!cursorEl) {
       return;
     }
-    const rightBoundary = scrollContentDom.offsetWidth - 1;
     const leftBoundary = 0;
     // 游标拖动
     cursorEl.addEventListener("mousedown", (e: MouseEvent) => {
@@ -52,7 +51,7 @@ export class CursorPointer{
       cursorEl.addEventListener("mouseup", handleMouseup);
       document.addEventListener("mousemove", handleMousemove);
     });
-    // 滚动区域点击
+    // 滚动区域 mouseup 移动游标
     scrollContentDom.addEventListener("mouseup", (e: MouseEvent) => {
       if (!this._enable) {
         return;
@@ -72,5 +71,8 @@ export class CursorPointer{
   }
   unfreeze(){
     this._enable = true;
+  }
+  refresh(){
+
   }
 }
