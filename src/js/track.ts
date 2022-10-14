@@ -7,6 +7,13 @@ export enum SegmentType {
 
 const CLOSE_ENOUPH_DISTANCE = 10; // 距离是否够近
 
+const getOriginAttrbute = (dom: HTMLElement, key: string) => {
+  const value = dom.dataset[key]
+  if(!value){
+    return 0;
+  }
+  return parseFloat(value)
+}
 // 创建 segment
 export const createSegment = (type: SegmentType) => {
   const dom = document.createElement("div");
@@ -278,8 +285,10 @@ class Tracks {
             } else {
               dom = segment;
             }
-            dom.style.left = `${segmentLeft}px`;
             track.appendChild(dom);
+            dom.style.left = `${segmentLeft}px`;
+            dom.dataset.left = String(segmentLeft);
+            dom.dataset.width = String(dom.getBoundingClientRect().width);
           }
         }
       });
@@ -303,6 +312,9 @@ class Tracks {
           const isCollistion = collisionCheckX(placeHolder, originTrack);
           if (!isCollistion) {
             segment.style.left = `${segmentLeft}px`;
+            segment.dataset.left = String(segmentLeft);
+            
+            segment.dataset.width = String(segment.getBoundingClientRect().width);
           }
         }
       }, 0);
@@ -323,6 +335,7 @@ interface SegmentTracksArgs {
 }
 // 轨道内 segment 拖拽
 export  class SegmentTracks extends Tracks{
+  scrollContainer: HTMLElement|null = null
   constructor({trackCursor, scrollContainer}: SegmentTracksArgs){
     if (!scrollContainer) {
       return;
@@ -340,9 +353,20 @@ export  class SegmentTracks extends Tracks{
       const segment = target;
       this.dragStart(e, trackCursor, scrollContainer, segment);
     };
+    this.scrollContainer = scrollContainer
     // 代理 segment 鼠标事件
     scrollContainer.addEventListener("mousedown", mousedown);
-  } 
+  }
+  scaleXByRatio(ratio: number){
+    if(!this.scrollContainer){
+      return
+    }
+    const segments: HTMLElement[] = Array.from(this.scrollContainer.querySelectorAll('.segment'));
+    segments.forEach( (segment: HTMLElement) => {
+      segment.style.left = `${getOriginAttrbute(segment, 'left') * ratio}px`;
+      segment.style.width = `${getOriginAttrbute(segment, 'width') * ratio}px`;
+    })
+  }
 }
 
 interface SegmentTracksOutArgs extends SegmentTracksArgs{

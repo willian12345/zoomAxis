@@ -66,7 +66,10 @@ export class TimelineAxis extends ZoomAxis{
   pause() {
     this.paused = true;
   }
-  play() {
+  play(currentFrame?: number) {
+    if(currentFrame != undefined && currentFrame >= 0 && currentFrame <= this.totalFrames){
+      this.currentFrame = currentFrame
+    }
     this.paused = false;
     this.enterFrame();
   }

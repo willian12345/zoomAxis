@@ -12,9 +12,10 @@ const DEFAULT_RATIO_STEP: number[][] = [
 ];
 
 export interface ZoomAxisArgs {
-  el: string | HTMLElement;
-  totalMarks: number;
-  ratioMap?: number[][];
+  el: string | HTMLElement
+  totalMarks: number
+  stageWidth?: number
+  ratioMap?: number[][]
 }
 
 //秒转化成 时分秒
@@ -41,7 +42,7 @@ export class ZoomAxis {
   private lineShortHeight = 16; // 短刻度线高度
   protected spacecycle = 10; // 每 10 个最小刻度为一组分割
   private spaceCycleIndex = 0; // 刻度大间隔周期累计
-  private spaceTimeSecond = 1; // 刻度间隔秒数单位（一个周期时间单位）
+  spaceTimeSecond = 1; // 刻度间隔秒数单位（一个周期时间单位）
   private markIndex = 0; // 刻度表帧数数计
   private lineX = 0;
   private lineY = 0;
@@ -54,7 +55,7 @@ export class ZoomAxis {
   zoomRatio = 1; // 缩放比例
   width = 600; // 标尺总宽度
 
-  constructor({ el, totalMarks, ratioMap }: ZoomAxisArgs) {
+  constructor({ el, totalMarks, ratioMap, stageWidth }: ZoomAxisArgs) {
     if (!el) {
       console.warn("挂载对象 id 必传");
       return;
@@ -65,7 +66,7 @@ export class ZoomAxis {
       return;
     }
     this.setRatioStep(ratioMap);
-    this.setStageWidth();
+    this.setStageWidth(stageWidth);
 
     this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
     this.ctx.font = "22px PingFang SC";
@@ -104,10 +105,13 @@ export class ZoomAxis {
     return canvas;
   }
   // 设置舞台宽度
-  private setStageWidth() {
+  private setStageWidth(stageWidth?: number) {
     // 获取父级宽度
-    const stageWidth =
+    if(stageWidth === undefined){
+      stageWidth =
       this.canvas?.parentElement?.getBoundingClientRect()?.width;
+    }
+    
     if (stageWidth) {
       this.stageWidth = stageWidth * 2;
     }
@@ -235,6 +239,12 @@ export class ZoomAxis {
     }
     this.resetToDraw();
     this.zoomRatio = roundFun(this.zoomRatio + 0.1, 2);
+    this.zoomByRatio();
+    this.redraw();
+  }
+  zoom(ratio: number){
+    this.zoomRatio = ratio
+    this.resetToDraw();
     this.zoomByRatio();
     this.redraw();
   }

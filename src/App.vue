@@ -11,8 +11,11 @@ import {
 } from "./js/track";
 
 let timelineAxis: TimelineAxis | null;
-let initScrollContentWidth: number = 920;
-let stageWidth = 920;
+let trackCursor: CursorPointer;
+let segmentTracks: SegmentTracks;
+let segmentTracksOut: SegmentTracksOut;
+let scrollContentUnscaledWidth: number = 920;
+let stageWidth = ref(920);
 const scrollContentWidth = ref(920);
 const scrollContainerRef = ref<HTMLElement | null>(null);
 const cursorRef = ref<InstanceType<typeof Cursor> | null>(null);
@@ -27,31 +30,47 @@ const handleScroll = (e: UIEvent) => {
   const dom = e.target as HTMLElement;
   timelineAxis?.scrollLeft(-dom.scrollLeft);
 };
-const getOriginAttrbute = (dom: HTMLElement, key: string) => {
-  return parseFloat(dom.dataset[key])
+
+let zoomRatio = 1;
+
+const zoomIn = () => {
+  zoomRatio += .1
+}
+const zoomOut = () => {
+  zoomRatio -= .1
 }
 // 滚轮缩放
 const handleWheel = (e: WheelEvent) => {
   e.preventDefault();
-  e.deltaY > 0 ? timelineAxis?.zoomIn() : timelineAxis?.zoomOut();
+  e.deltaY > 0 ? zoomOut() : zoomIn();
+  const scaleWidth = scrollContentUnscaledWidth * zoomRatio;
+  scrollContentWidth.value = scaleWidth >= stageWidth.value ? scaleWidth : stageWidth.value;
+  segmentTracks?.scaleXByRatio(zoomRatio);
   // 根据缩放比较，减小滚动宽度
   if (timelineAxis?.zoomRatio) {
-    const scaleWidth = initScrollContentWidth * timelineAxis?.zoomRatio;
-    scrollContentWidth.value =
-      scaleWidth >= stageWidth ? scaleWidth : stageWidth;
-    const segments: HTMLElement[] = Array.from(document.querySelectorAll('.segment'))
-    const ratio = timelineAxis?.zoomRatio ?? 1;
-    console.log(ratio)
-    segments.forEach( (segment: HTMLElement) => {
-      segment.style.left = `${getOriginAttrbute(segment, 'left') * ratio}px`
-      segment.style.width = `${getOriginAttrbute(segment, 'width') * ratio}px`
-    })
+    timelineAxis.zoom(zoomRatio);
   }
 };
 
 const handlePlay = () => {
+  if(!timelineAxis){
+    return;
+  }
+  if(timelineAxis.currentFrame === timelineAxis.totalFrames){
+    timelineAxis.play(0)
+    return
+  }
   timelineAxis?.paused ? timelineAxis?.play() : timelineAxis?.pause();
 };
+
+// 增加轨道内容宽度
+const addTrackWidth = (trackCursor: CursorPointer, right: number) => {
+  if(scrollContentWidth.value < right){
+    scrollContentWidth.value = scrollContentWidth.value + 800
+    scrollContentUnscaledWidth = scrollContentWidth.value
+    trackCursor.refresh();
+  }
+}
 
 const initApp = () => {
   if (!cursorRef.value?.$el || !scrollContentRef.value || !scrollContainerRef.value) {
@@ -66,22 +85,24 @@ const initApp = () => {
   const cursor: HTMLElement = cursorRef.value.$el;
   const scrollContainer: HTMLElement = scrollContainerRef.value
   const scrollContent: HTMLElement = scrollContentRef.value
-  stageWidth = scrollContainer.getBoundingClientRect().width;
-
+  stageWidth.value = scrollContainer.getBoundingClientRect().width;
+  scrollContentWidth.value = stageWidth.value
+  
   // 初始化时间轴
   timelineAxis = new TimelineAxis({
     el: "canvasStage",
     totalMarks: 500,
-    totalFrames: 12,
+    totalFrames: 90,
+    stageWidth: stageWidth.value,
   });
 
   let a = (+ new Date())
   timelineAxis.addEventListener(
     TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME,
     function (this: TimelineAxis, curentFrame, eventType) {
-      console.log(this.frameWidth);
-
-      const left = curentFrame * (this.spacecycle / this.frameRate) * this.frameWidth;
+      console.log(this.spaceTimeSecond, this.frameRate, this.frameWidth)
+      // 当前帧 * mark 周期 / ( 帧频 * mark 周期倍数 )
+      const left = curentFrame * (this.spacecycle / (this.frameRate * this.spaceTimeSecond)) * this.frameWidth;
       cursor.style.transform = `translateX(${left}px)`;
       if(this.currentFrame === 0){
         a = (+ new Date())
@@ -91,21 +112,18 @@ const initApp = () => {
   );
   
   // 初始化游标
-  const trackCursor = new CursorPointer(
+  trackCursor = new CursorPointer(
     scrollContent,
     cursor
   );
   // 初始化轨道
-  const st = new SegmentTracks({trackCursor, scrollContainer})
-  st.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
-    const [segment, right] = findEndestSegment()
+  segmentTracks = new SegmentTracks({trackCursor, scrollContainer})
+  segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
+    const [segment, right] = findEndestSegment();
     if(!segment){
       return
     }
-    if(scrollContentWidth.value < right){
-      scrollContentWidth.value = scrollContentWidth.value + 800;
-      trackCursor.refresh();
-    }
+    addTrackWidth(trackCursor, right);
   })
   
   // if (timelineAxis) {
@@ -115,16 +133,13 @@ const initApp = () => {
   // }
 
   // 初始化轨道外可拖 segment 片断
-  const sto =  new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList});
-  sto.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
+  segmentTracksOut = new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList});
+  segmentTracksOut.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
     const [segment, right] = findEndestSegment()
     if(!segment){
       return
     }
-    if(scrollContentWidth.value < right){
-      scrollContentWidth.value = scrollContentWidth.value + 800;
-      trackCursor.refresh();
-    }
+    addTrackWidth(trackCursor, right);
   })
 };
 
@@ -160,7 +175,7 @@ onMounted(() => {
           :style="{ width: `${scrollContentWidth}px` }"
         >
           <!-- :style="{ width: `${stageWidth}px` }" -->
-          <div class="track-list" ref="trackListRef">
+          <div class="track-list" ref="trackListRef" :style="{ width: `${scrollContentWidth}px` }">
             <div class="track">
               <div class="track-placeholder">
                 <!-- <div class="segment-placeholder"></div> -->
