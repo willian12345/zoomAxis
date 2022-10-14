@@ -46,9 +46,17 @@ const handleWheel = (e: WheelEvent) => {
   const scaleWidth = scrollContentUnscaledWidth * zoomRatio;
   scrollContentWidth.value = scaleWidth >= stageWidth.value ? scaleWidth : stageWidth.value;
   segmentTracks?.scaleXByRatio(zoomRatio);
+
   // 根据缩放比较，减小滚动宽度
   if (timelineAxis?.zoomRatio) {
     timelineAxis.zoom(zoomRatio);
+    
+    if(cursorRef.value){
+      console.log(timelineAxis.frameWidth * timelineAxis.currentFrame)
+      // const left = timelineAxis.currentFrame * (timelineAxis.spacecycle / (timelineAxis.frameRate * timelineAxis.spaceTimeSecond)) * timelineAxis.frameWidth;
+      // const cursor: HTMLElement = cursorRef.value.$el;
+      // cursor.style.transform = `translateX(${left}px)`;
+    }
   }
 };
 
