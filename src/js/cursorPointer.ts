@@ -9,6 +9,10 @@ export function getTranslateXY(element: HTMLElement) {
 }
 export class CursorPointer{
   private _enable = true
+  cursorEl: HTMLElement|null = null
+  unscaleLeft = 0 // 未发生缩放时 原始 left 值 
+  preRatio = 0
+  currentRatio = 0
   get enable(){
     return this._enable
   }
@@ -19,6 +23,7 @@ export class CursorPointer{
     if (!cursorEl) {
       return;
     }
+    this.cursorEl = cursorEl
     const leftBoundary = 0;
     // 游标拖动
     cursorEl.addEventListener("mousedown", (e: MouseEvent) => {
@@ -45,6 +50,7 @@ export class CursorPointer{
           x = rightBoundary;
         }
         cursorEl.style.transform = `translateX(${x}px)`;
+        // this.unscaleLeft = x;
         startX = e.clientX;
       };
       document.addEventListener("mouseup", handleMouseup);
@@ -64,7 +70,13 @@ export class CursorPointer{
         x = rightBoundary;
       }
       cursorEl.style.transform = `translateX(${x}px)`;
+      // this.unscaleLeft = x;
+      // this.preRatio = this.currentRatio;
+      // console.log(this.currentRatio)
     });
+  }
+  scaleXByRatio(ratio: number){
+
   }
   freeze(){
     this._enable = false;
