@@ -24,7 +24,7 @@ export class TimelineAxis extends ZoomAxis{
   private playStartCallbackSet: Set<ENTER_FRAME_CALLBACK>|null = null;
   private playEndCallbackSet: Set<ENTER_FRAME_CALLBACK>|null = null;
   paused = true; 
-  currentFrame = 0; // 当前帧
+  currentFrame = 10; // 当前帧
   totalFrames = 0; // 全部帧数
   frameRate = FRAME_RATE; // 帧频
   get frameWidth(){
