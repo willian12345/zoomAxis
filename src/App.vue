@@ -54,8 +54,9 @@ const handleWheel = (e: WheelEvent) => {
     if(cursorRef.value){
       console.log(timelineAxis.frameWidth * timelineAxis.currentFrame)
       // const left = timelineAxis.currentFrame * (timelineAxis.spacecycle / (timelineAxis.frameRate * timelineAxis.spaceTimeSecond)) * timelineAxis.frameWidth;
-      // const cursor: HTMLElement = cursorRef.value.$el;
-      // cursor.style.transform = `translateX(${left}px)`;
+      const left = timelineAxis.frameWidth * timelineAxis.currentFrame;
+      const cursor: HTMLElement = cursorRef.value.$el;
+      cursor.style.transform = `translateX(${left}px)`;
     }
   }
 };
