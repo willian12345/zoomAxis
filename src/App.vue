@@ -2,7 +2,7 @@
 import { onMounted, ref, Ref } from "vue";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "./js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
-import { CursorPointer } from "./js/cursorPointer";
+import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "./js/cursorPointer";
 import {
   findEndestSegment,
   SegmentTracksOut,
@@ -45,18 +45,16 @@ const handleWheel = (e: WheelEvent) => {
   e.deltaY > 0 ? zoomOut() : zoomIn();
   const scaleWidth = scrollContentUnscaledWidth * zoomRatio;
   scrollContentWidth.value = scaleWidth >= stageWidth.value ? scaleWidth : stageWidth.value;
+  // console.log(zoomRatio)
   segmentTracks?.scaleXByRatio(zoomRatio);
 
   // 根据缩放比较，减小滚动宽度
   if (timelineAxis?.zoomRatio) {
+    // console.log(timelineAxis?.frameWidth);
     timelineAxis.zoom(zoomRatio);
-    
-    if(cursorRef.value){
-      console.log(timelineAxis.frameWidth * timelineAxis.currentFrame)
-      // const left = timelineAxis.currentFrame * (timelineAxis.spacecycle / (timelineAxis.frameRate * timelineAxis.spaceTimeSecond)) * timelineAxis.frameWidth;
-      const left = timelineAxis.frameWidth * timelineAxis.currentFrame;
-      const cursor: HTMLElement = cursorRef.value.$el;
-      cursor.style.transform = `translateX(${left}px)`;
+    // 根据帧数变更游标位置
+    if(trackCursor){
+      trackCursor.syncLeft()
     }
   }
 };
@@ -101,7 +99,7 @@ const initApp = () => {
   timelineAxis = new TimelineAxis({
     el: "canvasStage",
     totalMarks: 500,
-    totalFrames: 90,
+    totalFrames: 30,
     stageWidth: stageWidth.value,
   });
 
@@ -109,9 +107,9 @@ const initApp = () => {
   timelineAxis.addEventListener(
     TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME,
     function (this: TimelineAxis, curentFrame, eventType) {
-      console.log(this.spaceTimeSecond, this.frameRate, this.frameWidth)
+      console.log(this.spaceTimeSecond, this.frameRate, this.markWidth)
       // 当前帧 * mark 周期 / ( 帧频 * mark 周期倍数 )
-      const left = curentFrame * (this.spacecycle / (this.frameRate * this.spaceTimeSecond)) * this.frameWidth;
+      const left = curentFrame * (this.spacecycle / (this.frameRate * this.spaceTimeSecond)) * this.markWidth;
       cursor.style.transform = `translateX(${left}px)`;
       if(this.currentFrame === 0){
         a = (+ new Date())
@@ -119,14 +117,19 @@ const initApp = () => {
       // console.log(this.currentFrame, +new Date() - a);
     }
   );
-  
   // 初始化游标
   trackCursor = new CursorPointer(
     scrollContent,
-    cursor
+    cursor,
+    timelineAxis,
   );
+  trackCursor.addEventListener(CURSOR_POINTER_EVENT_TYPE.CURSOR_UPDATE, (currentFrame) => {
+    console.log(currentFrame)
+    timelineAxis?.setCurrentFrame(currentFrame)
+  })
+  
   // 初始化轨道
-  segmentTracks = new SegmentTracks({trackCursor, scrollContainer})
+  segmentTracks = new SegmentTracks({trackCursor, scrollContainer, timelineAxis})
   segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
     const [segment, right] = findEndestSegment();
     if(!segment){
@@ -142,7 +145,7 @@ const initApp = () => {
   // }
 
   // 初始化轨道外可拖 segment 片断
-  segmentTracksOut = new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList});
+  segmentTracksOut = new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList, timelineAxis});
   segmentTracksOut.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
     const [segment, right] = findEndestSegment()
     if(!segment){
@@ -189,7 +192,7 @@ onMounted(() => {
               <div class="track-placeholder">
                 <!-- <div class="segment-placeholder"></div> -->
               </div>
-              <div
+              <!-- <div
                 class="segment segment-action"
                 data-width="164"
                 data-left="0"
@@ -206,16 +209,16 @@ onMounted(() => {
                 data-width="60"
                 data-left="400"
                 :style="{ width: `60px`, left: '400px' }"
-              ></div>
+              ></div> -->
             </div>
             <div class="track">
               <div class="track-placeholder"></div>
-              <div
+              <!-- <div
                 class="segment segment-action"
                 data-width="80"
                 data-left="0"
                 :style="{ width: `80px`, left: '0px' }"
-              ></div>
+              ></div> -->
             </div>
           </div>
         </div>
