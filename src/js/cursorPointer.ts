@@ -1,3 +1,4 @@
+import { TimelineAxis } from "./TimelineAxis";
 
 export function getTranslateXY(element: HTMLElement) {
   const style = window.getComputedStyle(element);
@@ -7,24 +8,42 @@ export function getTranslateXY(element: HTMLElement) {
     translateY: matrix.m42,
   };
 }
-export class CursorPointer{
-  private _enable = true
-  cursorEl: HTMLElement|null = null
-  unscaleLeft = 0 // 未发生缩放时 原始 left 值 
-  preRatio = 0
-  currentRatio = 0
-  get enable(){
-    return this._enable
+export enum CURSOR_POINTER_EVENT_TYPE {
+  CURSOR_UPDATE,
+}
+interface EventCallbackCursorPointer {
+  (currentFrame: number, cursorX: number): any;
+}
+export class CursorPointer {
+  private _enable = true;
+  cursorEl: HTMLElement | null = null;
+  scrollContentDom: HTMLElement | null = null;
+  timelineAxis: TimelineAxis | null = null;
+  unscaleLeft = 0; // 未发生缩放时 原始 left 值
+  preRatio = 0;
+  currentRatio = 0;
+  get enable() {
+    return this._enable;
   }
-  set enable(bool){
-    this._enable = bool
+  set enable(bool) {
+    this._enable = bool;
   }
-  constructor(scrollContentDom: HTMLElement, cursorEl: HTMLElement){
+  private cursorUpdateCallbackSet: Set<EventCallbackCursorPointer> | null =
+    null;
+  constructor(
+    scrollContentDom: HTMLElement,
+    cursorEl: HTMLElement,
+    timelineAxis: TimelineAxis
+  ) {
+    if (!scrollContentDom) {
+      return;
+    }
     if (!cursorEl) {
       return;
     }
-    this.cursorEl = cursorEl
-    const leftBoundary = 0;
+    this.scrollContentDom = scrollContentDom;
+    this.cursorEl = cursorEl;
+    this.timelineAxis = timelineAxis;
     // 游标拖动
     cursorEl.addEventListener("mousedown", (e: MouseEvent) => {
       e.preventDefault();
@@ -40,51 +59,76 @@ export class CursorPointer{
         document.removeEventListener("mousemove", handleMousemove);
       };
       const handleMousemove = (e: MouseEvent) => {
-        const rightBoundary = scrollContentDom.offsetWidth;
-        const movedX = e.clientX - startX;
-        const { translateX } = getTranslateXY(cursorEl);
-        let x = translateX + movedX;
-        if (x < leftBoundary) {
-          x = leftBoundary;
-        } else if (x > rightBoundary) {
-          x = rightBoundary;
-        }
-        cursorEl.style.transform = `translateX(${x}px)`;
-        // this.unscaleLeft = x;
+        this.cursorUpdate(timelineAxis, this.getX(e.clientX, scrollContentDom));
         startX = e.clientX;
       };
       document.addEventListener("mouseup", handleMouseup);
       cursorEl.addEventListener("mouseup", handleMouseup);
       document.addEventListener("mousemove", handleMousemove);
     });
+
     // 滚动区域 mouseup 移动游标
     scrollContentDom.addEventListener("mouseup", (e: MouseEvent) => {
       if (!this._enable) {
         return;
       }
-      let x = e.clientX - scrollContentDom.getBoundingClientRect().left + scrollContentDom.scrollLeft; 
-      const rightBoundary = scrollContentDom.offsetWidth;
-      if (x < leftBoundary) {
-        x = leftBoundary;
-      } else if (x > rightBoundary) {
-        x = rightBoundary;
-      }
-      cursorEl.style.transform = `translateX(${x}px)`;
-      // this.unscaleLeft = x;
-      // this.preRatio = this.currentRatio;
-      // console.log(this.currentRatio)
+      this.cursorUpdate(timelineAxis, this.getX(e.clientX, scrollContentDom));
     });
   }
-  scaleXByRatio(ratio: number){
-
+  private getX(clientX: number, scrollContentDom: HTMLElement) {
+    let x =
+      clientX -
+      scrollContentDom.getBoundingClientRect().left +
+      scrollContentDom.scrollLeft;
+    const rightBoundary = scrollContentDom.offsetWidth;
+    const leftBoundary = 0;
+    if (x < leftBoundary) {
+      x = leftBoundary;
+    } else if (x > rightBoundary) {
+      x = rightBoundary;
+    }
+    return x;
   }
-  freeze(){
+  private cursorUpdate(timelineAxis: TimelineAxis, x: number) {
+    if (!this.cursorEl) {
+      return;
+    }
+    const currentFrame = Math.round(x / timelineAxis.frameWidth);
+    const left = timelineAxis.frameWidth * currentFrame;
+    // 游标拖动的 left 值根据当前帧与每帧所占宽度计算
+    this.cursorEl.style.transform = `translateX(${left}px)`;
+    if (this.cursorUpdateCallbackSet?.size) {
+      this.cursorUpdateCallbackSet.forEach((cb) => {
+        if (!timelineAxis) {
+          return;
+        }
+
+        cb(currentFrame, left);
+      });
+    }
+  }
+  addEventListener(
+    eventType: CURSOR_POINTER_EVENT_TYPE,
+    cb: EventCallbackCursorPointer
+  ) {
+    if (!this.cursorUpdateCallbackSet) {
+      this.cursorUpdateCallbackSet = new Set();
+    }
+    this.cursorUpdateCallbackSet.add(cb);
+    return this;
+  }
+  syncLeft() {
+    if (!this.timelineAxis || !this.cursorEl) {
+      return;
+    }
+    const left = this.timelineAxis.frameWidth * this.timelineAxis.currentFrame;
+    this.cursorEl.style.transform = `translateX(${left}px)`;
+  }
+  freeze() {
     this._enable = false;
   }
-  unfreeze(){
+  unfreeze() {
     this._enable = true;
   }
-  refresh(){
-
-  }
+  refresh() {}
 }

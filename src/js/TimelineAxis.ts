@@ -24,11 +24,13 @@ export class TimelineAxis extends ZoomAxis{
   private playStartCallbackSet: Set<ENTER_FRAME_CALLBACK>|null = null;
   private playEndCallbackSet: Set<ENTER_FRAME_CALLBACK>|null = null;
   paused = true; 
-  currentFrame = 10; // 当前帧
+  currentFrame = 0; // 当前帧
   totalFrames = 0; // 全部帧数
   frameRate = FRAME_RATE; // 帧频
+  // 每一帧所占宽度
   get frameWidth(){
-    return this.markWidth
+    // 每个标尺宽度/ (帧频 / (标尺周期值/标尺周期值代表的时间秒数))
+    return this.markWidth / (this.frameRate / (this.spacecycle / this.spaceTimeSecond))
   }
   constructor({ el, totalFrames = 0, totalMarks, frameRate, ratioMap }: TimelineAxisArgs){
     super({ el, totalMarks,  ratioMap })
@@ -95,5 +97,8 @@ export class TimelineAxis extends ZoomAxis{
       this.playEndCallbackSet.add(callback)
       return this
     }
+  }
+  setCurrentFrame(currentFrame: number){
+    this.currentFrame = currentFrame
   }
 }

@@ -1,4 +1,5 @@
 import { CursorPointer } from "./cursorPointer";
+import { TimelineAxis } from "./TimelineAxis";
 
 export enum SegmentType {
   BODY_ANIMATION,
@@ -175,7 +176,13 @@ export interface TracksEventCallback {
 // 轨道
 class Tracks {
   private dragEndCallback: Set<TracksEventCallback>|null = null;
-  constructor(trackCursor: InstanceType<typeof CursorPointer>, scrollContainer: HTMLElement){}
+  timelineAxis: TimelineAxis|null = null
+  constructor(trackCursor:CursorPointer, scrollContainer: HTMLElement, timelineAxis: TimelineAxis){
+    if(!timelineAxis){
+      return
+    }
+    this.timelineAxis = timelineAxis
+  }
   addEventListener(eventType: TRACKS_EVENT_CALLBACK_TYPES, callback: TracksEventCallback){
     if(eventType === TRACKS_EVENT_CALLBACK_TYPES.DRAG_END){
       if(!this.dragEndCallback){
@@ -266,8 +273,10 @@ class Tracks {
       const { left, top } = dragTrackContainer.getBoundingClientRect();
       dragTrackContainer.style.transition = "none";
       // segmentLeft = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
-      const segmentLeft =
+      const x =
         left - scrollContainerRect.left + scrollContainerScrollLeft;
+      const currentFrame = Math.round(x / this.timelineAxis.frameWidth);
+      const segmentLeft = this.timelineAxis.frameWidth * currentFrame;
       // 判断所有轨道与鼠标当前Y轴距离
       tracks.forEach((track) => {
         // 如果足够近代表用户想拖到此轨道上
@@ -286,7 +295,12 @@ class Tracks {
               dom = segment;
             }
             track.appendChild(dom);
+            const frames = 10
+            dom.dataset.frames = `${frames}`;
             dom.style.left = `${segmentLeft}px`;
+            // if(this.timelineAxis){
+            //   dom.style.width = `${this.timelineAxis?.frameWidth * frames}px`;
+            // }
             dom.dataset.left = String(segmentLeft);
             dom.dataset.width = String(dom.getBoundingClientRect().width);
           }
@@ -332,15 +346,17 @@ class Tracks {
 interface SegmentTracksArgs {
   trackCursor: InstanceType<typeof CursorPointer>
   scrollContainer: HTMLElement
+  timelineAxis: TimelineAxis
 }
 // 轨道内 segment 拖拽
 export  class SegmentTracks extends Tracks{
   scrollContainer: HTMLElement|null = null
-  constructor({trackCursor, scrollContainer}: SegmentTracksArgs){
+  constructor({trackCursor, scrollContainer , timelineAxis }: SegmentTracksArgs){
     if (!scrollContainer) {
       return;
     }
-    super(trackCursor, scrollContainer)
+    super(trackCursor, scrollContainer, timelineAxis)
+    console.log(this.timelineAxis)
     const mousedown = (e: MouseEvent) => {
       e.preventDefault();
       const target = e.target as HTMLElement;
@@ -358,9 +374,10 @@ export  class SegmentTracks extends Tracks{
     scrollContainer.addEventListener("mousedown", mousedown);
   }
   scaleXByRatio(ratio: number){
-    if(!this.scrollContainer){
+    if(!this.scrollContainer || !this.timelineAxis){
       return
     }
+    console.log(this.timelineAxis.spacecycle / this.timelineAxis.spaceTimeSecond)
     const segments: HTMLElement[] = Array.from(this.scrollContainer.querySelectorAll('.segment'));
     segments.forEach( (segment: HTMLElement) => {
       segment.style.left = `${getOriginAttrbute(segment, 'left') * ratio}px`;
@@ -374,11 +391,11 @@ interface SegmentTracksOutArgs extends SegmentTracksArgs{
 }
 // 轨道外 segment 拖拽
 export class SegmentTracksOut extends Tracks{
-  constructor({trackCursor, scrollContainer, segmentDelegete}: SegmentTracksOutArgs){
-    if (!scrollContainer) {
+  constructor({trackCursor, scrollContainer, segmentDelegete, timelineAxis}: SegmentTracksOutArgs){
+    if (!scrollContainer || !timelineAxis) {
       return;
     }
-    super(trackCursor, scrollContainer)
+    super(trackCursor, scrollContainer, timelineAxis)
     const mousedown = (e: MouseEvent) => {
       e.preventDefault();
       const target = e.target as HTMLElement;
