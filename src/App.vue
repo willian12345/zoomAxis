@@ -8,6 +8,7 @@ import {
   SegmentTracksOut,
   TRACKS_EVENT_CALLBACK_TYPES,
   SegmentTracks,
+  DropableCheck,
 } from "./js/track";
 
 let timelineAxis: TimelineAxis | null;
@@ -143,9 +144,16 @@ const initApp = () => {
   //   scrollContentWidth.value =
   //     timelineAxis.totalFrames * timelineAxis.frameWidth;
   // }
-
+  
+  // 用于判断是否可拖动的条件
+  const dropableCheck: DropableCheck = function(){
+    return new Promise<boolean>((resolve, reject)=> {
+      resolve(true)
+    })
+  }
+  
   // 初始化轨道外可拖 segment 片断
-  segmentTracksOut = new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList, timelineAxis});
+  segmentTracksOut = new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList, timelineAxis, dropableCheck});
   segmentTracksOut.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
     const [segment, right] = findEndestSegment()
     if(!segment){

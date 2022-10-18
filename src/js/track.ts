@@ -173,15 +173,22 @@ export enum TRACKS_EVENT_CALLBACK_TYPES {
 export interface TracksEventCallback {
   (instance:Tracks, eventType: TRACKS_EVENT_CALLBACK_TYPES): any
 }
+export interface DropableCheck {
+  (): Promise<boolean>
+}
 // 轨道
 class Tracks {
   private dragEndCallback: Set<TracksEventCallback>|null = null;
   timelineAxis: TimelineAxis|null = null
-  constructor(trackCursor:CursorPointer, scrollContainer: HTMLElement, timelineAxis: TimelineAxis){
+  dropableCheck?: DropableCheck;
+  constructor(trackCursor:CursorPointer, scrollContainer: HTMLElement, timelineAxis: TimelineAxis, dropableCheck?: DropableCheck){
     if(!timelineAxis){
       return
     }
     this.timelineAxis = timelineAxis
+    if(dropableCheck){
+      this.dropableCheck = dropableCheck
+    }
   }
   addEventListener(eventType: TRACKS_EVENT_CALLBACK_TYPES, callback: TracksEventCallback){
     if(eventType === TRACKS_EVENT_CALLBACK_TYPES.DRAG_END){
@@ -267,6 +274,9 @@ class Tracks {
   
     const mouseup = (e: MouseEvent) => {
       e.stopPropagation();
+      if(!this.timelineAxis){
+        return
+      }
       startX = e.clientX;
       startY = e.clientY;
       const scrollContainerScrollLeft = scrollContainer.scrollLeft;
@@ -278,7 +288,7 @@ class Tracks {
       const currentFrame = Math.round(x / this.timelineAxis.frameWidth);
       const segmentLeft = this.timelineAxis.frameWidth * currentFrame;
       // 判断所有轨道与鼠标当前Y轴距离
-      tracks.forEach((track) => {
+      tracks.forEach(async (track) => {
         // 如果足够近代表用户想拖到此轨道上
         if (isCloseEnouphToY(track, e.clientY)) {
           const placeHolder = getSegmentPlaceholder(track);
@@ -290,12 +300,22 @@ class Tracks {
           if (!isCollistion) {
             let dom;
             if (isCopySegment) {
-              dom = createSegment(SegmentType.BODY_ANIMATION);
+              if(this.dropableCheck){
+                const dropable = await this.dropableCheck()
+                if(dropable){
+                  dom = createSegment(SegmentType.BODY_ANIMATION);
+                }
+              }else{
+                dom = createSegment(SegmentType.BODY_ANIMATION);
+              }
             } else {
               dom = segment;
             }
+            if(!dom){
+              return
+            }
             track.appendChild(dom);
-            const frames = 10
+            const frames = 30
             dom.dataset.frames = `${frames}`;
             dom.style.left = `${segmentLeft}px`;
             // if(this.timelineAxis){
@@ -356,7 +376,6 @@ export  class SegmentTracks extends Tracks{
       return;
     }
     super(trackCursor, scrollContainer, timelineAxis)
-    console.log(this.timelineAxis)
     const mousedown = (e: MouseEvent) => {
       e.preventDefault();
       const target = e.target as HTMLElement;
@@ -388,14 +407,16 @@ export  class SegmentTracks extends Tracks{
 
 interface SegmentTracksOutArgs extends SegmentTracksArgs{
   segmentDelegete: HTMLElement
+  dropableCheck?: DropableCheck
 }
 // 轨道外 segment 拖拽
 export class SegmentTracksOut extends Tracks{
-  constructor({trackCursor, scrollContainer, segmentDelegete, timelineAxis}: SegmentTracksOutArgs){
+  constructor({trackCursor, scrollContainer, segmentDelegete, timelineAxis, dropableCheck}: SegmentTracksOutArgs){
     if (!scrollContainer || !timelineAxis) {
       return;
     }
-    super(trackCursor, scrollContainer, timelineAxis)
+    super(trackCursor, scrollContainer, timelineAxis, dropableCheck)
+    this.dropableCheck = dropableCheck
     const mousedown = (e: MouseEvent) => {
       e.preventDefault();
       const target = e.target as HTMLElement;
