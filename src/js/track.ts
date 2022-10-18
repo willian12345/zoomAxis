@@ -285,7 +285,10 @@ class Tracks {
       // segmentLeft = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
       const x =
         left - scrollContainerRect.left + scrollContainerScrollLeft;
-      const currentFrame = Math.round(x / this.timelineAxis.frameWidth);
+      let currentFrame = Math.round(x / this.timelineAxis.frameWidth);
+      if(currentFrame < 0){
+        currentFrame = 0
+      }
       const segmentLeft = this.timelineAxis.frameWidth * currentFrame;
       // 判断所有轨道与鼠标当前Y轴距离
       tracks.forEach(async (track) => {
@@ -315,14 +318,15 @@ class Tracks {
               return
             }
             track.appendChild(dom);
-            const frames = 30
-            dom.dataset.frames = `${frames}`;
+            const framestart = currentFrame
+            dom.dataset.framestart = `${framestart}`;
+            dom.dataset.frameend = `${framestart + 30}`;
             dom.style.left = `${segmentLeft}px`;
-            // if(this.timelineAxis){
-            //   dom.style.width = `${this.timelineAxis?.frameWidth * frames}px`;
-            // }
-            dom.dataset.left = String(segmentLeft);
-            dom.dataset.width = String(dom.getBoundingClientRect().width);
+            // todo
+            const frames: number = parseFloat(dom.dataset.frameend) - parseFloat(dom.dataset.framestart)
+            if(this.timelineAxis){
+              dom.style.width = `${this.timelineAxis?.frameWidth * frames}px`;
+            }
           }
         }
       });
@@ -392,15 +396,21 @@ export  class SegmentTracks extends Tracks{
     // 代理 segment 鼠标事件
     scrollContainer.addEventListener("mousedown", mousedown);
   }
-  scaleXByRatio(ratio: number){
+  scaleX(ratio: number){
     if(!this.scrollContainer || !this.timelineAxis){
       return
     }
-    console.log(this.timelineAxis.spacecycle / this.timelineAxis.spaceTimeSecond)
     const segments: HTMLElement[] = Array.from(this.scrollContainer.querySelectorAll('.segment'));
-    segments.forEach( (segment: HTMLElement) => {
-      segment.style.left = `${getOriginAttrbute(segment, 'left') * ratio}px`;
-      segment.style.width = `${getOriginAttrbute(segment, 'width') * ratio}px`;
+    const frameWidth = this.timelineAxis?.frameWidth
+    segments.forEach( (dom: HTMLElement) => {
+      if(!dom.dataset.framestart || !dom.dataset.frameend || !this.timelineAxis){
+        return
+      }
+      const framestart = parseFloat(dom.dataset.framestart);
+      const frameend = parseFloat(dom.dataset.frameend);
+      const left = framestart * frameWidth;
+      dom.style.left = `${left}px`;
+      dom.style.width = `${frameWidth * (frameend - framestart)}px`;
     })
   }
 }
