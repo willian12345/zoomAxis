@@ -8,7 +8,6 @@ import {
   SegmentTracksOut,
   TRACKS_EVENT_CALLBACK_TYPES,
   SegmentTracks,
-  DropableCheck,
 } from "./js/track";
 
 let timelineAxis: TimelineAxis | null;
@@ -44,15 +43,14 @@ const zoomOut = () => {
 const handleWheel = (e: WheelEvent) => {
   e.preventDefault();
   e.deltaY > 0 ? zoomOut() : zoomIn();
-  const scaleWidth = scrollContentUnscaledWidth * zoomRatio;
-  scrollContentWidth.value = scaleWidth >= stageWidth.value ? scaleWidth : stageWidth.value;
-  // console.log(zoomRatio)
-  segmentTracks?.scaleXByRatio(zoomRatio);
-
+  if(zoomRatio < 0.2 || zoomRatio > 1.4){
+    return
+  }
+  // scrollContentWidth.value = scrollContentUnscaledWidth * zoomRatio;
   // 根据缩放比较，减小滚动宽度
   if (timelineAxis?.zoomRatio) {
-    // console.log(timelineAxis?.frameWidth);
     timelineAxis.zoom(zoomRatio);
+    segmentTracks?.scaleX(zoomRatio);
     // 根据帧数变更游标位置
     if(trackCursor){
       trackCursor.syncLeft()
@@ -72,9 +70,14 @@ const handlePlay = () => {
 };
 
 // 增加轨道内容宽度
-const addTrackWidth = (trackCursor: CursorPointer, right: number) => {
+const addTrackWidth = (trackCursor: CursorPointer) => {
+  const [segment, right] = findEndestSegment();
+  if(!segment){
+    return
+  }
   if(scrollContentWidth.value < right){
     scrollContentWidth.value = scrollContentWidth.value + 800
+    console.log(scrollContentWidth.value)
     scrollContentUnscaledWidth = scrollContentWidth.value
     trackCursor.refresh();
   }
@@ -132,21 +135,11 @@ const initApp = () => {
   // 初始化轨道
   segmentTracks = new SegmentTracks({trackCursor, scrollContainer, timelineAxis})
   segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
-    const [segment, right] = findEndestSegment();
-    if(!segment){
-      return
-    }
-    addTrackWidth(trackCursor, right);
+    addTrackWidth(trackCursor);
   })
   
-  // if (timelineAxis) {
-  //   // 根据帧数算出滚动内容宽度
-  //   scrollContentWidth.value =
-  //     timelineAxis.totalFrames * timelineAxis.frameWidth;
-  // }
-  
   // 用于判断是否可拖动的条件
-  const dropableCheck: DropableCheck = function(){
+  const dropableCheck = function(){
     return new Promise<boolean>((resolve, reject)=> {
       resolve(true)
     })
@@ -155,11 +148,9 @@ const initApp = () => {
   // 初始化轨道外可拖 segment 片断
   segmentTracksOut = new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList, timelineAxis, dropableCheck});
   segmentTracksOut.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
-    const [segment, right] = findEndestSegment()
-    if(!segment){
-      return
-    }
-    addTrackWidth(trackCursor, right);
+    setTimeout(() => {
+      addTrackWidth(trackCursor);  
+    }, 0);
   })
 };
 
@@ -314,7 +305,7 @@ onMounted(() => {
 
 .track-list {
   padding-top: @markHeight;
-
+  width: 100%;
   .track {
     pointer-events: none;
     position: relative;

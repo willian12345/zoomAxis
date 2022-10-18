@@ -122,6 +122,7 @@ export class CursorPointer {
       return;
     }
     const left = this.timelineAxis.frameWidth * this.timelineAxis.currentFrame;
+    console.log(this.timelineAxis.frameWidth)
     this.cursorEl.style.transform = `translateX(${left}px)`;
   }
   freeze() {
