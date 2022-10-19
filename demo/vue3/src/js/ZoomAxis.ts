@@ -18,22 +18,21 @@ export interface ZoomAxisArgs {
   ratioMap?: number[][]
 }
 
-export function secondToDate(interval: number) {//格式化时间
-  interval = interval | 0//interval为毫秒数
-  const minute = interval / 60 | 0//分钟数为总时间/60
-  const second = _pad(interval % 60)
+function toFixedToN(num: string, n = 2) {
+  let len = num.length;
+  while (len < n) {
+    num = '0' + num;
+    len++;
+  }
+  return num;
+}
+//秒转化成 分秒
+export function millisecondToSecond(interval: number) {//格式化时间
+  interval = interval >> 0;
+  const minute = interval / 60 >> 0;
+  const second = toFixedToN(String(interval % 60));
   return `${minute}:${second}`
 }
-function _pad(num: number, n = 2) {//格式化时间，给秒数补0；
-  let r = num.toString();
-  let len = r.length;
-  while (len < n) {
-    r = '0' + num
-    len++
-  }
-  return r
-}
-
 //保留n位小数
 export function roundFun(value: number, n: number) {
   return Math.round(value * Math.pow(10, n)) / Math.pow(10, n);
@@ -132,7 +131,7 @@ export class ZoomAxis {
   }
   // 转换显示分:秒
   private getTimeText(sec: number): string {
-    return secondToDate(sec); // `${m}:${s}`
+    return millisecondToSecond(sec); // `${m}:${s}`
   }
   // 显示周期标尺上的分秒文本
   private drawCyclePointText() {
