@@ -4,17 +4,18 @@ import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "./js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
 import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "./js/cursorPointer";
 import {
-  findEndestSegment,
-  SegmentTracksOut,
   TRACKS_EVENT_CALLBACK_TYPES,
-  SegmentTracks,
-} from "./js/track";
+  DropableArgs,
+} from "./js/trackType";
+import { findEndestSegment } from './js/trackUtils'
+import { SegmentTracks } from './js/SegmentTracks'
+import { SegmentTracksOut } from './js/SegmentTracksOut'
+
 
 let timelineAxis: TimelineAxis | null;
 let trackCursor: CursorPointer;
 let segmentTracks: SegmentTracks;
 let segmentTracksOut: SegmentTracksOut;
-let scrollContentUnscaledWidth: number = 920;
 let stageWidth = ref(920);
 const scrollContentWidth = ref(920);
 const scrollContainerRef = ref<HTMLElement | null>(null);
@@ -76,12 +77,17 @@ const addTrackWidth = (trackCursor: CursorPointer) => {
     return
   }
   if(scrollContentWidth.value < right){
-    scrollContentWidth.value = scrollContentWidth.value + 800
-    console.log(scrollContentWidth.value)
-    scrollContentUnscaledWidth = scrollContentWidth.value
+    scrollContentWidth.value = right + 800
     trackCursor.refresh();
   }
 }
+
+// 用于判断是否可拖动的条件
+const dropableCheck = function (startFrame: number) {
+  return new Promise<DropableArgs>(async (resolve, reject) => {
+    resolve({dropable: true, endFrame: startFrame + 30})
+  });
+};
 
 const initApp = () => {
   if (!cursorRef.value?.$el || !scrollContentRef.value || !scrollContainerRef.value) {
@@ -138,12 +144,6 @@ const initApp = () => {
     addTrackWidth(trackCursor);
   })
   
-  // 用于判断是否可拖动的条件
-  const dropableCheck = function(){
-    return new Promise<boolean>((resolve, reject)=> {
-      resolve(true)
-    })
-  }
   
   // 初始化轨道外可拖 segment 片断
   segmentTracksOut = new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList, timelineAxis, dropableCheck});
@@ -344,10 +344,8 @@ onMounted(() => {
     background-color: #c66136;
   }
 
-  .actived {
-    .segment {
-      border: 1px solid white;
-    }
+  .actived.segment{
+    border: 1px solid white;
   }
 
   .dragover {
