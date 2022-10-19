@@ -1,0 +1,176 @@
+:root {
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+@markHeight: 24px;
+@trackHeight: 28px;
+
+.track-drag-container {
+  pointer-events: none;
+  position: fixed;
+  z-index: 9;
+  left: 0;
+  top: 0;
+  min-height: 24px;
+  border-radius: 4px;
+  background-color: rgba(aquamarine, 0.8);
+}
+
+.wrapper {
+  padding: 100px 40px 0;
+}
+
+.timeline-container {
+  display: flex;
+  position: relative;
+  margin: 180px 40px;
+  width: 100vh;
+  height: 180px;
+}
+
+.timeline-markers {
+  position: sticky;
+  left: 0;
+  top: 0;
+  width: 100%;
+  line-height: 1;
+  z-index: 2;
+  background-color: #242424;
+  pointer-events: none;
+}
+
+.scroll-container {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  overflow-y: hidden;
+  overflow-x: auto;
+  overflow-x: overlay;
+}
+
+.scroll-content {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  // background: rgba(255, 255, 255, 0.5);
+}
+
+.track-operation {
+  padding-top: @markHeight;
+  flex-basis: 120px;
+
+  .track-operation-item {
+    background-color: rgba(white, 0.05);
+    height: @markHeight;
+  }
+}
+
+.segment-wrapper {
+  height: @trackHeight;
+  pointer-events: all;
+  position: absolute;
+}
+
+.track-list {
+  padding-top: @markHeight;
+  width: 100%;
+  .track {
+    pointer-events: none;
+    position: relative;
+    width: 100%;
+    height: @trackHeight;
+    background-color: rgba(white, 0.04);
+  }
+
+  .track {
+    margin-bottom: 2px;
+  }
+
+  .track-placeholder {
+    bottom: 0;
+    left: 0;
+    overflow: hidden;
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+
+  .segment {
+    position: absolute;
+    left: 0;
+    top: 1px;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    height: 24px;
+    border-radius: 4px;
+    pointer-events: all;
+    border: 1px solid transparent;
+  }
+
+  .segment-action {
+    background-color: #c66136;
+  }
+
+  .actived {
+    .segment {
+      border: 1px solid white;
+    }
+  }
+
+  .dragover {
+    background-color: rgba(white, 0.08);
+  }
+
+  .segment-placeholder {
+    position: absolute;
+    z-index: 1;
+    width: 0;
+    height: 100%;
+    border-radius: 4px;
+    background-color: rgba(aquamarine, 0.3);
+  }
+}
+
+.segment-list {
+  display: flex;
+  gap: 20px;
+
+  .segment-item {
+    width: 80px;
+    height: 80px;
+    border-radius: 4px;
+    background-color: bisque;
+  }
+}
+
+.segment-fake {
+  width: 100%;
+  height: 100%;
+  background-color: #c66136;
+  opacity: 0.8;
+}
