@@ -38,26 +38,28 @@ export function roundFun(value: number, n: number) {
   return Math.round(value * Math.pow(10, n)) / Math.pow(10, n);
 }
 export class ZoomAxis {
-  private canvas?: HTMLCanvasElement | null = null;
-  private ctx?: CanvasRenderingContext2D | null = null;
-  private stageWidth = 600; // 最小宽度 600px
-  private stageHeightOut = 24;
-  private stageHeight = this.stageHeightOut * 2;
-  private lineColor = "rgba(255, 255, 255, 0.12)";
-  private lineWidth = 2; // 刻度线宽度
-  private lineHeight = 24; // 刻度线高度
-  private lineShortHeight = 16; // 短刻度线高度
-  spacecycle = 10; // 每 10 个最小刻度为一组分割
-  private spaceCycleIndex = 0; // 刻度大间隔周期累计
-  spaceTimeSecond = 1; // 刻度间隔秒数单位（一个周期时间单位）
-  private markIndex = 0; // 刻度表帧数数计
-  private lineX = 0;
-  private lineY = 0;
-  private ratioMap = new Map();
-  protected _markWidth = SPACE_FRAME_WIDTH; // 刻度间距
-  totalMarks = 0;
+  private canvas?: HTMLCanvasElement | null = null
+  private ctx?: CanvasRenderingContext2D | null = null
+  private stageWidth = 600 // 最小宽度 600px
+  private stageHeightOut = 24
+  private stageHeight = this.stageHeightOut * 2
+  private lineColor = 'rgba(255, 255, 255, 0.12)'
+  private lineColorPrimary = 'rgba(255, 255, 255, 0.2)'
+  private textColor = 'rgba(255, 255, 255, 0.35)'
+  private lineWidth = 2 // 刻度线宽度
+  private lineHeight = 24 // 刻度线高度
+  private lineShortHeight = 16 // 短刻度线高度
+  spacecycle = 10 // 每 10 个最小刻度为一组分割
+  private spaceCycleIndex = 0 // 刻度大间隔周期累计
+  spaceTimeSecond = 1 // 刻度间隔秒数单位（一个周期时间单位）
+  private markIndex = 0 // 刻度表帧数数计
+  private lineX = 0
+  private lineY = 0
+  private ratioMap = new Map()
+  protected _markWidth = SPACE_FRAME_WIDTH // 刻度间距
+  totalMarks = 0
   get markWidth(): number{
-    return this._markWidth * .5; // 刻度实际显示像素
+    return this._markWidth * .5 // 刻度实际显示像素
   }
   zoomRatio = 1; // 缩放比例
   width = 600; // 标尺总宽度
@@ -75,14 +77,20 @@ export class ZoomAxis {
     this.setRatioStep(ratioMap);
     this.setStageWidth(stageWidth);
 
-    this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
-    this.ctx.font = "22px PingFang SC";
-    this.ctx.textBaseline = "top";
+    this.initCanvas();
     this.totalMarks = totalMarks
     this.setWidth();
 
     this.drawLine();
     
+  }
+  initCanvas(){
+    if(!this.canvas){
+      return
+    }
+    this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
+    this.ctx.font = "22px PingFang SC";
+    this.ctx.textBaseline = "top";
   }
   // 设置缩放等级对应缩放显示时间
   private setRatioStep(ratioMap: number[][] = DEFAULT_RATIO_STEP) {
@@ -103,7 +111,6 @@ export class ZoomAxis {
     }
     const div = document.createElement("div");
     div.innerHTML = `<canvas style="
-        width: 100%;
         height: ${this.stageHeightOut}px;
         vertical-align: middle;
       " height="${this.stageHeight}"></canvas>`;
@@ -139,9 +146,10 @@ export class ZoomAxis {
       return;
     }
     // 同时设置文本白色透明度
-    this.ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    this.ctx.fillStyle = this.textColor;
     const timeText = this.getTimeText(this.spaceCycleIndex);
-    this.ctx.fillText(timeText, this.lineX + 6, 0);
+    this.ctx.textAlign = 'left';
+    this.ctx.fillText(timeText, this.lineX+6, 0);
   }
   // 是否处于周期值
   private checkIsCyclePoint() {
@@ -162,8 +170,8 @@ export class ZoomAxis {
       const lineHeight = isCyclePoint ? this.lineHeight : this.lineShortHeight;
 
       this.ctx.fillStyle = isCyclePoint
-        ? "rgba(255, 255, 255, 0.2)"
-        : "rgba(255, 255, 255, 0.12)";
+        ? this.lineColorPrimary
+        : this.lineColor;
       this.ctx.fillRect(this.lineX, this.lineY, this.lineWidth, lineHeight);
       // 如果处于标尺周期，则要显示分:秒，且刻度线更长一些
       if (isCyclePoint) {
@@ -253,6 +261,14 @@ export class ZoomAxis {
     this.zoomRatio = ratio
     this.resetToDraw();
     this.zoomByRatio();
+    this.redraw();
+  }
+  resizeStage(stageWidth: number){
+    this.setStageWidth(stageWidth);
+    // 由于修改了canvas width
+    // 必须重新获取 ctx 否则文本可能会渲染不出来
+    this.initCanvas();
+    this.resetToDraw();
     this.redraw();
   }
 }
