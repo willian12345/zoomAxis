@@ -6,16 +6,16 @@ export class SegmentTracks extends Tracks {
   constructor({
     trackCursor,
     scrollContainer,
-    timelineAxis,
+    timeline,
     deleteableCheck,
   }: SegmentTracksArgs) {
     if (!scrollContainer) {
       return;
     }
-    super({trackCursor, scrollContainer, timelineAxis, deleteableCheck});
+    super({trackCursor, scrollContainer, timeline, deleteableCheck});
     const mousedown = (e: MouseEvent) => {
       e.preventDefault();
-      // e.stopPropagation();
+      e.stopPropagation();
       const target = e.target as HTMLElement;
       if (!target) {
         return;
@@ -30,20 +30,22 @@ export class SegmentTracks extends Tracks {
     this.scrollContainer = scrollContainer;
     // 代理 segment 鼠标事件
     scrollContainer.addEventListener("mousedown", mousedown);
+    
+
   }
   scaleX(ratio: number) {
-    if (!this.scrollContainer || !this.timelineAxis) {
+    if (!this.scrollContainer || !this.timeline) {
       return;
     }
     const segments: HTMLElement[] = Array.from(
       this.scrollContainer.querySelectorAll(".segment")
     );
-    const frameWidth = this.timelineAxis?.frameWidth;
+    const frameWidth = this.timeline?.frameWidth;
     segments.forEach((dom: HTMLElement) => {
       if (
         !dom.dataset.framestart ||
         !dom.dataset.frameend ||
-        !this.timelineAxis
+        !this.timeline
       ) {
         return;
       }

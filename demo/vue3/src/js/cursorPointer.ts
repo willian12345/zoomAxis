@@ -18,7 +18,7 @@ export class CursorPointer {
   private _enable = true;
   cursorEl: HTMLElement | null = null;
   scrollContentDom: HTMLElement | null = null;
-  timelineAxis: TimelineAxis | null = null;
+  timeline: TimelineAxis | null = null;
   unscaleLeft = 0; // 未发生缩放时 原始 left 值
   preRatio = 0;
   currentRatio = 0;
@@ -33,7 +33,7 @@ export class CursorPointer {
   constructor(
     scrollContentDom: HTMLElement,
     cursorEl: HTMLElement,
-    timelineAxis: TimelineAxis
+    timeline: TimelineAxis
   ) {
     if (!scrollContentDom) {
       return;
@@ -43,11 +43,11 @@ export class CursorPointer {
     }
     this.scrollContentDom = scrollContentDom;
     this.cursorEl = cursorEl;
-    this.timelineAxis = timelineAxis;
+    this.timeline = timeline;
     // 游标拖动
     cursorEl.addEventListener("mousedown", (e: MouseEvent) => {
       e.preventDefault();
-      if (!this._enable) {
+      if (!this._enable || this.timeline?.playing) {
         return;
       }
       let startX = e.clientX;
@@ -57,9 +57,10 @@ export class CursorPointer {
         cursorEl.removeEventListener("mouseup", handleMouseup);
         document.removeEventListener("mouseup", handleMouseup);
         document.removeEventListener("mousemove", handleMousemove);
+        
       };
       const handleMousemove = (e: MouseEvent) => {
-        this.cursorUpdate(timelineAxis, this.getX(e.clientX, scrollContentDom));
+        this.cursorUpdate(timeline, this.getX(e.clientX, scrollContentDom));
         startX = e.clientX;
       };
       document.addEventListener("mouseup", handleMouseup);
@@ -68,11 +69,15 @@ export class CursorPointer {
     });
 
     // 滚动区域 mouseup 移动游标
-    scrollContentDom.addEventListener("mouseup", (e: MouseEvent) => {
-      if (!this._enable) {
+    scrollContentDom.addEventListener("click", (e: MouseEvent) => {
+      if (!this._enable || this.timeline?.playing) {
         return;
       }
-      this.cursorUpdate(timelineAxis, this.getX(e.clientX, scrollContentDom));
+      const target = e.target as HTMLElement;
+      if(target && target.classList.contains('segment')){
+        return;
+      }
+      this.cursorUpdate(timeline, this.getX(e.clientX, scrollContentDom));
     });
   }
   private getX(clientX: number, scrollContentDom: HTMLElement) {
@@ -117,12 +122,11 @@ export class CursorPointer {
     this.cursorUpdateCallbackSet.add(cb);
     return this;
   }
-  syncLeft() {
-    if (!this.timelineAxis || !this.cursorEl) {
+  sync() {
+    if (!this.timeline || !this.cursorEl) {
       return;
     }
-    const left = this.timelineAxis.frameWidth * this.timelineAxis.currentFrame;
-    console.log(this.timelineAxis.frameWidth)
+    const left = this.timeline.frameWidth * this.timeline.currentFrame;
     this.cursorEl.style.transform = `translateX(${left}px)`;
   }
   freeze() {

@@ -8,13 +8,13 @@ export class SegmentTracksOut extends Tracks {
     trackCursor,
     scrollContainer,
     segmentDelegete,
-    timelineAxis,
+    timeline,
     dropableCheck,
   }: SegmentTracksOutArgs) {
-    if (!scrollContainer || !timelineAxis) {
+    if (!scrollContainer || !timeline) {
       return;
     }
-    super({trackCursor, scrollContainer, timelineAxis, dropableCheck});
+    super({trackCursor, scrollContainer, timeline, dropableCheck});
     this.dropableCheck = dropableCheck;
     const mousedown = (e: MouseEvent) => {
       e.preventDefault();
