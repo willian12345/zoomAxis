@@ -12,7 +12,7 @@ import { SegmentTracks } from './js/SegmentTracks'
 import { SegmentTracksOut } from './js/SegmentTracksOut'
 
 
-let timelineAxis: TimelineAxis | null;
+let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;
 let segmentTracks: SegmentTracks;
 let segmentTracksOut: SegmentTracksOut;
@@ -29,7 +29,7 @@ const handleScroll = (e: UIEvent) => {
     return;
   }
   const dom = e.target as HTMLElement;
-  timelineAxis?.scrollLeft(-dom.scrollLeft);
+  timeline?.scrollLeft(-dom.scrollLeft);
 };
 
 let zoomRatio = 1;
@@ -49,25 +49,25 @@ const handleWheel = (e: WheelEvent) => {
   }
   // scrollContentWidth.value = scrollContentUnscaledWidth * zoomRatio;
   // 根据缩放比较，减小滚动宽度
-  if (timelineAxis?.zoomRatio) {
-    timelineAxis.zoom(zoomRatio);
+  if (timeline?.zoomRatio) {
+    timeline.zoom(zoomRatio);
     segmentTracks?.scaleX(zoomRatio);
     // 根据帧数变更游标位置
     if(trackCursor){
-      trackCursor.syncLeft()
+      trackCursor.sync();
     }
   }
 };
 
 const handlePlay = () => {
-  if(!timelineAxis){
+  if(!timeline){
     return;
   }
-  if(timelineAxis.currentFrame === timelineAxis.totalFrames){
-    timelineAxis.play(0)
+  if(timeline.currentFrame === timeline.totalFrames){
+    timeline.play(0);
     return
   }
-  timelineAxis?.paused ? timelineAxis?.play() : timelineAxis?.pause();
+  timeline?.play();
 };
 
 // 增加轨道内容宽度
@@ -82,12 +82,6 @@ const addTrackWidth = (trackCursor: CursorPointer) => {
   }
 }
 
-// 用于判断是否可拖动的条件
-const dropableCheck = function (startFrame: number) {
-  return new Promise<DropableArgs>(async (resolve, reject) => {
-    resolve({dropable: true, endFrame: startFrame + 30})
-  });
-};
 
 const initApp = () => {
   if (!cursorRef.value?.$el || !scrollContentRef.value || !scrollContainerRef.value) {
@@ -106,47 +100,39 @@ const initApp = () => {
   scrollContentWidth.value = stageWidth.value
   
   // 初始化时间轴
-  timelineAxis = new TimelineAxis({
+  timeline = new TimelineAxis({
     el: "canvasStage",
     totalMarks: 500,
     totalFrames: 30,
     stageWidth: stageWidth.value,
   });
 
-  let a = (+ new Date())
-  timelineAxis.addEventListener(
+  timeline.addEventListener(
     TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME,
-    function (this: TimelineAxis, curentFrame, eventType) {
-      console.log(this.spaceTimeSecond, this.frameRate, this.markWidth)
-      // 当前帧 * mark 周期 / ( 帧频 * mark 周期倍数 )
-      const left = curentFrame * (this.spacecycle / (this.frameRate * this.spaceTimeSecond)) * this.markWidth;
-      cursor.style.transform = `translateX(${left}px)`;
-      if(this.currentFrame === 0){
-        a = (+ new Date())
-      }
-      // console.log(this.currentFrame, +new Date() - a);
+    () => {
+      trackCursor.sync()
     }
   );
   // 初始化游标
   trackCursor = new CursorPointer(
     scrollContent,
     cursor,
-    timelineAxis,
+    timeline,
   );
   trackCursor.addEventListener(CURSOR_POINTER_EVENT_TYPE.CURSOR_UPDATE, (currentFrame) => {
     console.log(currentFrame)
-    timelineAxis?.setCurrentFrame(currentFrame)
+    timeline?.setCurrentFrame(currentFrame)
   })
   
   // 初始化轨道
-  segmentTracks = new SegmentTracks({trackCursor, scrollContainer, timelineAxis})
+  segmentTracks = new SegmentTracks({trackCursor, scrollContainer, timeline})
   segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
     addTrackWidth(trackCursor);
   })
   
   
   // 初始化轨道外可拖 segment 片断
-  segmentTracksOut = new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList, timelineAxis});
+  segmentTracksOut = new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList, timeline});
   segmentTracksOut.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
     setTimeout(() => {
       addTrackWidth(trackCursor);  
@@ -379,5 +365,14 @@ onMounted(() => {
   height: 100%;
   background-color: #c66136;
   opacity: 0.8;
+}
+.segment-name{
+  padding: 0 6px;
+  font-size: 11px;
+  color: white;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  line-height: 24px;
+  pointer-events: none;
 }
 </style>

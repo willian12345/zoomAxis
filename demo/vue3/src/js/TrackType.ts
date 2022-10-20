@@ -36,14 +36,14 @@ export interface DeleteableCheck{
 export interface TracksArgs {
   trackCursor: CursorPointer
   scrollContainer: HTMLElement
-  timelineAxis: TimelineAxis
+  timeline: TimelineAxis
   dropableCheck?: DropableCheck
   deleteableCheck?: DeleteableCheck
 }
 export interface SegmentTracksArgs {
   trackCursor: InstanceType<typeof CursorPointer>
   scrollContainer: HTMLElement
-  timelineAxis: TimelineAxis
+  timeline: TimelineAxis
   deleteableCheck?: DeleteableCheck
 }
 export interface SegmentTracksOutArgs extends SegmentTracksArgs {

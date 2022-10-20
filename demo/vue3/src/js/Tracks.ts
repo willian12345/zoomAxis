@@ -26,14 +26,14 @@ import {
 export class Tracks {
   private dragEndCallback: Set<TracksEventCallback> | null = null;
   protected scrollContainer: HTMLElement | null = null;
-  timelineAxis: TimelineAxis | null = null;
+  timeline: TimelineAxis | null = null;
   dropableCheck?: DropableCheck;
   deleteableCheck?: DeleteableCheck;
-  constructor({trackCursor, scrollContainer, timelineAxis, dropableCheck, deleteableCheck}: TracksArgs) {
-    if (!timelineAxis || !scrollContainer) {
+  constructor({trackCursor, scrollContainer, timeline, dropableCheck, deleteableCheck}: TracksArgs) {
+    if (!timeline || !scrollContainer) {
       return;
     }
-    this.timelineAxis = timelineAxis;
+    this.timeline = timeline;
     if (dropableCheck) {
       this.dropableCheck = dropableCheck;
     }
@@ -180,7 +180,7 @@ export class Tracks {
 
     const mouseup = (e: MouseEvent) => {
       e.stopPropagation();
-      if (!this.timelineAxis) {
+      if (!this.timeline) {
         return;
       }
       startX = e.clientX;
@@ -190,11 +190,11 @@ export class Tracks {
       dragTrackContainer.style.transition = "none";
       // segmentLeft = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
       const x = left - scrollContainerRect.left + scrollContainerScrollLeft;
-      let currentFrame = Math.round(x / this.timelineAxis.frameWidth);
+      let currentFrame = Math.round(x / this.timeline.frameWidth);
       if (currentFrame < 0) {
         currentFrame = 0;
       }
-      const segmentLeft = this.timelineAxis.frameWidth * currentFrame;
+      const segmentLeft = this.timeline.frameWidth * currentFrame;
       // 判断所有轨道与鼠标当前Y轴距离
       tracks.forEach(async (track) => {
         // 轨道 id
@@ -238,8 +238,8 @@ export class Tracks {
             dom.style.left = `${segmentLeft}px`;
             // todo
             const frames: number = parseFloat(dom.dataset.frameend) - parseFloat(dom.dataset.framestart)
-            if(this.timelineAxis){
-              dom.style.width = `${this.timelineAxis?.frameWidth * frames}px`;
+            if(this.timeline){
+              dom.style.width = `${this.timeline?.frameWidth * frames}px`;
             }
           }
         }
@@ -271,12 +271,11 @@ export class Tracks {
             );
           }
         }
+        trackCursor.enable = true;
+        this.dragEndCallback?.forEach((cb) =>
+          cb(this, TRACKS_EVENT_CALLBACK_TYPES.DRAG_END)
+        );
       }, 0);
-      trackCursor.enable = true;
-      this.dragEndCallback?.forEach((cb) =>
-        cb(this, TRACKS_EVENT_CALLBACK_TYPES.DRAG_END)
-      );
-
       document.removeEventListener("mouseup", mouseup);
       document.removeEventListener("mousemove", mousemove);
     };
