@@ -1,15 +1,17 @@
 import {
   TRACKS_EVENT_CALLBACK_TYPES,
   TracksEventCallback,
-  DropableArgs,
+  DeleteableCheck,
   SegmentType,
   DropableCheck,
+  TracksArgs,
 } from './TrackType';
 
 import { CursorPointer } from "./cursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
 
 import {
+  createSegmentName,
   createSegment,
   createSegmentFake,
   getDragTrackCotainer,
@@ -17,6 +19,7 @@ import {
   trackCollisionCheckY,
   isCloseEnouphToY,
   getSegmentPlaceholder,
+  findParentElementByClassName,
 } from './trackUtils';
 
 // 轨道
@@ -25,18 +28,17 @@ export class Tracks {
   protected scrollContainer: HTMLElement | null = null;
   timelineAxis: TimelineAxis | null = null;
   dropableCheck?: DropableCheck;
-  constructor({trackCursor, scrollContainer, timelineAxis, dropableCheck}: {
-    trackCursor: CursorPointer,
-    scrollContainer: HTMLElement,
-    timelineAxis: TimelineAxis,
-    dropableCheck?: DropableCheck
-  }) {
+  deleteableCheck?: DeleteableCheck;
+  constructor({trackCursor, scrollContainer, timelineAxis, dropableCheck, deleteableCheck}: TracksArgs) {
     if (!timelineAxis || !scrollContainer) {
       return;
     }
     this.timelineAxis = timelineAxis;
     if (dropableCheck) {
       this.dropableCheck = dropableCheck;
+    }
+    if (deleteableCheck) {
+      this.deleteableCheck = deleteableCheck;
     }
     this.scrollContainer = scrollContainer;
     this.initEvent();
@@ -62,13 +64,25 @@ export class Tracks {
       return;
     }
   }
-  removeActivedSegment(event: KeyboardEvent){
+  async removeActivedSegment(event: KeyboardEvent){
     if(event.key !== 'Delete'){
       return
     }
-    const activedSegment = this.scrollContainer?.querySelector(".segment.actived")
+    const activedSegment: HTMLElement = this.scrollContainer?.querySelector(".segment.actived") as HTMLElement;
     if(!activedSegment){
       return
+    }
+    if(this.deleteableCheck){
+      const trackDom = findParentElementByClassName(activedSegment, 'track');
+      const trackId = trackDom?.dataset.trackId;
+      const segmentId = activedSegment.dataset.segmentId;
+      if(trackId && segmentId){
+        const result = await this.deleteableCheck(trackId, segmentId)
+        if(!result){
+          console.warn('删除失败');
+          return;
+        }
+      }
     }
     activedSegment.parentElement?.removeChild(activedSegment)
   }
@@ -183,6 +197,8 @@ export class Tracks {
       const segmentLeft = this.timelineAxis.frameWidth * currentFrame;
       // 判断所有轨道与鼠标当前Y轴距离
       tracks.forEach(async (track) => {
+        // 轨道 id
+        const trackId = track.dataset.trackId ?? ''
         // 如果足够近代表用户想拖到此轨道上
         if (isCloseEnouphToY(track, e.clientY)) {
           const placeHolder = getSegmentPlaceholder(track);
@@ -195,11 +211,12 @@ export class Tracks {
             let dom;
             if (isCopySegment) {
               if(this.dropableCheck){
-                const {dropable, endFrame} = await this.dropableCheck(currentFrame)
-                console.log(dropable, endFrame);
-                if(dropable && endFrame){
+                const { dropable, segmentData, segmentName } = await this.dropableCheck(trackId, currentFrame)
+                if(dropable && segmentData){
                   dom = createSegment(SegmentType.BODY_ANIMATION);
-                  dom.dataset.frameend = `${endFrame}`;
+                  dom.appendChild(createSegmentName(segmentName));
+                  dom.dataset.frameend = `${segmentData.endFrame}`;
+                  dom.dataset.segmentId = segmentData.sectionId;
                 }
               }else{
                 dom = createSegment(SegmentType.BODY_ANIMATION);
@@ -217,6 +234,7 @@ export class Tracks {
               const frameend = framestart + 30; // 默认
               dom.dataset.frameend = `${frameend}`;
             }
+            dom.dataset.trackId = trackId;
             dom.style.left = `${segmentLeft}px`;
             // todo
             const frames: number = parseFloat(dom.dataset.frameend) - parseFloat(dom.dataset.framestart)

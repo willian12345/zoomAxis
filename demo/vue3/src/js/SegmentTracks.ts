@@ -7,11 +7,12 @@ export class SegmentTracks extends Tracks {
     trackCursor,
     scrollContainer,
     timelineAxis,
+    deleteableCheck,
   }: SegmentTracksArgs) {
     if (!scrollContainer) {
       return;
     }
-    super({trackCursor, scrollContainer, timelineAxis});
+    super({trackCursor, scrollContainer, timelineAxis, deleteableCheck});
     const mousedown = (e: MouseEvent) => {
       e.preventDefault();
       // e.stopPropagation();

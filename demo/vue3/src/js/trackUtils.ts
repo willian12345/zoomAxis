@@ -1,6 +1,12 @@
 // 创建 segment
 import { SegmentType } from './TrackType'
 const CLOSE_ENOUPH_DISTANCE = 10; // 距离是否够近
+export const createSegmentName = (text: string) => {
+  const dom = document.createElement("div");
+  dom.className = "segment-name";
+  dom.innerText = text;
+  return dom;
+}
 export const createSegment = (type: SegmentType) => {
   const dom = document.createElement("div");
   dom.className = "segment segment-action";
@@ -16,6 +22,13 @@ export const createSegmentFake = (rect: DOMRect) => {
   dom.style.borderRadius = "4px";
   return dom;
 };
+export const findParentElementByClassName = (dom: HTMLElement, parentClassName: string) => {
+  let parent = dom.parentElement;
+  while(parent && !parent.classList.contains(parentClassName)){
+    parent = parent.parentElement
+  }
+  return parent
+}
 export const getLeftValue = (dom: HTMLElement | undefined) => {
   if (!dom) {
     return 0;

@@ -146,7 +146,7 @@ const initApp = () => {
   
   
   // 初始化轨道外可拖 segment 片断
-  segmentTracksOut = new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList, timelineAxis, dropableCheck});
+  segmentTracksOut = new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList, timelineAxis});
   segmentTracksOut.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
     setTimeout(() => {
       addTrackWidth(trackCursor);  
