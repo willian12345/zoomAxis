@@ -294,9 +294,14 @@ export class Tracks {
         }
         // 重新允许游标交互
         trackCursor.enable = true;
+        const segmentId = segment.dataset.segmentId ?? ''
+        const trackId = segment.dataset.trackId ?? ''
+        const startFrame = parseFloat(segment.dataset.framestart ?? '0');
+        const endFrame = parseFloat(segment.dataset.frameend ?? '0') ;
+
         // 拖完后触发回调
         this.dragEndCallback?.forEach((cb) =>
-          cb(this, TRACKS_EVENT_CALLBACK_TYPES.DRAG_END)
+          cb(this, TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, {trackId, segmentId, startFrame, endFrame})
         );
         
       }, 0);
