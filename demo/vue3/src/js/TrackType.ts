@@ -8,8 +8,12 @@ export enum SegmentType {
 }
 export enum TRACKS_EVENT_CALLBACK_TYPES {
   DRAG_END,
-}export interface TracksEventCallback {
-  (instance:Tracks, eventType: TRACKS_EVENT_CALLBACK_TYPES): any
+}
+export interface SegmentBasicInfo {
+  trackId: string, segmentId: string, startFrame: number, endFrame: number
+}
+export interface TracksEventCallback {
+  (instance:Tracks, eventType: TRACKS_EVENT_CALLBACK_TYPES, segment?: SegmentBasicInfo): any
 }
 
 
