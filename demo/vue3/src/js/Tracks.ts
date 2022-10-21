@@ -26,6 +26,8 @@ import {
 export class Tracks {
   private dragEndCallback: Set<TracksEventCallback> | null = null;
   protected scrollContainer: HTMLElement | null = null;
+  protected dragoverClass = 'dragover';
+  protected dragoverErrorClass = 'dragover-error';
   timeline: TimelineAxis | null = null;
   dropableCheck?: DropableCheck;
   deleteableCheck?: DeleteableCheck;
@@ -46,7 +48,7 @@ export class Tracks {
   initEvent(){
     // 点击轨道外部时清除选中过的 segment 状态
     document.body.addEventListener(
-      "mousedown",
+      "click",
       this.removeSegmentActivedStatus.bind(this)
     );
     // Delete 键删除当前选中的 segment 
@@ -64,10 +66,18 @@ export class Tracks {
       return;
     }
   }
-  async removeActivedSegment(event: KeyboardEvent){
+  removeActivedSegment(event: KeyboardEvent){
     if(event.key !== 'Delete'){
       return
     }
+    this.deleteCurrentActiveSegment(); 
+  }
+  removeSegmentActivedStatus() {
+    this.scrollContainer?.querySelectorAll(".segment").forEach((segment) => {
+      segment.classList.remove("actived");
+    });
+  }
+  async deleteCurrentActiveSegment(){
     const activedSegment: HTMLElement = this.scrollContainer?.querySelector(".segment.actived") as HTMLElement;
     if(!activedSegment){
       return
@@ -85,11 +95,6 @@ export class Tracks {
       }
     }
     activedSegment.parentElement?.removeChild(activedSegment)
-  }
-  removeSegmentActivedStatus() {
-    this.scrollContainer?.querySelectorAll(".segment").forEach((segment) => {
-      segment.classList.remove("actived");
-    });
   }
   destroy() {
     document.body.removeEventListener(
@@ -158,10 +163,13 @@ export class Tracks {
       const scrollContainerX =
         scrollContainerScrollLeft - scrollContainerRect.left;
       const isCollisionY = trackCollisionCheckY(
+        segment,
         dragTrackContainerRect,
         tracks,
         scrollContainerX,
-        e.clientY
+        e.clientY,
+        this.dragoverClass,
+        this.dragoverErrorClass,
       );
       if (isCopySegment) {
         // 如果是复制，则需要形变成标准轨道内 segment 形状
@@ -197,26 +205,37 @@ export class Tracks {
       const segmentLeft = this.timeline.frameWidth * currentFrame;
       // 判断所有轨道与鼠标当前Y轴距离
       tracks.forEach(async (track) => {
-        // 轨道 id
-        const trackId = track.dataset.trackId ?? ''
         // 如果足够近代表用户想拖到此轨道上
         if (isCloseEnouphToY(track, e.clientY)) {
+          
           const placeHolder = getSegmentPlaceholder(track);
           if (!placeHolder) {
             return;
           }
           placeHolder.style.opacity = "0";
+          // 轨道 id
+          const trackId = track.dataset.trackId ?? ''
+          const segmentTrackId = segment.dataset.trackId ?? ''
+          // 轨道 id 必须相同才能拖动进去
+          if(trackId !== segmentTrackId){
+            return ;
+          }
           const isCollistion = collisionCheckX(placeHolder, track);
           if (!isCollistion) {
             let dom;
+            let framestart = currentFrame;
             if (isCopySegment) {
               if(this.dropableCheck){
-                const { dropable, segmentData, segmentName } = await this.dropableCheck(trackId, currentFrame)
+                const { dropable, segmentData, segmentName } = await this.dropableCheck(segmentTrackId, currentFrame)
                 if(dropable && segmentData){
                   dom = createSegment(SegmentType.BODY_ANIMATION);
                   dom.appendChild(createSegmentName(segmentName));
+                  framestart = segmentData.startFrame
+                  dom.dataset.framestart = `${framestart}`;
                   dom.dataset.frameend = `${segmentData.endFrame}`;
+                  dom.dataset.frames = segmentData.endFrame - framestart;
                   dom.dataset.segmentId = segmentData.sectionId;
+                  dom.dataset.trackId = segmentTrackId;
                 }
               }else{
                 dom = createSegment(SegmentType.BODY_ANIMATION);
@@ -228,21 +247,26 @@ export class Tracks {
               return
             }
             track.appendChild(dom);
-            const framestart = currentFrame;
+            
+            const frames = parseFloat(dom.dataset.frames) ?? 0
             dom.dataset.framestart = `${framestart}`;
             if(!dom.dataset.frameend){
               const frameend = framestart + 30; // 默认
               dom.dataset.frameend = `${frameend}`;
+            }else{
+              dom.dataset.frameend = `${framestart + frames}`;
             }
+          
             dom.dataset.trackId = trackId;
             dom.style.left = `${segmentLeft}px`;
             // todo
-            const frames: number = parseFloat(dom.dataset.frameend) - parseFloat(dom.dataset.framestart)
             if(this.timeline){
               dom.style.width = `${this.timeline?.frameWidth * frames}px`;
             }
           }
         }
+        track.classList.remove(this.dragoverClass);
+        track.classList.remove(this.dragoverErrorClass);
       });
       // 如果没有跨轨道拖动成功，则 x 轴移动
       setTimeout(() => {
@@ -251,30 +275,30 @@ export class Tracks {
           if (isCopySegment) {
             dragTrackContainer.removeChild(segmentCopy);
           }
-          if (!originTrack) {
-            return;
-          }
-          originTrack.appendChild(segment);
+          if (originTrack) {
+            originTrack.appendChild(segment);
+            const placeHolder = getSegmentPlaceholder(originTrack);
+            if (placeHolder) {
+              placeHolder.style.opacity = "0";
+            }
+            const isCollistion = collisionCheckX(placeHolder, originTrack);
+            if (!isCollistion) {
+              segment.style.left = `${segmentLeft}px`;
+              segment.dataset.left = String(segmentLeft);
 
-          const placeHolder = getSegmentPlaceholder(originTrack);
-          if (!placeHolder) {
-            return;
-          }
-          placeHolder.style.opacity = "0";
-          const isCollistion = collisionCheckX(placeHolder, originTrack);
-          if (!isCollistion) {
-            segment.style.left = `${segmentLeft}px`;
-            segment.dataset.left = String(segmentLeft);
-
-            segment.dataset.width = String(
-              segment.getBoundingClientRect().width
-            );
+              segment.dataset.width = String(
+                segment.getBoundingClientRect().width
+              );
+            }  
           }
         }
+        // 重新允许游标交互
         trackCursor.enable = true;
+        // 拖完后触发回调
         this.dragEndCallback?.forEach((cb) =>
           cb(this, TRACKS_EVENT_CALLBACK_TYPES.DRAG_END)
         );
+        
       }, 0);
       document.removeEventListener("mouseup", mouseup);
       document.removeEventListener("mousemove", mousemove);
