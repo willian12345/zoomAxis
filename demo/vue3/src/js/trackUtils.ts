@@ -108,10 +108,13 @@ export const isCloseEnouphToY = (track: HTMLElement, mouseY: number) => {
 
 // 轨道 y 轴 碰撞检测
 export const trackCollisionCheckY = (
+  segment: HTMLElement,
   dragTrackContainerRect: DOMRect,
   tracks: HTMLElement[],
   scrollContainerX: number,
-  mouseY: number
+  mouseY: number,
+  dragoverClass: string,
+  dragoverErrorClass: string,
 ) => {
   let collision = false;
   tracks.forEach((track) => {
@@ -122,9 +125,16 @@ export const trackCollisionCheckY = (
         return;
       }
       tracks.forEach((element: HTMLElement) => {
-        element.classList.remove("dragover");
+        element.classList.remove(dragoverClass);
+        element.classList.remove(dragoverErrorClass);
       });
-      track.classList.add("dragover");
+      track.classList.add(dragoverClass);
+      const trackId = track.dataset.trackId;
+      const segmentTrackId = segment.dataset.trackId;
+      // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
+      if(trackId !== segmentTrackId){
+        track.classList.add(dragoverErrorClass);
+      }
       // 拖动时轨道内占位元素
       placeHolder.style.width = `${dragTrackContainerRect.width}px`;
       placeHolder.style.left = `${

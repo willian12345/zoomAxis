@@ -24,6 +24,7 @@ export class SegmentTracks extends Tracks {
         return;
       }
       const segment = target;
+      this.removeSegmentActivedStatus();
       segment.classList.add("actived");
       this.dragStart(e, trackCursor, scrollContainer, segment);
     };
