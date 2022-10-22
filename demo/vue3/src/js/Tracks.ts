@@ -7,7 +7,7 @@ import {
   TracksArgs,
 } from './TrackType';
 
-import { CursorPointer } from "./cursorPointer";
+import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
 
 import {
@@ -105,6 +105,25 @@ export class Tracks {
       "keydown",
       this.removeActivedSegment
     );
+  }
+  private putSegmentBack(segment: HTMLElement, segmentLeft: number, originTrack: HTMLElement){
+    if (originTrack) {
+      originTrack.appendChild(segment);
+      const placeHolder = getSegmentPlaceholder(originTrack);
+      if (!placeHolder) {
+        return
+      }
+      placeHolder.style.opacity = "0";
+      const isCollistion = collisionCheckX(placeHolder, originTrack);
+      if (!isCollistion) {
+        segment.style.left = `${segmentLeft}px`;
+        segment.dataset.left = String(segmentLeft);
+
+        segment.dataset.width = String(
+          segment.getBoundingClientRect().width
+        );
+      }  
+    }
   }
   dragStart(
     e: MouseEvent,
@@ -233,7 +252,7 @@ export class Tracks {
                   framestart = segmentData.startFrame
                   dom.dataset.framestart = `${framestart}`;
                   dom.dataset.frameend = `${segmentData.endFrame}`;
-                  dom.dataset.frames = segmentData.endFrame - framestart;
+                  dom.dataset.frames = `${segmentData.endFrame - framestart}`;
                   dom.dataset.segmentId = segmentData.sectionId;
                   dom.dataset.trackId = segmentTrackId;
                 }
@@ -248,7 +267,7 @@ export class Tracks {
             }
             track.appendChild(dom);
             
-            const frames = parseFloat(dom.dataset.frames) ?? 0
+            const frames = parseFloat(dom.dataset.frames ?? '30');
             dom.dataset.framestart = `${framestart}`;
             if(!dom.dataset.frameend){
               const frameend = framestart + 30; // 默认
@@ -275,22 +294,7 @@ export class Tracks {
           if (isCopySegment) {
             dragTrackContainer.removeChild(segmentCopy);
           }
-          if (originTrack) {
-            originTrack.appendChild(segment);
-            const placeHolder = getSegmentPlaceholder(originTrack);
-            if (placeHolder) {
-              placeHolder.style.opacity = "0";
-            }
-            const isCollistion = collisionCheckX(placeHolder, originTrack);
-            if (!isCollistion) {
-              segment.style.left = `${segmentLeft}px`;
-              segment.dataset.left = String(segmentLeft);
-
-              segment.dataset.width = String(
-                segment.getBoundingClientRect().width
-              );
-            }  
-          }
+          originTrack && this.putSegmentBack(segment, segmentLeft, originTrack);
         }
         // 重新允许游标交互
         trackCursor.enable = true;

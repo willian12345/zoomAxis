@@ -1,5 +1,5 @@
 
-import { CursorPointer } from "./cursorPointer";
+import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
 import { Tracks } from "./Tracks";
 export enum SegmentType {
