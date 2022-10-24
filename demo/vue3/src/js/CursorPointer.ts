@@ -19,7 +19,6 @@ export class CursorPointer {
   cursorEl: HTMLElement | null = null;
   scrollContentDom: HTMLElement | null = null;
   timeline: TimelineAxis | null = null;
-  unscaleLeft = 0; // 未发生缩放时 原始 left 值
   preRatio = 0;
   currentRatio = 0;
   get enable() {

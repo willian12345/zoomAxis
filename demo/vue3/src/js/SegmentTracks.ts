@@ -16,6 +16,9 @@ export class SegmentTracks extends Tracks {
     const mousedown = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      if(timeline.playing){
+        return;
+      }
       const target = e.target as HTMLElement;
       if (!target) {
         return;
