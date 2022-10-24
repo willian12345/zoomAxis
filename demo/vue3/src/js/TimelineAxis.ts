@@ -11,10 +11,7 @@ export enum TIMELINE_AXIS_EVENT_TYPE {
   STOP,
 }
 interface EventCallback {
-  (eventType: TIMELINE_AXIS_EVENT_TYPE): any
-}
-interface ENTER_FRAME_CALLBACK  extends EventCallback{
-  (eventType: TIMELINE_AXIS_EVENT_TYPE, currentFrame: number): void
+  (eventType: TIMELINE_AXIS_EVENT_TYPE, currentFrame: number): any
 }
 const FRAME_RATE = 30
 let a:number;
@@ -37,9 +34,9 @@ export class TimelineAxis extends ZoomAxis{
     return this.markWidth / (this.frameRate / (this.spacecycle / this.spaceTimeSecond))
   }
   constructor({ el, totalFrames = 0, totalMarks, frameRate, ratioMap }: TimelineAxisArgs){
-    super({ el, totalMarks,  ratioMap })
-    this.totalFrames = totalFrames
-    this.frameRate = frameRate ?? FRAME_RATE
+    super({ el, totalMarks,  ratioMap });
+    this.totalFrames = totalFrames;
+    this.frameRate = frameRate ?? FRAME_RATE;
     this.setFrameIntervalTime();
   }
   // 每一帧间隔时间
@@ -56,16 +53,14 @@ export class TimelineAxis extends ZoomAxis{
     }
     if (this.currentFrame > this.totalFrames) {
       this.playing = false;
-      // todo: 结束播放回调
+      this.playEndCallbackSet?.forEach( (cb: EventCallback) => cb(TIMELINE_AXIS_EVENT_TYPE.PLAY_END, this.currentFrame))
       return;
     }
     const now = + new Date()
     const interval = now - this.preTimestamp
     if(interval >= this.fps){
       this.preTimestamp = now - (interval % this.fps);
-      if(this.enterframeCallbackSet?.size){
-        this.enterframeCallbackSet.forEach( (cb: ENTER_FRAME_CALLBACK) => cb(this.currentFrame, TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME))
-      }
+      this.enterframeCallbackSet?.forEach( (cb: EventCallback) => cb(TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME, this.currentFrame))
       this.currentFrame++;
     }
     window.requestAnimationFrame(this.enterFrame.bind(this));
@@ -88,16 +83,14 @@ export class TimelineAxis extends ZoomAxis{
     this.stoped = true;
     this.paused = false;
     this.playing = false;
-    if(this.stopCallbackSet?.size){
-      this.stopCallbackSet.forEach( (cb: EventCallback) => cb.call(this, TIMELINE_AXIS_EVENT_TYPE.STOP));
-    }
+    this.stopCallbackSet?.forEach( (cb: EventCallback) => cb.call(this, TIMELINE_AXIS_EVENT_TYPE.STOP, this.currentFrame));
   }
   addEventListener(eventType: TIMELINE_AXIS_EVENT_TYPE, callback: EventCallback){
     if(eventType === TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME){
       if(!this.enterframeCallbackSet){
         this.enterframeCallbackSet  = new Set()
       }
-      this.enterframeCallbackSet.add(callback as ENTER_FRAME_CALLBACK)
+      this.enterframeCallbackSet.add(callback)
       return this
     }
     if(eventType === TIMELINE_AXIS_EVENT_TYPE.PLAY_START){
