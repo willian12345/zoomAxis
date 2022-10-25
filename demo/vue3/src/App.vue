@@ -375,4 +375,18 @@ onMounted(() => {
   line-height: 24px;
   pointer-events: none;
 }
+.segment-handle{
+  position: absolute;
+  width: 4px;
+  height: 100%;
+  z-index: 2;
+  cursor: col-resize;
+  background-color: rgba(255, 255, 255, 0);
+}
+.segment-handle-left{
+  left: 0;
+}
+.segment-handle-right{
+  right: 0;
+}
 </style>

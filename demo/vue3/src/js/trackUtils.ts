@@ -7,12 +7,21 @@ export const createSegmentName = (text: string) => {
   dom.innerText = text;
   return dom;
 }
+const createDivDom = (className: string) => {
+  const dom = document.createElement('div');
+  dom.className = className;
+  return dom;
+}
 export const createSegment = (type: SegmentType) => {
   const dom = document.createElement("div");
   dom.className = "segment segment-action";
   dom.style.width = "80px";
   dom.style.height = "24px";
   dom.style.left = "0";
+  const handleLeftDom = createDivDom('segment-handle segment-handle-left');
+  const handleRightDom = createDivDom('segment-handle segment-handle-right');
+  dom.prepend(handleLeftDom);
+  dom.appendChild(handleRightDom);
   return dom;
 };
 export const createSegmentFake = (rect: DOMRect) => {
@@ -158,11 +167,11 @@ export const trackCollisionCheckY = (
 };
 
 // 最右侧 segment 片断
-export const findEndestSegment = function (): [HTMLElement | null, number] {
+export const findEndestSegment = function (container: HTMLElement = document.body): [HTMLElement | null, number] {
   let end: HTMLElement | null = null;
   let max: number = 0;
   const segments: HTMLElement[] = Array.from(
-    document.querySelectorAll(".segment")
+    container.querySelectorAll(".segment")
   );
   segments.forEach((segment) => {
     const rect = segment.getBoundingClientRect();
@@ -174,3 +183,7 @@ export const findEndestSegment = function (): [HTMLElement | null, number] {
   });
   return [end, max];
 };
+// 找到某条轨道最右侧的片断
+export const findEndestSegmentOnTrack =  (track: HTMLElement) => {
+  return findEndestSegment(track)
+}

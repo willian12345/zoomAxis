@@ -117,13 +117,27 @@ export class Tracks {
       const isCollistion = collisionCheckX(placeHolder, originTrack);
       if (!isCollistion) {
         segment.style.left = `${segmentLeft}px`;
-        segment.dataset.left = String(segmentLeft);
-
-        segment.dataset.width = String(
-          segment.getBoundingClientRect().width
-        );
       }  
     }
+  }
+  private  async copySegment(segmentTrackId: string, framestart: number){
+    let dom: HTMLElement|null = null;
+    if(this.dropableCheck){
+      const { dropable, segmentData, segmentName } = await this.dropableCheck(segmentTrackId, framestart);
+      if(dropable && segmentData){
+        dom = createSegment(SegmentType.BODY_ANIMATION);
+        dom.appendChild(createSegmentName(segmentName));
+        framestart = segmentData.startFrame
+        dom.dataset.framestart = `${framestart}`;
+        dom.dataset.frameend = `${segmentData.endFrame}`;
+        dom.dataset.frames = `${segmentData.endFrame - framestart}`;
+        dom.dataset.segmentId = segmentData.sectionId;
+        dom.dataset.trackId = segmentTrackId;
+      }
+    }else{
+      dom = createSegment(SegmentType.BODY_ANIMATION);
+    }
+    return dom
   }
   dragStart(
     e: MouseEvent,
@@ -241,24 +255,10 @@ export class Tracks {
           }
           const isCollistion = collisionCheckX(placeHolder, track);
           if (!isCollistion) {
-            let dom;
+            let dom: HTMLElement | null = null;
             let framestart = currentFrame;
             if (isCopySegment) {
-              if(this.dropableCheck){
-                const { dropable, segmentData, segmentName } = await this.dropableCheck(segmentTrackId, currentFrame)
-                if(dropable && segmentData){
-                  dom = createSegment(SegmentType.BODY_ANIMATION);
-                  dom.appendChild(createSegmentName(segmentName));
-                  framestart = segmentData.startFrame
-                  dom.dataset.framestart = `${framestart}`;
-                  dom.dataset.frameend = `${segmentData.endFrame}`;
-                  dom.dataset.frames = `${segmentData.endFrame - framestart}`;
-                  dom.dataset.segmentId = segmentData.sectionId;
-                  dom.dataset.trackId = segmentTrackId;
-                }
-              }else{
-                dom = createSegment(SegmentType.BODY_ANIMATION);
-              }
+              dom = await this.copySegment(segmentTrackId, framestart);
             } else {
               dom = segment;
             }
