@@ -19,7 +19,7 @@ import {
   trackCollisionCheckY,
   isCloseEnouphToY,
   getSegmentPlaceholder,
-  findParentElementByClassName,
+  isContainSplitFromComma,
 } from './trackUtils';
 
 // 轨道
@@ -83,8 +83,8 @@ export class Tracks {
       return
     }
     if(this.deleteableCheck){
-      const trackDom = findParentElementByClassName(activedSegment, 'track');
-      const trackId = trackDom?.dataset.trackId;
+      // const trackDom = findParentElementByClassName(activedSegment, 'track');
+      const trackId = activedSegment?.dataset.trackId;
       const segmentId = activedSegment.dataset.segmentId;
       if(trackId && segmentId){
         const result = await this.deleteableCheck(trackId, segmentId)
@@ -250,7 +250,7 @@ export class Tracks {
           const trackId = track.dataset.trackId ?? ''
           const segmentTrackId = segment.dataset.trackId ?? ''
           // 轨道 id 必须相同才能拖动进去
-          if(trackId !== segmentTrackId){
+          if(!isContainSplitFromComma(trackId, segmentTrackId)){
             return ;
           }
           const isCollistion = collisionCheckX(placeHolder, track);
@@ -258,6 +258,7 @@ export class Tracks {
             let dom: HTMLElement | null = null;
             let framestart = currentFrame;
             if (isCopySegment) {
+
               dom = await this.copySegment(segmentTrackId, framestart);
             } else {
               dom = segment;
@@ -276,7 +277,7 @@ export class Tracks {
               dom.dataset.frameend = `${framestart + frames}`;
             }
           
-            dom.dataset.trackId = trackId;
+            dom.dataset.trackId = segmentTrackId;
             dom.style.left = `${segmentLeft}px`;
             // todo
             if(this.timeline){

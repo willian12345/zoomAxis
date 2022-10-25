@@ -115,6 +115,13 @@ export const isCloseEnouphToY = (track: HTMLElement, mouseY: number) => {
   return distanceY < CLOSE_ENOUPH_DISTANCE;
 };
 
+export const isContainSplitFromComma = (trackIds: string, trackId: string) => {
+  return trackIds.split(',').find((splitTrackId)=> {
+    return splitTrackId === trackId
+  })
+
+}
+
 // 轨道 y 轴 碰撞检测
 export const trackCollisionCheckY = (
   segment: HTMLElement,
@@ -138,10 +145,10 @@ export const trackCollisionCheckY = (
         element.classList.remove(dragoverErrorClass);
       });
       track.classList.add(dragoverClass);
-      const trackId = track.dataset.trackId;
-      const segmentTrackId = segment.dataset.trackId;
+      const trackId = track.dataset.trackId ?? '';
+      const segmentTrackId = segment.dataset.trackId ?? '';
       // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
-      if(trackId !== segmentTrackId){
+      if(!isContainSplitFromComma(trackId, segmentTrackId)){
         track.classList.add(dragoverErrorClass);
       }
       // 拖动时轨道内占位元素
