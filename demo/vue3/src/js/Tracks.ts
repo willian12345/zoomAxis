@@ -28,22 +28,27 @@ export class Tracks {
   protected scrollContainer: HTMLElement | null = null;
   protected dragoverClass = 'dragover';
   protected dragoverErrorClass = 'dragover-error';
+  protected trackCursor: CursorPointer|null = null
   timeline: TimelineAxis | null = null;
   dropableCheck?: DropableCheck;
   deleteableCheck?: DeleteableCheck;
   constructor({trackCursor, scrollContainer, timeline, dropableCheck, deleteableCheck}: TracksArgs) {
-    if (!timeline || !scrollContainer) {
+    if (!timeline || !scrollContainer || !trackCursor) {
       return;
     }
     this.timeline = timeline;
+    this.trackCursor = trackCursor;
+    this.scrollContainer = scrollContainer;
+
     if (dropableCheck) {
       this.dropableCheck = dropableCheck;
     }
     if (deleteableCheck) {
       this.deleteableCheck = deleteableCheck;
     }
-    this.scrollContainer = scrollContainer;
+
     this.initEvent();
+    return this;
   }
   initEvent(){
     // 点击轨道外部时清除选中过的 segment 状态
@@ -194,7 +199,6 @@ export class Tracks {
     }, 0);
 
     const scrollContainerRect = scrollContainer.getBoundingClientRect();
-    const frameWidth = this.timeline?.frameWidth ?? 0
 
     const mousemove = (e: MouseEvent) => {
       // 拖动时拖动的是 dragTrackContainer
@@ -245,7 +249,6 @@ export class Tracks {
       let segmentLeft = this.getSegmentLeft(framestart);
       // 判断所有轨道与鼠标当前Y轴距离
       tracks.forEach(async (track) => {
-        // 先清掉样式
         track.classList.remove(this.dragoverClass);
         track.classList.remove(this.dragoverErrorClass);
         // 如果足够近代表用户想拖到此轨道上
@@ -302,6 +305,7 @@ export class Tracks {
 
           }
         }
+        
       });
       // todo?? 如果没有跨轨道拖动成功，则 x 轴移动
       setTimeout(() => {
