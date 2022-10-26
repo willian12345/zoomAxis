@@ -1,6 +1,7 @@
 // 创建 segment
 import { SegmentType } from './TrackType'
-const CLOSE_ENOUPH_DISTANCE = 10; // 距离是否够近
+const CLOSE_ENOUPH_DISTANCE_Y = 10; // 距离 y 是否够近
+const CLOSE_ENOUPH_SEGMENT_X = 60; // 距离 segment x是否够近
 export const createSegmentName = (text: string) => {
   const dom = document.createElement("div");
   dom.className = "segment-name";
@@ -79,43 +80,51 @@ export const getSegmentPlaceholder = (track: HTMLElement) => {
   return dom;
 };
 
+type  collisionCheckXResult = [collision:boolean, magnet: boolean, magnetTo?:HTMLElement]
 // 轨道内 segment x 轴横向碰撞检测
 export const collisionCheckX = (
   placeholder: HTMLElement,
   track: HTMLElement
-) => {
+): collisionCheckXResult => {
   const placeholderRect = placeholder.getBoundingClientRect();
   const segments: HTMLElement[] = Array.from(
     track.querySelectorAll(".segment")
   );
   const segmentsLength = segments.length;
   if (!segmentsLength) {
-    return false;
+    return [false, false];
   }
   for (let segment of segments) {
     const segmentRect = segment.getBoundingClientRect();
     // placeholder与 segment 都属于轨道内，left 值取 style内的值 即相对坐标
     const segmentLeft = getLeftValue(segment);
     const placeholderLeft = getLeftValue(placeholder);
+    const closeDistance = placeholderLeft - (segmentLeft + segmentRect.width);
+    if(closeDistance <= 0 && closeDistance >= -CLOSE_ENOUPH_SEGMENT_X){
+      return [true, true, segment]
+    }
     // x 轴碰撞检测
     if (
       placeholderLeft + placeholderRect.width > segmentLeft &&
       placeholderLeft < segmentLeft + segmentRect.width
     ) {
-      return true;
+      return [true, false];
     }
   }
-  return false;
+  return [false, false];
 };
 
 // 离Y轴是否足够近
 export const isCloseEnouphToY = (track: HTMLElement, mouseY: number) => {
   const trackRect = track.getBoundingClientRect();
   const distanceY = Math.abs(trackRect.top + trackRect.height * 0.5 - mouseY);
-  return distanceY < CLOSE_ENOUPH_DISTANCE;
+  return distanceY < CLOSE_ENOUPH_DISTANCE_Y;
 };
 
 export const isContainSplitFromComma = (trackIds: string, trackId: string) => {
+  if(trackIds === trackId){
+    return true
+  }
   return trackIds.split(',').find((splitTrackId)=> {
     return splitTrackId === trackId
   })
@@ -156,7 +165,7 @@ export const trackCollisionCheckY = (
       placeHolder.style.left = `${
         dragTrackContainerRect.left + scrollContainerX
       }px`;
-      const isCollistion = collisionCheckX(placeHolder, track);
+      const [isCollistion] = collisionCheckX(placeHolder, track);
       // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
       if (isCollistion) {
         placeHolder.style.opacity = "0";

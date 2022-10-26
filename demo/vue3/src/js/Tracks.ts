@@ -114,7 +114,7 @@ export class Tracks {
         return
       }
       placeHolder.style.opacity = "0";
-      const isCollistion = collisionCheckX(placeHolder, originTrack);
+      const [isCollistion] = collisionCheckX(placeHolder, originTrack);
       if (!isCollistion) {
         segment.style.left = `${segmentLeft}px`;
       }  
@@ -138,6 +138,18 @@ export class Tracks {
       dom = createSegment(SegmentType.BODY_ANIMATION);
     }
     return dom
+  }
+  private getFramestartByX(x: number): number{
+    const frameWidth: number = this.timeline?.frameWidth ?? 0
+    let currentFrame = Math.round(x / frameWidth);
+    if (currentFrame < 0) {
+      currentFrame = 0;
+    }
+    return currentFrame
+  }
+  private getSegmentLeft = (framestart: number):number => {
+    const frameWidth = this.timeline?.frameWidth ?? 0;
+    return framestart * frameWidth;
   }
   dragStart(
     e: MouseEvent,
@@ -182,6 +194,7 @@ export class Tracks {
     }, 0);
 
     const scrollContainerRect = scrollContainer.getBoundingClientRect();
+    const frameWidth = this.timeline?.frameWidth ?? 0
 
     const mousemove = (e: MouseEvent) => {
       // 拖动时拖动的是 dragTrackContainer
@@ -221,9 +234,6 @@ export class Tracks {
 
     const mouseup = (e: MouseEvent) => {
       e.stopPropagation();
-      if (!this.timeline) {
-        return;
-      }
       startX = e.clientX;
       startY = e.clientY;
       const scrollContainerScrollLeft = scrollContainer.scrollLeft;
@@ -231,11 +241,8 @@ export class Tracks {
       dragTrackContainer.style.transition = "none";
       // segmentLeft = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
       const x = left - scrollContainerRect.left + scrollContainerScrollLeft;
-      let currentFrame = Math.round(x / this.timeline.frameWidth);
-      if (currentFrame < 0) {
-        currentFrame = 0;
-      }
-      const segmentLeft = this.timeline.frameWidth * currentFrame;
+      let framestart = this.getFramestartByX(x)
+      let segmentLeft = this.getSegmentLeft(framestart);
       // 判断所有轨道与鼠标当前Y轴距离
       tracks.forEach(async (track) => {
         // 如果足够近代表用户想拖到此轨道上
@@ -253,12 +260,10 @@ export class Tracks {
           if(!isContainSplitFromComma(trackId, segmentTrackId)){
             return ;
           }
-          const isCollistion = collisionCheckX(placeHolder, track);
-          if (!isCollistion) {
+          const [isCollistion, magnet, magnetTo] = collisionCheckX(placeHolder, track);
+          if (!isCollistion || magnet) {
             let dom: HTMLElement | null = null;
-            let framestart = currentFrame;
             if (isCopySegment) {
-
               dom = await this.copySegment(segmentTrackId, framestart);
             } else {
               dom = segment;
@@ -267,7 +272,14 @@ export class Tracks {
               return
             }
             track.appendChild(dom);
-            
+            // 如果 x 轴磁吸，则需要根据磁吸的 segment 重新计算 framestart 与 segmentLeft 值
+            if(magnet && magnetTo){
+              const magnetToRect:DOMRect = magnetTo.getBoundingClientRect()
+              const x = (magnetToRect.left + magnetToRect.width) - (scrollContainerRect.left + scrollContainerScrollLeft);
+              framestart = this.getFramestartByX(x)
+              segmentLeft = this.getSegmentLeft(framestart);
+            }
+
             const frames = parseFloat(dom.dataset.frames ?? '30');
             dom.dataset.framestart = `${framestart}`;
             if(!dom.dataset.frameend){
@@ -283,6 +295,8 @@ export class Tracks {
             if(this.timeline){
               dom.style.width = `${this.timeline?.frameWidth * frames}px`;
             }
+          }else{
+
           }
         }
         track.classList.remove(this.dragoverClass);
