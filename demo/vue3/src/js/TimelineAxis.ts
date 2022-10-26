@@ -18,7 +18,7 @@ let a:number;
 export class TimelineAxis extends ZoomAxis{
   private fps = 0;
   private preTimestamp = 0;
-  private enterframeCallbackSet: Set<ENTER_FRAME_CALLBACK>|null = null;
+  private enterframeCallbackSet: Set<EventCallback>|null = null;
   private playStartCallbackSet: Set<EventCallback>|null = null;
   private playEndCallbackSet: Set<EventCallback>|null = null;
   private stopCallbackSet: Set<EventCallback>|null = null;
