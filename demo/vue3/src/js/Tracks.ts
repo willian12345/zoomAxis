@@ -245,6 +245,9 @@ export class Tracks {
       let segmentLeft = this.getSegmentLeft(framestart);
       // 判断所有轨道与鼠标当前Y轴距离
       tracks.forEach(async (track) => {
+        // 先清掉样式
+        track.classList.remove(this.dragoverClass);
+        track.classList.remove(this.dragoverErrorClass);
         // 如果足够近代表用户想拖到此轨道上
         if (isCloseEnouphToY(track, e.clientY)) {
           
@@ -299,8 +302,6 @@ export class Tracks {
 
           }
         }
-        track.classList.remove(this.dragoverClass);
-        track.classList.remove(this.dragoverErrorClass);
       });
       // todo?? 如果没有跨轨道拖动成功，则 x 轴移动
       setTimeout(() => {
