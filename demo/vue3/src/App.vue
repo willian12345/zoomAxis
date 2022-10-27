@@ -3,14 +3,10 @@ import { onMounted, ref, Ref } from "vue";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "./js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
 import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "./js/cursorPointer";
-import {
-  TRACKS_EVENT_CALLBACK_TYPES,
-  DropableArgs,
-} from "./js/trackType";
-import { findEndestSegment } from './js/trackUtils'
-import { SegmentTracks } from './js/SegmentTracks'
-import { SegmentTracksOut } from './js/SegmentTracksOut'
-
+import { TRACKS_EVENT_CALLBACK_TYPES, DropableArgs } from "./js/trackType";
+import { findEndestSegment } from "./js/trackUtils";
+import { SegmentTracks } from "./js/SegmentTracks";
+import { SegmentTracksOut } from "./js/SegmentTracksOut";
 
 let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;
@@ -35,17 +31,17 @@ const handleScroll = (e: UIEvent) => {
 let zoomRatio = 1;
 
 const zoomIn = () => {
-  zoomRatio += .1
-}
+  zoomRatio += 0.1;
+};
 const zoomOut = () => {
-  zoomRatio -= .1
-}
+  zoomRatio -= 0.1;
+};
 // 滚轮缩放
 const handleWheel = (e: WheelEvent) => {
   e.preventDefault();
   e.deltaY > 0 ? zoomOut() : zoomIn();
-  if(zoomRatio < 0.2 || zoomRatio > 1.4){
-    return
+  if (zoomRatio < 0.2 || zoomRatio > 1.4) {
+    return;
   }
   // scrollContentWidth.value = scrollContentUnscaledWidth * zoomRatio;
   // 根据缩放比较，减小滚动宽度
@@ -53,19 +49,19 @@ const handleWheel = (e: WheelEvent) => {
     timeline.zoom(zoomRatio);
     segmentTracks?.scaleX(zoomRatio);
     // 根据帧数变更游标位置
-    if(trackCursor){
+    if (trackCursor) {
       trackCursor.sync();
     }
   }
 };
 
 const handlePlay = () => {
-  if(!timeline){
+  if (!timeline) {
     return;
   }
-  if(timeline.currentFrame === timeline.totalFrames){
+  if (timeline.currentFrame === timeline.totalFrames) {
     timeline.play(0);
-    return
+    return;
   }
   timeline?.play();
 };
@@ -73,18 +69,21 @@ const handlePlay = () => {
 // 增加轨道内容宽度
 const addTrackWidth = (trackCursor: CursorPointer) => {
   const [segment, right] = findEndestSegment();
-  if(!segment){
-    return
+  if (!segment) {
+    return;
   }
-  if(scrollContentWidth.value < right){
-    scrollContentWidth.value = right + 800
+  if (scrollContentWidth.value < right) {
+    scrollContentWidth.value = right + 800;
     trackCursor.refresh();
   }
-}
-
+};
 
 const initApp = () => {
-  if (!cursorRef.value?.$el || !scrollContentRef.value || !scrollContainerRef.value) {
+  if (
+    !cursorRef.value?.$el ||
+    !scrollContentRef.value ||
+    !scrollContainerRef.value
+  ) {
     return;
   }
   // 轨道，轨道容器，可拖入轨道列表
@@ -94,11 +93,11 @@ const initApp = () => {
   const segmentItemList: HTMLElement = segmentItemListRef.value;
 
   const cursor: HTMLElement = cursorRef.value.$el;
-  const scrollContainer: HTMLElement = scrollContainerRef.value
-  const scrollContent: HTMLElement = scrollContentRef.value
+  const scrollContainer: HTMLElement = scrollContainerRef.value;
+  const scrollContent: HTMLElement = scrollContentRef.value;
   stageWidth.value = scrollContainer.getBoundingClientRect().width;
-  scrollContentWidth.value = stageWidth.value
-  
+  scrollContentWidth.value = stageWidth.value;
+
   // 初始化时间轴
   timeline = new TimelineAxis({
     el: "canvasStage",
@@ -107,37 +106,51 @@ const initApp = () => {
     stageWidth: stageWidth.value,
   });
 
-  timeline.addEventListener(
-    TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME,
-    () => {
-      trackCursor.sync()
+  timeline.addEventListener(TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME, () => {
+    trackCursor.sync();
+  });
+  // 初始化游标
+  trackCursor = new CursorPointer(scrollContent, cursor, timeline);
+  trackCursor.addEventListener(
+    CURSOR_POINTER_EVENT_TYPE.CURSOR_UPDATE,
+    (currentFrame) => {
+      console.log(currentFrame);
+      timeline?.setCurrentFrame(currentFrame);
     }
   );
-  // 初始化游标
-  trackCursor = new CursorPointer(
-    scrollContent,
-    cursor,
-    timeline,
-  );
-  trackCursor.addEventListener(CURSOR_POINTER_EVENT_TYPE.CURSOR_UPDATE, (currentFrame) => {
-    console.log(currentFrame)
-    timeline?.setCurrentFrame(currentFrame)
-  })
-  
+
   // 初始化轨道
-  segmentTracks = new SegmentTracks({trackCursor, scrollContainer, timeline})
+  segmentTracks = new SegmentTracks({ trackCursor, scrollContainer, timeline });
   segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
     addTrackWidth(trackCursor);
-  })
-  
-  
+  });
+
   // 初始化轨道外可拖 segment 片断
-  segmentTracksOut = new SegmentTracksOut({trackCursor, scrollContainer, segmentDelegete: segmentItemList, timeline});
-  segmentTracksOut.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
-    setTimeout(() => {
-      addTrackWidth(trackCursor);  
-    }, 0);
-  })
+  segmentTracksOut = new SegmentTracksOut({
+    trackCursor,
+    scrollContainer,
+    segmentDelegete: segmentItemList,
+    timeline,
+    ondrop: (framestart: number, segment:HTMLElement, track: HTMLElement) => {
+      // const segments = Array.from(track.querySelectorAll('.segment')) as HTMLElement[]
+      // if(segments.length === 1){
+      //   segment.style.width = "100%";
+      //   segment.style.left = '0';
+      // }else{
+
+      // }
+      
+      // console.log(framestart, track, segment, 44444);
+    }
+  });
+  segmentTracksOut.addEventListener(
+    TRACKS_EVENT_CALLBACK_TYPES.DRAG_END,
+    () => {
+      setTimeout(() => {
+        addTrackWidth(trackCursor);
+      }, 0);
+    }
+  );
 };
 
 onMounted(() => {
@@ -172,7 +185,11 @@ onMounted(() => {
           :style="{ width: `${scrollContentWidth}px` }"
         >
           <!-- :style="{ width: `${stageWidth}px` }" -->
-          <div class="track-list" ref="trackListRef" :style="{ width: `${scrollContentWidth}px` }">
+          <div
+            class="track-list"
+            ref="trackListRef"
+            :style="{ width: `${scrollContentWidth}px` }"
+          >
             <div class="track">
               <div class="track-placeholder">
                 <!-- <div class="segment-placeholder"></div> -->
@@ -198,12 +215,9 @@ onMounted(() => {
             </div>
             <div class="track">
               <div class="track-placeholder"></div>
-              <!-- <div
-                class="segment segment-action"
-                data-width="80"
-                data-left="0"
-                :style="{ width: `80px`, left: '0px' }"
-              ></div> -->
+            </div>
+            <div class="track track-stretch">
+              <div class="track-placeholder"></div>
             </div>
           </div>
         </div>
@@ -329,7 +343,7 @@ onMounted(() => {
     background-color: #c66136;
   }
 
-  .actived.segment{
+  .actived.segment {
     border: 1px solid white;
   }
 
@@ -365,7 +379,7 @@ onMounted(() => {
   background-color: #c66136;
   opacity: 0.8;
 }
-.segment-name{
+.segment-name {
   padding: 0 6px;
   font-size: 11px;
   color: white;
@@ -374,7 +388,7 @@ onMounted(() => {
   line-height: 24px;
   pointer-events: none;
 }
-.segment-handle{
+.segment-handle {
   position: absolute;
   width: 4px;
   height: 100%;
@@ -382,10 +396,10 @@ onMounted(() => {
   cursor: col-resize;
   background-color: rgba(255, 255, 255, 0);
 }
-.segment-handle-left{
+.segment-handle-left {
   left: 0;
 }
-.segment-handle-right{
+.segment-handle-right {
   right: 0;
 }
 </style>
