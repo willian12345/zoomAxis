@@ -1,12 +1,25 @@
 import { Tracks } from './Tracks'
 import {
   SegmentTracksOutArgs,
+  MouseHandle,
 } from './trackType';
-import { CursorPointer } from "./CursorPointer";
 // 轨道外 segment 拖拽
 export class SegmentTracksOut extends Tracks {
   private segmentDelegete: HTMLElement = document.body
-  private mousedownHandle: any
+  private mousedownHandle: MouseHandle = (e: MouseEvent) => {
+    e.preventDefault();
+    const target = e.target as HTMLElement;
+    if (!target) {
+      return;
+    }
+    if (!target.classList.contains("segment-item")) {
+      return;
+    }
+    const segment = target;
+    if(this.trackCursor && this.scrollContainer){
+      this.dragStart(e, this.trackCursor, this.scrollContainer, segment, true);
+    }
+  }
   constructor({
     trackCursor,
     scrollContainer,
@@ -21,20 +34,6 @@ export class SegmentTracksOut extends Tracks {
     this.dropableCheck = dropableCheck;
     if(segmentDelegete){
       this.segmentDelegete = segmentDelegete;
-    }
-    this.mousedownHandle = (e: MouseEvent) => {
-      e.preventDefault();
-      const target = e.target as HTMLElement;
-      if (!target) {
-        return;
-      }
-      if (!target.classList.contains("segment-item")) {
-        return;
-      }
-      const segment = target;
-      if(this.trackCursor && this.scrollContainer){
-        this.dragStart(e, this.trackCursor, this.scrollContainer, segment, true);
-      }
     }
     // 代理 segment 鼠标事件
     this.segmentDelegete.addEventListener("mousedown", this.mousedownHandle);

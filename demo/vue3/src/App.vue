@@ -212,7 +212,6 @@ onMounted(() => {
     </div>
     <div style="display: flex; gap: 10px">
       <button @click="handlePlay">play</button>
-      <button @click="findEndestSegment">最右侧片断</button>
     </div>
   </div>
 </template>

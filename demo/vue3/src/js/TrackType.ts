@@ -54,3 +54,7 @@ export interface SegmentTracksOutArgs extends SegmentTracksArgs {
   segmentDelegete: HTMLElement
   dropableCheck?: DropableCheck
 }
+
+export interface MouseHandle {
+  (e: MouseEvent):void
+}
