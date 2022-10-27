@@ -140,8 +140,9 @@ export const trackCollisionCheckY = (
   mouseY: number,
   dragoverClass: string,
   dragoverErrorClass: string,
-) => {
+): [boolean, HTMLElement|null] => {
   let collision = false;
+  let collisionTrack: HTMLElement|null = null;
   tracks.forEach((track) => {
     // 离轨道足够近
     const placeHolder = getSegmentPlaceholder(track);
@@ -173,13 +174,14 @@ export const trackCollisionCheckY = (
         placeHolder.style.opacity = "1";
       }
       collision = true;
+      collisionTrack = track
     } else {
       if (placeHolder) {
         placeHolder.style.opacity = "0";
       }
     }
   });
-  return collision;
+  return [collision, collisionTrack];
 };
 
 // 最右侧 segment 片断

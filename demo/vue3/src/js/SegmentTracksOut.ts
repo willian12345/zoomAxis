@@ -1,11 +1,38 @@
-import { Tracks } from './Tracks'
+import { Tracks } from "./Tracks";
+import { SegmentTracksOutArgs, MouseHandle, DragingArgs, DropArgs } from "./trackType";
 import {
-  SegmentTracksOutArgs,
-  MouseHandle,
-} from './trackType';
+  trackCollisionCheckY,
+} from "./trackUtils";
 // 轨道外 segment 拖拽
 export class SegmentTracksOut extends Tracks {
-  private segmentDelegete: HTMLElement = document.body
+  private segmentDelegete: HTMLElement = document.body;
+  constructor({
+    trackCursor,
+    scrollContainer,
+    segmentDelegete,
+    timeline,
+    dropableCheck,
+    ondragover,
+    ondrop,
+  }: SegmentTracksOutArgs) {
+    if (!scrollContainer || !timeline) {
+      return;
+    }
+    super({
+      trackCursor,
+      scrollContainer,
+      timeline,
+      dropableCheck,
+      ondragover,
+      ondrop,
+    });
+    this.dropableCheck = dropableCheck;
+    if (segmentDelegete) {
+      this.segmentDelegete = segmentDelegete;
+    }
+    // 代理 segment 鼠标事件
+    this.segmentDelegete.addEventListener("mousedown", this.mousedownHandle);
+  }
   private mousedownHandle: MouseHandle = (e: MouseEvent) => {
     e.preventDefault();
     const target = e.target as HTMLElement;
@@ -16,31 +43,12 @@ export class SegmentTracksOut extends Tracks {
       return;
     }
     const segment = target;
-    if(this.trackCursor && this.scrollContainer){
+    if (this.trackCursor && this.scrollContainer) {
       this.dragStart(e, this.trackCursor, this.scrollContainer, segment, true);
     }
   }
-  constructor({
-    trackCursor,
-    scrollContainer,
-    segmentDelegete,
-    timeline,
-    dropableCheck,
-  }: SegmentTracksOutArgs) {
-    if (!scrollContainer || !timeline) {
-      return;
-    }
-    super({trackCursor, scrollContainer, timeline, dropableCheck});
-    this.dropableCheck = dropableCheck;
-    if(segmentDelegete){
-      this.segmentDelegete = segmentDelegete;
-    }
-    // 代理 segment 鼠标事件
-    this.segmentDelegete.addEventListener("mousedown", this.mousedownHandle);
-  }
-  
-  destroy(){
-    super.destroy()
+  destroy() {
+    super.destroy();
     this.segmentDelegete.removeEventListener("mousedown", this.mousedownHandle);
   }
 }
