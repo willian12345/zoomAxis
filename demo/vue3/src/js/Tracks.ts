@@ -197,36 +197,38 @@ export class Tracks{
   }
 
   private sliceSegments(track: HTMLElement, currentSegmentId: string, framestart: number, frameend: number){
+    console.log(currentSegmentId)
+    
     const frameWidth = this.timeline?.frameWidth ?? 0;
     // 过滤出重叠的 segment (在可伸展轨道)
-    const segments = Array.from<HTMLElement>(track.querySelectorAll('.segment'))
-    .filter((segment: HTMLElement) => {
+    let segments = Array.from<HTMLElement>(track.querySelectorAll('.segment'))
+    // 如果只有刚拖入的 segment 则不需要客外处理
+    if(segments.length === 1){
+      return
+    }
+    segments = segments.filter((segment: HTMLElement) => {
       const segmentFramestart = getDatasetNumberByKey(segment, 'framestart');
       const segmentFrameend = getDatasetNumberByKey(segment, 'frameend');
       // 碰撞检测（通过计算开始帧与结束帧）且不是自身
-      if(framestart < segmentFrameend && frameend > segmentFramestart && segment.dataset.segmentId !== currentSegmentId){
+      if((framestart < segmentFrameend && frameend > segmentFramestart) && segment.dataset.segmentId !== currentSegmentId){
         return true
       }
       return false
     });
     console.log(segments)
-    if(segments.length === 1){
-      return
-    }
     for(let i=0,j=segments.length; i<j;i++){
       const segment: HTMLElement = segments[i];
       let sFramestart = parseFloat(segment.dataset.framestart ?? '0');
       let sFrameend = parseFloat(segment.dataset.frameend ?? '0');
       // 将结束帧移动至 framestart 开始帧
       if(sFrameend > framestart && sFramestart < framestart){
-        sFrameend = framestart;
-        segment.dataset.frameend  = `${sFrameend}`;
+        sFrameend = framestart
+        segment.dataset.frameend  = `${framestart}`;
+      }else if(sFramestart < frameend && sFrameend > framestart){
+        sFramestart = frameend
+        segment.dataset.framestart  = `${frameend}`;
       }
-      if(sFramestart < frameend && sFrameend > framestart){
-        sFramestart = frameend;
-        segment.dataset.framestart  = `${sFramestart}`;
-      }
-
+      console.log(segment)
       segment.style.left =  `${this.getSegmentLeft(sFramestart)}px`;
       segment.style.width = `${frameWidth * (sFrameend - sFramestart)}px`;
     }
@@ -236,8 +238,9 @@ export class Tracks{
     const frames = parseFloat(segment.dataset.frames ?? "30");
     const segmentId = segment.dataset.segmentId ?? '';
     segment.dataset.framestart = `${framestart}`;
-    let frameend = framestart + 30; // 默认
+    let frameend = 0; // 默认
     if (!segment.dataset.frameend) {
+      frameend = framestart + 30
       segment.dataset.frameend = `${frameend}`;
     } else {
       frameend = framestart + frames; // 默认
