@@ -161,15 +161,17 @@ onMounted(() => {
 <template>
   <div class="wrapper">
     <div class="segment-list" ref="segmentItemListRef">
-      <div class="segment-item"></div>
-      <div class="segment-item"></div>
-      <div class="segment-item"></div>
-      <div class="segment-item"></div>
-      <div class="segment-item segment-stretch"></div>
+      <div class="segment-item">拖我</div>
+      <div class="segment-item">拖我</div>
+      <div class="segment-item">拖我</div>
+      <div class="segment-item">拖我</div>
+      <div class="segment-item">拖我</div>
     </div>
     <div class="timeline-container" @wheel.ctrl="handleWheel">
       <div class="track-operation">
-        <div class="track-operation-item"></div>
+        <div class="track-operation-item">普通轨道</div>
+        <div class="track-operation-item">普通轨道</div>
+        <div class="track-operation-item">伸缩轨道</div>
       </div>
       <div
         class="webkit-scrollbar scroll-container"
@@ -255,6 +257,7 @@ onMounted(() => {
   margin: 180px 40px;
   width: 100vh;
   height: 180px;
+  background-color: #0f0c0c;
 }
 
 .timeline-markers {
@@ -289,10 +292,16 @@ onMounted(() => {
 .track-operation {
   padding-top: @markHeight;
   flex-basis: 120px;
-
+  border-right: 1px solid black;
+  background-color: rgba(white, .01);
   .track-operation-item {
+    margin-bottom: 2px;
+    padding-left: 6px;
+    font-size: 12px;
+    height: @trackHeight;
+    line-height: @trackHeight;
+    color: rgba(255, 255, 255, .5);
     background-color: rgba(white, 0.05);
-    height: @markHeight;
   }
 }
 
@@ -366,10 +375,15 @@ onMounted(() => {
   gap: 20px;
 
   .segment-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 80px;
     height: 80px;
     border-radius: 4px;
+    color: green;
     background-color: bisque;
+    cursor: move;
   }
 }
 
