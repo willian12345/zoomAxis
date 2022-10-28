@@ -2,6 +2,7 @@
 import { SegmentType } from './TrackType'
 const CLOSE_ENOUPH_DISTANCE_Y = 10; // 距离 y 是否够近
 const CLOSE_ENOUPH_SEGMENT_X = 60; // 距离 segment x是否够近
+let segmentUUID = 1
 export const createSegmentName = (text: string) => {
   const dom = document.createElement("div");
   dom.className = "segment-name";
@@ -19,6 +20,7 @@ export const createSegment = (type: SegmentType) => {
   dom.style.width = "80px";
   dom.style.height = "24px";
   dom.style.left = "0";
+  dom.dataset.segmentId = `${++segmentUUID}`;
   const handleLeftDom = createDivDom('segment-handle segment-handle-left');
   const handleRightDom = createDivDom('segment-handle segment-handle-right');
   dom.prepend(handleLeftDom);
@@ -204,4 +206,8 @@ export const findEndestSegment = function (container: HTMLElement = document.bod
 // 找到某条轨道最右侧的片断
 export const findEndestSegmentOnTrack =  (track: HTMLElement) => {
   return findEndestSegment(track)
+}
+// 获取 dom dataset 数值
+export const getDatasetNumberByKey = (dom: HTMLElement, datasetKey: string):number => {
+  return parseFloat(dom.dataset[datasetKey] ?? '0')
 }

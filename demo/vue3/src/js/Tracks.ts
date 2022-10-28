@@ -23,6 +23,7 @@ import {
   isCloseEnouphToY,
   getSegmentPlaceholder,
   isContainSplitFromComma,
+  getDatasetNumberByKey,
 } from "./trackUtils";
 // 轨道
 export class Tracks{
@@ -175,13 +176,81 @@ export class Tracks{
     }
     return currentFrame;
   }
-  private getSegmentLeft = (framestart: number): number => {
+  private getSegmentLeft(framestart: number): number{
     const frameWidth = this.timeline?.frameWidth ?? 0;
     return framestart * frameWidth;
   }
-  protected isStretchTrack = (track: HTMLElement) => {
+  protected isStretchTrack(track: HTMLElement){
     const isStretchTrack = track.classList.contains("track-stretch");
     return isStretchTrack;
+  }
+  protected isStretchSegment(segment: HTMLElement){
+    return segment.classList.contains("segment-stretch");
+  }
+  private async getSegment(copy: boolean, segment:HTMLElement, segmentTrackId: string, framestart: number): Promise<HTMLElement|null>{
+    if (copy) {
+      return await this.copySegment(segmentTrackId, framestart);
+    } else {
+      return segment;
+    }
+    
+  }
+
+  private sliceSegments(track: HTMLElement, currentSegmentId: string, framestart: number, frameend: number){
+    const frameWidth = this.timeline?.frameWidth ?? 0;
+    // 过滤出重叠的 segment (在可伸展轨道)
+    const segments = Array.from<HTMLElement>(track.querySelectorAll('.segment'))
+    .filter((segment: HTMLElement) => {
+      const segmentFramestart = getDatasetNumberByKey(segment, 'framestart');
+      const segmentFrameend = getDatasetNumberByKey(segment, 'frameend');
+      // 碰撞检测（通过计算开始帧与结束帧）且不是自身
+      if(framestart < segmentFrameend && frameend > segmentFramestart && segment.dataset.segmentId !== currentSegmentId){
+        return true
+      }
+      return false
+    });
+    console.log(segments)
+    if(segments.length === 1){
+      return
+    }
+    for(let i=0,j=segments.length; i<j;i++){
+      const segment: HTMLElement = segments[i];
+      let sFramestart = parseFloat(segment.dataset.framestart ?? '0');
+      let sFrameend = parseFloat(segment.dataset.frameend ?? '0');
+      // 将结束帧移动至 framestart 开始帧
+      if(sFrameend > framestart && sFramestart < framestart){
+        sFrameend = framestart;
+        segment.dataset.frameend  = `${sFrameend}`;
+      }
+      if(sFramestart < frameend && sFrameend > framestart){
+        sFramestart = frameend;
+        segment.dataset.framestart  = `${sFramestart}`;
+      }
+
+      segment.style.left =  `${this.getSegmentLeft(sFramestart)}px`;
+      segment.style.width = `${frameWidth * (sFrameend - sFramestart)}px`;
+    }
+  }
+  private dropToStretchTrack(track: HTMLElement, segment: HTMLElement, framestart: number){
+    track.appendChild(segment);
+    const frames = parseFloat(segment.dataset.frames ?? "30");
+    const segmentId = segment.dataset.segmentId ?? '';
+    segment.dataset.framestart = `${framestart}`;
+    let frameend = framestart + 30; // 默认
+    if (!segment.dataset.frameend) {
+      segment.dataset.frameend = `${frameend}`;
+    } else {
+      frameend = framestart + frames; // 默认
+      segment.dataset.frameend = `${frameend}`;
+    }
+
+    segment.dataset.trackId = segment.dataset.segmentTrackId;
+    const segmentLeft = this.getSegmentLeft(framestart);
+    segment.style.left = `${segmentLeft}px`;
+    if (this.timeline) {
+      segment.style.width = `${this.timeline?.frameWidth * frames}px`;
+    }
+    this.sliceSegments(track, segmentId, framestart, frameend);
   }
   draging({
     e, scrollContainerX, segment, segmentRect, dragTrackContainerRect, tracks, isCopySegment, dragTrackContainer
@@ -202,8 +271,9 @@ export class Tracks{
         dragTrackContainer.style.left = `${e.clientX}px`;
         dragTrackContainer.style.top = `${e.clientY - 14}px`;
         dragTrackContainer.style.height = "24px";
+        // todo
         if (collisionTrack) {
-          this.isStretchTrack(collisionTrack);
+          const s = this.isStretchTrack(collisionTrack);
         }
       } else {
         dragTrackContainer.style.height = `${segmentRect.height}px`;
@@ -219,7 +289,7 @@ export class Tracks{
     if (!placeHolder) {
       return;
     }
-    placeHolder.style.opacity = "0";
+    let dom: HTMLElement | null = null;
     // 轨道 id
     const trackId = track.dataset.trackId ?? "";
     const segmentTrackId = segment.dataset.trackId ?? "";
@@ -231,16 +301,21 @@ export class Tracks{
       placeHolder,
       track
     );
-    if ((!isCollistion || magnet) || this.isStretchTrack(track)) {
-      let dom: HTMLElement | null = null;
-      if (isCopySegment) {
-        dom = await this.copySegment(segmentTrackId, framestart);
-      } else {
-        dom = segment;
-      }
-      if (!dom) {
-        return;
-      }
+
+    dom = await this.getSegment(isCopySegment, segment, segmentTrackId, framestart)
+    if(!dom){
+      return
+    }
+    const stretchTrack =  this.isStretchTrack(track);
+    // 如果是伸展轨道
+    if(stretchTrack){
+      this.dropToStretchTrack(track, dom, framestart);
+      return;
+    }
+    placeHolder.style.opacity = "0";
+    // 普通轨道
+    if (!isCollistion || magnet) {
+      
       track.appendChild(dom);
       // 如果 x 轴磁吸，则需要根据磁吸的 segment 重新计算 framestart 与 segmentLeft 值
       if (magnet && magnetTo) {

@@ -165,7 +165,7 @@ onMounted(() => {
       <div class="segment-item"></div>
       <div class="segment-item"></div>
       <div class="segment-item"></div>
-      <div class="segment-item"></div>
+      <div class="segment-item segment-stretch"></div>
     </div>
     <div class="timeline-container" @wheel.ctrl="handleWheel">
       <div class="track-operation">
