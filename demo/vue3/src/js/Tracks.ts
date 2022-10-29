@@ -93,14 +93,14 @@ export class Tracks{
     if (event.key !== "Delete") {
       return;
     }
-    this.deleteCurrentActiveSegment();
+    this.deleteActivedSegment();
   }
   removeSegmentActivedStatus() {
     this.scrollContainer?.querySelectorAll(".segment").forEach((segment) => {
       segment.classList.remove("actived");
     });
   }
-  async deleteCurrentActiveSegment() {
+  async deleteActivedSegment() {
     const activedSegment: HTMLElement = this.scrollContainer?.querySelector(
       ".segment.actived"
     ) as HTMLElement;
@@ -120,6 +120,7 @@ export class Tracks{
       }
     }
     activedSegment.parentElement?.removeChild(activedSegment);
+    // todo 如果是可伸缩轨道删除，则需要重新伸缩其它segment填满轨道
   }
   destroy() {
     document.body.removeEventListener(
@@ -195,11 +196,8 @@ export class Tracks{
     }
     
   }
-
   private sliceSegments(track: HTMLElement, currentSegmentId: string, framestart: number, frameend: number){
     console.log(currentSegmentId)
-    
-    const frameWidth = this.timeline?.frameWidth ?? 0;
     // 过滤出重叠的 segment (在可伸展轨道)
     let segments = Array.from<HTMLElement>(track.querySelectorAll('.segment'))
     // 如果只有刚拖入的 segment 则不需要客外处理
@@ -215,6 +213,7 @@ export class Tracks{
       }
       return false
     });
+
     console.log(segments)
     for(let i=0,j=segments.length; i<j;i++){
       const segment: HTMLElement = segments[i];
@@ -228,31 +227,39 @@ export class Tracks{
         sFramestart = frameend
         segment.dataset.framestart  = `${frameend}`;
       }
-      console.log(segment)
-      segment.style.left =  `${this.getSegmentLeft(sFramestart)}px`;
-      segment.style.width = `${frameWidth * (sFrameend - sFramestart)}px`;
+      // 如果开始与结束帧相等，说明被完全覆盖需要删除此segment 
+      if(sFramestart === sFrameend){
+        // delete segment 
+        // todo 需要触发删除回调
+        segment.parentNode?.removeChild(segment);
+      }
+      
+      this.setSegmentPosition(segment, sFramestart, sFrameend)
+    }
+  }
+  private setSegmentPosition(segment: HTMLElement, framestart:number, frameend: number){
+    const segmentLeft = this.getSegmentLeft(framestart);
+    segment.style.left = `${segmentLeft}px`;
+    const frames = frameend - framestart
+    if (this.timeline) {
+      segment.style.width = `${this.timeline?.frameWidth * frames}px`;
     }
   }
   private dropToStretchTrack(track: HTMLElement, segment: HTMLElement, framestart: number){
     track.appendChild(segment);
-    const frames = parseFloat(segment.dataset.frames ?? "30");
-    const segmentId = segment.dataset.segmentId ?? '';
-    segment.dataset.framestart = `${framestart}`;
-    let frameend = 0; // 默认
-    if (!segment.dataset.frameend) {
-      frameend = framestart + 30
-      segment.dataset.frameend = `${frameend}`;
-    } else {
-      frameend = framestart + frames; // 默认
-      segment.dataset.frameend = `${frameend}`;
+    const totalFrames = this.timeline?.totalFrames ?? 0
+    let frameend = totalFrames
+    // 如果轨道内只有一个 segment 则铺满整个轨道
+    if(track.querySelectorAll('.segment').length === 1){
+      framestart = 0
     }
-
+    segment.dataset.framestart = String(framestart)
+    segment.dataset.frameend = String(frameend)
     segment.dataset.trackId = segment.dataset.segmentTrackId;
-    const segmentLeft = this.getSegmentLeft(framestart);
-    segment.style.left = `${segmentLeft}px`;
-    if (this.timeline) {
-      segment.style.width = `${this.timeline?.frameWidth * frames}px`;
-    }
+    
+    this.setSegmentPosition(segment, framestart, frameend);
+    const segmentId = segment.dataset.segmentId ?? '';
+    
     this.sliceSegments(track, segmentId, framestart, frameend);
   }
   draging({
@@ -309,13 +316,16 @@ export class Tracks{
     if(!dom){
       return
     }
+    placeHolder.style.opacity = "0";
     const stretchTrack =  this.isStretchTrack(track);
+    
     // 如果是伸展轨道
     if(stretchTrack){
       this.dropToStretchTrack(track, dom, framestart);
+      console.log(this.timeline?.totalFrames)
       return;
     }
-    placeHolder.style.opacity = "0";
+    
     // 普通轨道
     if (!isCollistion || magnet) {
       

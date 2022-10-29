@@ -102,7 +102,7 @@ const initApp = () => {
   timeline = new TimelineAxis({
     el: "canvasStage",
     totalMarks: 500,
-    totalFrames: 30,
+    totalFrames: 320,
     stageWidth: stageWidth.value,
   });
 
@@ -131,21 +131,10 @@ const initApp = () => {
     scrollContainer,
     segmentDelegete: segmentItemList,
     timeline,
-    ondrop: (framestart: number, segment:HTMLElement, track: HTMLElement) => {
-      // const segments = Array.from(track.querySelectorAll('.segment')) as HTMLElement[]
-      // if(segments.length === 1){
-      //   segment.style.width = "100%";
-      //   segment.style.left = '0';
-      // }else{
-
-      // }
-      
-      // console.log(framestart, track, segment, 44444);
-    }
   });
   segmentTracksOut.addEventListener(
     TRACKS_EVENT_CALLBACK_TYPES.DRAG_END,
-    () => {
+    (a,b,c) => {
       setTimeout(() => {
         addTrackWidth(trackCursor);
       }, 0);

@@ -152,13 +152,10 @@ export const trackCollisionCheckY = (
       if (!placeHolder) {
         return;
       }
-      tracks.forEach((element: HTMLElement) => {
-        element.classList.remove(dragoverClass);
-        element.classList.remove(dragoverErrorClass);
-      });
       track.classList.add(dragoverClass);
       const trackId = track.dataset.trackId ?? '';
       const segmentTrackId = segment.dataset.trackId ?? '';
+      // todo 更改 ui 的逻辑需要抽离
       // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
       if(!isContainSplitFromComma(trackId, segmentTrackId)){
         track.classList.add(dragoverErrorClass);
@@ -181,6 +178,8 @@ export const trackCollisionCheckY = (
       if (placeHolder) {
         placeHolder.style.opacity = "0";
       }
+      track.classList.remove(dragoverClass);
+      track.classList.remove(dragoverErrorClass);
     }
   });
   return [collision, collisionTrack];
