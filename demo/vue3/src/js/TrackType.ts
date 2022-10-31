@@ -61,11 +61,8 @@ export interface DragingArgs {
   e: MouseEvent, 
   scrollContainerX: number, 
   segment: HTMLElement, 
-  segmentRect: DOMRect, 
   dragTrackContainerRect: DOMRect, 
-  tracks: HTMLElement[], 
-  isCopySegment: boolean, 
-  dragTrackContainer: HTMLElement
+  tracks: HTMLElement[],
 }
 export interface DropArgs {
   e: MouseEvent, 
