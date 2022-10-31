@@ -262,33 +262,78 @@ export class Tracks{
     
     this.sliceSegments(track, segmentId, framestart, frameend);
   }
-  draging({
-    e, scrollContainerX, segment, segmentRect, dragTrackContainerRect, tracks, isCopySegment, dragTrackContainer
-  }: DragingArgs){
-    
-    const [isCollisionY, collisionTrack] = trackCollisionCheckY(
-      segment,
-      dragTrackContainerRect,
-      tracks,
-      scrollContainerX,
-      e.clientY,
-      this.dragoverClass,
-      this.dragoverErrorClass
-    );
-    if (isCopySegment) {
-      // 如果是复制，则需要形变成标准轨道内 segment 形状
-      if (isCollisionY) {
-        dragTrackContainer.style.left = `${e.clientX}px`;
-        dragTrackContainer.style.top = `${e.clientY - 14}px`;
-        dragTrackContainer.style.height = "24px";
-        // todo
-        if (collisionTrack) {
-          const s = this.isStretchTrack(collisionTrack);
-        }
-      } else {
-        dragTrackContainer.style.height = `${segmentRect.height}px`;
+  // 伸缩轨道内拖动
+  collisionXstretch(currentSegment:HTMLElement, placeholder: HTMLElement, collisionTrack: HTMLElement){
+    const segments = Array.from(collisionTrack.querySelectorAll('.segment')) as HTMLElement[];
+    const placeholderRect: DOMRect = placeholder.getBoundingClientRect();
+    for (let segment of segments) {
+      const segmentRect = segment.getBoundingClientRect();
+      const segmentLeft = getLeftValue(segment);
+      const placeholderLeft = getLeftValue(placeholder);
+      if(placeholderLeft < (segmentLeft + (segmentRect.width * .5))){
+        const currentSegmentFramestart = getDatasetNumberByKey(currentSegment, 'framestart');
+        const currentSegmentFrameend = getDatasetNumberByKey(currentSegment, 'frameend');
+        const currentSegmentFrames = currentSegmentFrameend - currentSegmentFramestart;
+        const framestart = getDatasetNumberByKey(segment, 'framestart');
+        const frameend = getDatasetNumberByKey(segment, 'frameend');
+        const framestartMove = framestart + currentSegmentFrames;
+        const frameendMove = frameend + currentSegmentFrames;
+        this.setSegmentPosition(segment, framestartMove, frameendMove);
+
       }
     }
+  }
+  draging({
+    e, scrollContainerX, segment, dragTrackContainerRect, tracks
+  }: DragingArgs){
+    const [collisionY, collisionTrack] = trackCollisionCheckY(
+      tracks,
+      e.clientY,
+    );
+    if(collisionTrack){
+      // 离轨道足够近
+      let placeHolder = getSegmentPlaceholder(collisionTrack);
+      collisionTrack.classList.add(this.dragoverClass);
+      const trackId = collisionTrack.dataset.trackId ?? '';
+      const segmentTrackId = segment.dataset.trackId ?? '';
+      // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
+      if(!isContainSplitFromComma(trackId, segmentTrackId)){
+        collisionTrack.classList.add(this.dragoverErrorClass);
+      }
+      if(!placeHolder){
+        return
+      }
+      // 拖动时轨道内占位元素
+      placeHolder.style.width = `${dragTrackContainerRect.width}px`;
+      placeHolder.style.left = `${
+        dragTrackContainerRect.left + scrollContainerX
+      }px`;
+      const isStretchTrack = this.isStretchTrack(collisionTrack);
+      if (isStretchTrack) { 
+        this.collisionXstretch(segment, placeHolder, collisionTrack);
+      }else{
+        // 利用各轨道内的 placeholder 与 轨道内所有现有存 segment进行x轴碰撞检测
+        const [isCollistion] = collisionCheckX(placeHolder, collisionTrack);
+        // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
+        if (isCollistion) {
+          placeHolder.style.opacity = "0";
+        } else {
+          placeHolder.style.opacity = "1";
+        }
+      }
+    }else{
+      // 没发生碰撞则恢复所有默认状态
+      tracks.forEach( track => {
+        let placeHolder = getSegmentPlaceholder(track);
+        if (placeHolder) {
+          placeHolder.style.opacity = "0";
+        }
+        track.classList.remove(this.dragoverClass);
+        track.classList.remove(this.dragoverErrorClass);
+      })
+    }
+    
+    return collisionY
   }
   async drop({
     e, x, segment, track, tracks, isCopySegment
@@ -325,10 +370,8 @@ export class Tracks{
       console.log(this.timeline?.totalFrames)
       return;
     }
-    
     // 普通轨道
     if (!isCollistion || magnet) {
-      
       track.appendChild(dom);
       // 如果 x 轴磁吸，则需要根据磁吸的 segment 重新计算 framestart 与 segmentLeft 值
       if (magnet && magnetTo) {
@@ -411,7 +454,19 @@ export class Tracks{
       dragTrackContainer.style.left = `${left}px`;
       dragTrackContainer.style.top = `${top}px`;
       const scrollContainerX = scrollContainer.scrollLeft - scrollContainerRect.left;
-      this.draging({e, scrollContainerX, segment, segmentRect, dragTrackContainerRect, tracks, isCopySegment, dragTrackContainer});
+      const collisionY = this.draging({e, scrollContainerX, segment, dragTrackContainerRect, tracks});
+      // 拖动容器形变
+      if (isCopySegment) {
+        // 如果是复制，则需要形变成标准轨道内 segment 形状
+        if (collisionY) {
+          dragTrackContainer.style.left = `${e.clientX}px`;
+          dragTrackContainer.style.top = `${e.clientY - 14}px`;
+          dragTrackContainer.style.height = "24px";
+        } else {
+          dragTrackContainer.style.height = `${segmentRect.height}px`;
+        }
+      }
+      // 游标禁止交互
       trackCursor.enable = false;
       startX = e.clientX;
       startY = e.clientY;

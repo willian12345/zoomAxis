@@ -71,7 +71,7 @@ export const createSegmentPlaceHolder = () => {
 export const getSegmentPlaceholder = (track: HTMLElement) => {
   const trackPlaceholder: HTMLElement | null =
     track.querySelector(".track-placeholder");
-  let dom;
+  let dom = null;
   if (trackPlaceholder) {
     dom = trackPlaceholder.querySelector(".segment-placeholder") as HTMLElement;
     if (!dom) {
@@ -135,54 +135,18 @@ export const isContainSplitFromComma = (trackIds: string, trackId: string) => {
 
 // 轨道 y 轴 碰撞检测
 export const trackCollisionCheckY = (
-  segment: HTMLElement,
-  dragTrackContainerRect: DOMRect,
   tracks: HTMLElement[],
-  scrollContainerX: number,
   mouseY: number,
-  dragoverClass: string,
-  dragoverErrorClass: string,
 ): [boolean, HTMLElement|null] => {
-  let collision = false;
   let collisionTrack: HTMLElement|null = null;
+  let collisionY = false;
   tracks.forEach((track) => {
-    // 离轨道足够近
-    const placeHolder = getSegmentPlaceholder(track);
     if (isCloseEnouphToY(track, mouseY)) {
-      if (!placeHolder) {
-        return;
-      }
-      track.classList.add(dragoverClass);
-      const trackId = track.dataset.trackId ?? '';
-      const segmentTrackId = segment.dataset.trackId ?? '';
-      // todo 更改 ui 的逻辑需要抽离
-      // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
-      if(!isContainSplitFromComma(trackId, segmentTrackId)){
-        track.classList.add(dragoverErrorClass);
-      }
-      // 拖动时轨道内占位元素
-      placeHolder.style.width = `${dragTrackContainerRect.width}px`;
-      placeHolder.style.left = `${
-        dragTrackContainerRect.left + scrollContainerX
-      }px`;
-      const [isCollistion] = collisionCheckX(placeHolder, track);
-      // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
-      if (isCollistion) {
-        placeHolder.style.opacity = "0";
-      } else {
-        placeHolder.style.opacity = "1";
-      }
-      collision = true;
-      collisionTrack = track
-    } else {
-      if (placeHolder) {
-        placeHolder.style.opacity = "0";
-      }
-      track.classList.remove(dragoverClass);
-      track.classList.remove(dragoverErrorClass);
+      collisionTrack = track;
+      collisionY = true;
     }
   });
-  return [collision, collisionTrack];
+  return [collisionY, collisionTrack];
 };
 
 // 最右侧 segment 片断
