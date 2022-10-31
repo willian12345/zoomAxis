@@ -245,25 +245,32 @@ export class Tracks{
       segment.style.width = `${this.timeline?.frameWidth * frames}px`;
     }
   }
-  private dropToStretchTrack(track: HTMLElement, segment: HTMLElement, framestart: number){
-    track.appendChild(segment);
-    const totalFrames = this.timeline?.totalFrames ?? 0
-    let frameend = totalFrames
-    // 如果轨道内只有一个 segment 则铺满整个轨道
-    if(track.querySelectorAll('.segment').length === 1){
-      framestart = 0
+  private dropToStretchTrack(track: HTMLElement, currentSegment: HTMLElement, framestart: number, isCopySegment: boolean){
+    if(isCopySegment){
+      track.appendChild(currentSegment);
+      const totalFrames = this.timeline?.totalFrames ?? 0
+      let frameend = totalFrames
+      // 如果轨道内只有一个 segment 则铺满整个轨道
+      if(track.querySelectorAll('.segment').length === 1){
+        framestart = 0
+      }
+      currentSegment.dataset.framestart = String(framestart)
+      currentSegment.dataset.frameend = String(frameend)
+      currentSegment.dataset.trackId = currentSegment.dataset.segmentTrackId;
+      
+      this.setSegmentPosition(currentSegment, framestart, frameend);
+      const segmentId = currentSegment.dataset.segmentId ?? '';
+      this.sliceSegments(track, segmentId, framestart, frameend);
+    }else{
+      const placeHolder = getSegmentPlaceholder(track)
+      if(placeHolder){
+        this.collisionXstretch(currentSegment, placeHolder, track, true);
+
+      }
     }
-    segment.dataset.framestart = String(framestart)
-    segment.dataset.frameend = String(frameend)
-    segment.dataset.trackId = segment.dataset.segmentTrackId;
-    
-    this.setSegmentPosition(segment, framestart, frameend);
-    const segmentId = segment.dataset.segmentId ?? '';
-    
-    this.sliceSegments(track, segmentId, framestart, frameend);
   }
   // 伸缩轨道内拖动
-  collisionXstretch(currentSegment:HTMLElement, placeholder: HTMLElement, collisionTrack: HTMLElement){
+  collisionXstretch(currentSegment:HTMLElement, placeholder: HTMLElement, collisionTrack: HTMLElement, isdrop?:boolean){
     const segments = Array.from(collisionTrack.querySelectorAll('.segment')) as HTMLElement[];
     const placeholderRect: DOMRect = placeholder.getBoundingClientRect();
     for (let segment of segments) {
@@ -278,8 +285,13 @@ export class Tracks{
         const frameend = getDatasetNumberByKey(segment, 'frameend');
         const framestartMove = framestart + currentSegmentFrames;
         const frameendMove = frameend + currentSegmentFrames;
+        if(isdrop){
+          segment.dataset.framestart = `${framestartMove}`;
+          segment.dataset.frameend = `${frameendMove}`;
+        }
         this.setSegmentPosition(segment, framestartMove, frameendMove);
-
+      }else{
+        console.log(segment)
       }
     }
   }
@@ -366,7 +378,7 @@ export class Tracks{
     
     // 如果是伸展轨道
     if(stretchTrack){
-      this.dropToStretchTrack(track, dom, framestart);
+      this.dropToStretchTrack(track, dom, framestart, isCopySegment);
       console.log(this.timeline?.totalFrames)
       return;
     }
