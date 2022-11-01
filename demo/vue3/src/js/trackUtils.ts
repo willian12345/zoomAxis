@@ -14,6 +14,7 @@ const createDivDom = (className: string) => {
   dom.className = className;
   return dom;
 }
+
 export const createSegment = (type: SegmentType) => {
   const dom = document.createElement("div");
   dom.className = "segment segment-action";
