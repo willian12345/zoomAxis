@@ -36,23 +36,25 @@ const zoomIn = () => {
 const zoomOut = () => {
   zoomRatio -= 0.1;
 };
-// 滚轮缩放
-const handleWheel = (e: WheelEvent) => {
-  e.preventDefault();
-  e.deltaY > 0 ? zoomOut() : zoomIn();
-  if (zoomRatio < 0.2 || zoomRatio > 1.4) {
-    return;
-  }
-  // scrollContentWidth.value = scrollContentUnscaledWidth * zoomRatio;
+const syncByZoom = (zoom: number) => {
   // 根据缩放比较，减小滚动宽度
-  if (timeline?.zoomRatio) {
-    timeline.zoom(zoomRatio);
-    segmentTracks?.scaleX(zoomRatio);
+  if (zoom) {
+    timeline?.zoom(zoom);
+    segmentTracks?.scaleX(zoom);
     // 根据帧数变更游标位置
     if (trackCursor) {
       trackCursor.sync();
     }
   }
+}
+// 滚轮缩放
+const handleWheel = (e: WheelEvent) => {
+  e.preventDefault();
+  e.deltaY > 0 ? zoomOut() : zoomIn();
+  if (zoomRatio <= 0.1 || zoomRatio >= 1.4) {
+    return;
+  }
+  syncByZoom(zoomRatio)
 };
 
 const handlePlay = () => {
