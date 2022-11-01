@@ -102,7 +102,7 @@ const initApp = () => {
   timeline = new TimelineAxis({
     el: "canvasStage",
     totalMarks: 500,
-    totalFrames: 320,
+    totalFrames: 1220,
     stageWidth: stageWidth.value,
   });
 

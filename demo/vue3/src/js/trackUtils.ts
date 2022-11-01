@@ -21,6 +21,7 @@ export const createSegment = (type: SegmentType) => {
   dom.style.height = "24px";
   dom.style.left = "0";
   dom.dataset.segmentId = `${++segmentUUID}`;
+  dom.dataset.trackId = '';
   const handleLeftDom = createDivDom('segment-handle segment-handle-left');
   const handleRightDom = createDivDom('segment-handle segment-handle-right');
   dom.prepend(handleLeftDom);
