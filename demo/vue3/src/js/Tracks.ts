@@ -302,7 +302,7 @@ export class Tracks{
       const segmentX = getLeftValue(segment);
       return placeholderLeft > (segmentX + segment.getBoundingClientRect().width * .5)
     })
-    console.log(onLeftSegments, '----', onRightSegments, [currentSegmentFramestart, currentSegmentFrameend])
+    console.log(onLeftSegments, '----', onRightSegments, [currentSegmentFramestart, currentSegmentFrameend, currentSegmentFrames])
     for (let segment of onRightSegments) {
 
       const segmentX = getLeftValue(segment);
@@ -322,12 +322,12 @@ export class Tracks{
     }
     let prevstart = 0
     for (let segment of onLeftSegments) {
-      const segmentX = getLeftValue(segment);
       const framestart = getDatasetNumberByKey(segment, 'framestart');
       const frameend = getDatasetNumberByKey(segment, 'frameend');
       console.log([framestart, frameend])
       if(framestart >= currentSegmentFrameend){
-        const framestartMove = framestart - currentSegmentFrames + prevstart;
+        const framestartMove = framestart - currentSegmentFrames;
+        console.log(framestartMove, 1111111)
         const frameendMove = frameend - currentSegmentFrames;
         this.setSegmentPosition(segment, framestartMove, frameendMove);
         segment.dataset.framestart = `${framestartMove}`;
