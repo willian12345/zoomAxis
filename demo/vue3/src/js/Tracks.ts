@@ -11,7 +11,7 @@ import {
 
 import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
-import { templateSettings, throttle } from "lodash-es"; 
+import { throttle } from "lodash-es"; 
 
 import {
   createSegmentName,
@@ -38,6 +38,9 @@ export class Tracks{
   deleteableCheck?: DeleteableCheck
   ondragover:any = null
   ondrop:any = null
+  framestart = 0
+  frameend = 0
+  frames = 0
   constructor({
     trackCursor,
     scrollContainer,
@@ -141,7 +144,7 @@ export class Tracks{
       if (!placeHolder) {
         return;
       }
-      placeHolder.style.opacity = "0";
+      placeHolder.style.opacity = '0';
       const [isCollistion] = collisionCheckX(placeHolder, originTrack);
       if (!isCollistion) {
         segment.style.left = `${segmentLeft}px`;
@@ -247,7 +250,6 @@ export class Tracks{
     segment.style.left = `${segmentLeft}px`;
     const frames = frameend - framestart
     if (this.timeline) {
-      console.log(this.timeline.frameWidth, 'framewidth--------------')
       segment.style.width = `${this.timeline?.frameWidth * frames}px`;
     }
   }
@@ -270,97 +272,72 @@ export class Tracks{
     }else{
       const placeHolder = getSegmentPlaceholder(track)
       if(placeHolder){
-        this.collisionXstretch(0, currentSegment, placeHolder, track, true);
+        this.collisionXstretch(isCopySegment, currentSegment, placeHolder, track, true);
       }
     }
   }
   // 伸缩轨道内拖动
-  collisionXstretch(movedX: number, currentSegment:HTMLElement, placeholder: HTMLElement, collisionTrack: HTMLElement, isdrop?:boolean){
-    if(movedX === 0){
+  
+  collisionXstretch(isCopySegment: boolean, currentSegment:HTMLElement, placeholder: HTMLElement, collisionTrack: HTMLElement, isdrop?:boolean){
+    if(isCopySegment){
       return;
     }
     let segments = Array.from(collisionTrack.querySelectorAll('.segment')) as HTMLElement[];
-    let currentSegmentFramestart = getDatasetNumberByKey(currentSegment, 'framestart');
-    let currentSegmentFrameend = getDatasetNumberByKey(currentSegment, 'frameend');
+    // let currentSegmentFramestart = getDatasetNumberByKey(currentSegment, 'framestart');
+    // let currentSegmentFrameend = getDatasetNumberByKey(currentSegment, 'frameend');
     const placeholderLeft = getLeftValue(placeholder);
-    // console.log(placeholderLeft)
+    // const placeholderRect: DOMRect = placeholder.getBoundingClientRect();
+    // const currentSegmentFrames = currentSegmentFrameend - currentSegmentFramestart;
     // const onRightSegments = segments.filter( (segment) => {
-    //   const segmentFramestart = getDatasetNumberByKey(segment, 'framestart');
-    //   return segmentFramestart > currentSegmentFramestart
+    //   const segmentX = getLeftValue(segment);
+    //   return placeholderLeft < segmentX
     // })
     // const onLeftSegments = segments.filter( (segment) => {
-    //   const segmentFramestart = getDatasetNumberByKey(segment, 'framestart');
-    //   return segmentFramestart < currentSegmentFramestart
+    //   const segmentX = getLeftValue(segment);
+    //   return placeholderLeft > (segmentX + segment.getBoundingClientRect().width * .5)
     // })
-    const placeholderRect: DOMRect = placeholder.getBoundingClientRect();
-    const currentSegmentFrames = currentSegmentFrameend - currentSegmentFramestart;
-    const onRightSegments = segments.filter( (segment) => {
+    // console.log(onLeftSegments, '----', onRightSegments, [currentSegmentFramestart, currentSegmentFrameend, placeholderLeft])
+    // console.log(this.framestart, this.frameend, this.frames, '111111111')
+     for (let segment of segments) {
       const segmentX = getLeftValue(segment);
-      return placeholderLeft < segmentX
-    })
-    const onLeftSegments = segments.filter( (segment) => {
-      const segmentX = getLeftValue(segment);
-      return placeholderLeft > (segmentX + segment.getBoundingClientRect().width * .5)
-    })
-    console.log(onLeftSegments, '----', onRightSegments, [currentSegmentFramestart, currentSegmentFrameend, currentSegmentFrames])
-    for (let segment of onRightSegments) {
-
-      const segmentX = getLeftValue(segment);
-      const framestart = getDatasetNumberByKey(segment, 'framestart');
-      const frameend = getDatasetNumberByKey(segment, 'frameend');
-      console.log([framestart, frameend])
-      if(framestart <= currentSegmentFramestart){
-        const framestartMove = framestart + currentSegmentFrames;
-        const frameendMove = frameend + currentSegmentFrames;
-        this.setSegmentPosition(segment, framestartMove, frameendMove);
-        segment.dataset.framestart = `${framestartMove}`;
-        segment.dataset.frameend = `${frameendMove}`;
-        // currentSegment.dataset.framestart = `${frameend}`;
-        // currentSegment.dataset.frameend = `${frameend + currentSegmentFrames}`;
-        // currentSegmentFramestart =frameend
+      // console.log([framestart, frameend])
+      const distance = segmentX - placeholderLeft
+      if(Math.abs(distance) <= 20){
+        console.log('swap', )
+        const framestart = getDatasetNumberByKey(segment, 'framestart');
+        const frameend = getDatasetNumberByKey(segment, 'frameend');
+        const frames = frameend - framestart
+        // 从左往右拖
+        if(segmentX - placeholderLeft > 0){
+          console.log('从左往右拖')
+          this.setSegmentPosition(segment, this.framestart, this.framestart + frames);
+          segment.dataset.framestart = `${this.framestart}`;
+          segment.dataset.frameend = `${this.framestart + frames}`;
+          this.framestart = this.framestart + frames;
+          this.frameend = this.framestart + this.frames;
+        }else{
+          // 从右往左拖,先设置拖放segment的start位置
+          // 计算拖放的segment所占宽度
+          console.log('从右往左拖')
+          this.framestart = framestart
+          this.frameend = framestart + this.frames
+          // 将交换的segment 放在拖放 segment 位置后
+          segment.dataset.framestart = `${this.frameend}`;
+          segment.dataset.frameend = `${this.frameend + frames}`;
+          this.setSegmentPosition(segment, this.frameend, this.frameend + frames);
+        }
+        
+        console.log(this.framestart, this.frameend, this.frames, '22222222222')
       }
     }
-    let prevstart = 0
-    for (let segment of onLeftSegments) {
-      const framestart = getDatasetNumberByKey(segment, 'framestart');
-      const frameend = getDatasetNumberByKey(segment, 'frameend');
-      console.log([framestart, frameend])
-      if(framestart >= currentSegmentFrameend){
-        const framestartMove = framestart - currentSegmentFrames;
-        console.log(framestartMove, 1111111)
-        const frameendMove = frameend - currentSegmentFrames;
-        this.setSegmentPosition(segment, framestartMove, frameendMove);
-        segment.dataset.framestart = `${framestartMove}`;
-        segment.dataset.frameend = `${frameendMove}`;
-        prevstart = frameendMove
-        // currentSegment.dataset.framestart = `${frameend}`;
-        // currentSegment.dataset.frameend = `${frameend + currentSegmentFrames}`;
-        // currentSegmentFramestart =frameend
-      }
-      // const framestart = getDatasetNumberByKey(segment, 'framestart');
-      // const frameend = getDatasetNumberByKey(segment, 'frameend');
-      // if(segmentX > this.getSegmentLeft(currentSegmentFramestart)){
-      //   const framestartMove = framestart - currentSegmentFrames;
-      //   const frameendMove = frameend - currentSegmentFrames;
-      //   this.setSegmentPosition(segment, framestartMove, frameendMove);
-      //   currentSegment.dataset.framestart = `${frameend}`;
-      //   currentSegment.dataset.frameend = `${frameend + currentSegmentFrames}`;
-      //   currentSegmentFramestart =frameend
-      // }
-      // console.log(segmentX, placeholderLeft, segmentX - placeholderLeft, '====');
-      // if(Math.abs((segmentX + segment.getBoundingClientRect().width * .5) - placeholderLeft) <= 20){
-        
-      //   const framestart = getDatasetNumberByKey(segment, 'framestart');
-      //   const frameend = getDatasetNumberByKey(segment, 'frameend');
-      //   const framestartMove = framestart - currentSegmentFrames;
-      //   const frameendMove = frameend - currentSegmentFrames;
-      //   const segmentLeft = this.getSegmentLeft(framestartMove);
-      //   segment.style.left = `${segmentLeft}px`;
-      // }
+    if(isdrop){
+      this.setSegmentPosition(currentSegment, this.framestart, this.frameend);
+      currentSegment.dataset.framestart = `${this.framestart}`;
+      currentSegment.dataset.frameend = `${this.frameend}`;
     }
   }
   draging({
-    e, movedX, scrollContainerX, segment, dragTrackContainerRect, tracks
+    e, isCopySegment, scrollContainerX, segment, dragTrackContainerRect, tracks
   }: DragingArgs){
     const [collisionY, collisionTrack] = trackCollisionCheckY(
       tracks,
@@ -387,15 +364,15 @@ export class Tracks{
       }px`;
       const isStretchTrack = this.isStretchTrack(collisionTrack);
       if (isStretchTrack) { 
-        this.collisionXstretch(movedX, segment, placeHolder, collisionTrack);
+        this.collisionXstretch(isCopySegment, segment, placeHolder, collisionTrack);
       }else{
         // 利用各轨道内的 placeholder 与 轨道内所有现有存 segment进行x轴碰撞检测
         const [isCollistion] = collisionCheckX(placeHolder, collisionTrack);
         // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
         if (isCollistion) {
-          // placeHolder.style.opacity = "0";
+          placeHolder.style.opacity = '0';
         } else {
-          placeHolder.style.opacity = "1";
+          placeHolder.style.opacity = '1';
         }
       }
     }else{
@@ -403,7 +380,7 @@ export class Tracks{
       tracks.forEach( track => {
         let placeHolder = getSegmentPlaceholder(track);
         if (placeHolder) {
-          // placeHolder.style.opacity = "0";
+          placeHolder.style.opacity = '0';
         }
         track.classList.remove(this.dragoverClass);
         track.classList.remove(this.dragoverErrorClass);
@@ -439,7 +416,7 @@ export class Tracks{
     if(!dom){
       return
     }
-    // placeHolder.style.opacity = "0";
+    placeHolder.style.opacity = '0';
     const stretchTrack =  this.isStretchTrack(track);
     
     // 如果是伸展轨道
@@ -513,6 +490,13 @@ export class Tracks{
       // 将 segment 暂时放到 dragTracContainer 内
       dragTrackContainer.appendChild(segment);
     }
+
+    if(!isCopySegment){
+      this.framestart = getDatasetNumberByKey(segment, 'framestart')
+      this.frameend = getDatasetNumberByKey(segment, 'frameend')
+      this.frames = this.frameend - this.framestart
+    }
+    
     // 高度变为正在拖动的 segment 高度
     dragTrackContainer.style.height = `${segmentRect.height}px`;
     setTimeout(() => {
@@ -531,7 +515,7 @@ export class Tracks{
       dragTrackContainer.style.left = `${left}px`;
       dragTrackContainer.style.top = `${top}px`;
       const scrollContainerX = scrollContainer.scrollLeft - scrollContainerRect.left;
-      const collisionY = this.draging({e, movedX, scrollContainerX, segment, dragTrackContainerRect, tracks});
+      const collisionY = this.draging({e, isCopySegment, scrollContainerX, segment, dragTrackContainerRect, tracks});
       // 拖动容器形变
       if (isCopySegment) {
         // 如果是复制，则需要形变成标准轨道内 segment 形状
@@ -581,8 +565,8 @@ export class Tracks{
         trackCursor.enable = true;
         const segmentId = segment.dataset.segmentId ?? "";
         const trackId = segment.dataset.trackId ?? "";
-        const startFrame = parseFloat(segment.dataset.framestart ?? "0");
-        const endFrame = parseFloat(segment.dataset.frameend ?? "0");
+        const startFrame = parseFloat(segment.dataset.framestart ?? '0');
+        const endFrame = parseFloat(segment.dataset.frameend ?? '0');
 
         // 拖完后触发回调
         this.dragEndCallback?.forEach((cb) =>
