@@ -59,7 +59,7 @@ export interface MouseHandle {
 }
 export interface DragingArgs {
   e: MouseEvent, 
-  movedX: number,
+  isCopySegment: boolean,
   scrollContainerX: number, 
   segment: HTMLElement, 
   dragTrackContainerRect: DOMRect, 
