@@ -159,7 +159,10 @@ onUnmounted(()=> {
       <div class="segment-item">拖我</div>
       <div class="segment-item">拖我</div>
       <div class="segment-item">拖我</div>
-      <div class="segment-item">拖我</div>
+      <div class="segment-item segment-item-stretch">
+        拖我
+        <em>(伸缩轨道)</em>
+      </div>
     </div>
     <div class="timeline-container" @wheel.ctrl="handleWheel">
       <div class="track-operation">
@@ -378,6 +381,15 @@ onUnmounted(()=> {
     color: green;
     background-color: bisque;
     cursor: move;
+  }
+  .segment-item-stretch{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    em{
+      font-size: 8px;
+    }
   }
 }
 
