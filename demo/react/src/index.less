@@ -48,6 +48,7 @@ a:hover {
   margin: 180px 40px;
   width: 100vh;
   height: 180px;
+  background-color: #0f0c0c;
 }
 
 .timeline-markers {
@@ -82,10 +83,16 @@ a:hover {
 .track-operation {
   padding-top: @markHeight;
   flex-basis: 120px;
-
+  border-right: 1px solid black;
+  background-color: rgba(white, .01);
   .track-operation-item {
+    margin-bottom: 2px;
+    padding-left: 6px;
+    font-size: 12px;
+    height: @trackHeight;
+    line-height: @trackHeight;
+    color: rgba(255, 255, 255, .5);
     background-color: rgba(white, 0.05);
-    height: @markHeight;
   }
 }
 
@@ -136,10 +143,8 @@ a:hover {
     background-color: #c66136;
   }
 
-  .actived {
-    .segment {
-      border: 1px solid white;
-    }
+  .actived.segment {
+    border: 1px solid white;
   }
 
   .dragover {
@@ -161,10 +166,24 @@ a:hover {
   gap: 20px;
 
   .segment-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 80px;
     height: 80px;
     border-radius: 4px;
+    color: green;
     background-color: bisque;
+    cursor: move;
+  }
+  .segment-item-stretch{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    em{
+      font-size: 8px;
+    }
   }
 }
 
@@ -173,4 +192,27 @@ a:hover {
   height: 100%;
   background-color: #c66136;
   opacity: 0.8;
+}
+.segment-name {
+  padding: 0 6px;
+  font-size: 11px;
+  color: white;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  line-height: 24px;
+  pointer-events: none;
+}
+.segment-handle {
+  position: absolute;
+  width: 4px;
+  height: 100%;
+  z-index: 2;
+  cursor: col-resize;
+  background-color: rgba(255, 255, 255, 0);
+}
+.segment-handle-left {
+  left: 0;
+}
+.segment-handle-right {
+  right: 0;
 }
