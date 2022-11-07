@@ -1,6 +1,6 @@
-import { useRef, useImperativeHandle, forwardRef } from 'react';
+import { useRef, useImperativeHandle, forwardRef, LegacyRef } from 'react';
 import './cursor.less';
-function Cursor(props, ref){
+function Cursor(_props: any, ref: LegacyRef<HTMLDivElement> | undefined){
   return (
     <div className='cursor-pointer' ref={ref}>
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
