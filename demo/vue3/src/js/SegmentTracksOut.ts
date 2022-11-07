@@ -47,8 +47,7 @@ export class SegmentTracksOut extends Tracks {
       this.dragStart(e, this.trackCursor, this.scrollContainer, segment, true);
     }
   }
-  destroy() {
-    super.destroy();
+  override destroy() {
     this.segmentDelegete.removeEventListener("mousedown", this.mousedownHandle);
   }
 }
