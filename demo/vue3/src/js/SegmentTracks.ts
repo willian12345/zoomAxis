@@ -9,6 +9,7 @@ interface MoveFunctionArgs {
   widthOrigin: number;
   segment: HTMLElement;
 }
+
 // 轨道内 segment 拖拽
 export class SegmentTracks extends Tracks {
   scrollContainer: HTMLElement | null = null;
@@ -155,8 +156,7 @@ export class SegmentTracks extends Tracks {
       dom.style.width = `${frameWidth * (frameend - framestart)}px`;
     });
   }
-  destroy(): void {
-    super.destroy();
+  override destroy(): void {
     this?.scrollContainer?.removeEventListener("mousedown", this.mouseDownHandle);
   }
 }

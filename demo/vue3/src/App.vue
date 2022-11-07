@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, Ref } from "vue";
+import { onMounted, onUnmounted, ref, Ref } from "vue";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "./js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
 import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "./js/cursorPointer";
@@ -147,6 +147,9 @@ const initApp = () => {
 onMounted(() => {
   initApp();
 });
+onUnmounted(()=> {
+  segmentTracks.unMounted();
+})
 </script>
 
 <template>

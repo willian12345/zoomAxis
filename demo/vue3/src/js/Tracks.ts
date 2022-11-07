@@ -27,7 +27,8 @@ import {
   getDatasetNumberByKey,
 } from "./trackUtils";
 // 轨道
-export class Tracks{
+export abstract class Tracks{
+  abstract destroy(): void
   private dragEndCallback: Set<TracksEventCallback> | null = null
   protected scrollContainer: HTMLElement | null = null
   protected dragoverClass = "dragover"
@@ -126,12 +127,13 @@ export class Tracks{
     activedSegment.parentElement?.removeChild(activedSegment);
     // todo 如果是可伸缩轨道删除，则需要重新伸缩其它segment填满轨道
   }
-  destroy() {
+  unMounted() {
     document.body.removeEventListener(
       "mousedown",
       this.removeSegmentActivedStatus
     );
     document.body.removeEventListener("keydown", this.removeActivedSegment);
+    this.destroy()
   }
   private putSegmentBack(
     segment: HTMLElement,
