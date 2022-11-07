@@ -224,7 +224,6 @@ export abstract class Tracks{
       return false
     });
 
-    console.log(segments)
     for(let i=0,j=segments.length; i<j;i++){
       const segment: HTMLElement = segments[i];
       let sFramestart = parseFloat(segment.dataset.framestart ?? '0');
@@ -285,53 +284,48 @@ export abstract class Tracks{
       return;
     }
     let segments = Array.from(collisionTrack.querySelectorAll('.segment')) as HTMLElement[];
-    // let currentSegmentFramestart = getDatasetNumberByKey(currentSegment, 'framestart');
-    // let currentSegmentFrameend = getDatasetNumberByKey(currentSegment, 'frameend');
     const placeholderLeft = getLeftValue(placeholder);
-    // const placeholderRect: DOMRect = placeholder.getBoundingClientRect();
-    // const currentSegmentFrames = currentSegmentFrameend - currentSegmentFramestart;
-    // const onRightSegments = segments.filter( (segment) => {
-    //   const segmentX = getLeftValue(segment);
-    //   return placeholderLeft < segmentX
-    // })
-    // const onLeftSegments = segments.filter( (segment) => {
-    //   const segmentX = getLeftValue(segment);
-    //   return placeholderLeft > (segmentX + segment.getBoundingClientRect().width * .5)
-    // })
-    // console.log(onLeftSegments, '----', onRightSegments, [currentSegmentFramestart, currentSegmentFrameend, placeholderLeft])
-    // console.log(this.framestart, this.frameend, this.frames, '111111111')
-     for (let segment of segments) {
+    const onRightSegments = segments.filter( (segment) => {
       const segmentX = getLeftValue(segment);
-      // console.log([framestart, frameend])
-      const distance = segmentX - placeholderLeft
-      if(Math.abs(distance) <= 20){
-        console.log('swap', )
-        const framestart = getDatasetNumberByKey(segment, 'framestart');
-        const frameend = getDatasetNumberByKey(segment, 'frameend');
-        const frames = frameend - framestart
-        // 从左往右拖
-        if(segmentX - placeholderLeft > 0){
-          console.log('从左往右拖')
-          this.setSegmentPosition(segment, this.framestart, this.framestart + frames);
-          segment.dataset.framestart = `${this.framestart}`;
-          segment.dataset.frameend = `${this.framestart + frames}`;
-          this.framestart = this.framestart + frames;
-          this.frameend = this.framestart + this.frames;
-        }else{
-          // 从右往左拖,先设置拖放segment的start位置
-          // 计算拖放的segment所占宽度
-          console.log('从右往左拖')
-          this.framestart = framestart
-          this.frameend = framestart + this.frames
-          // 将交换的segment 放在拖放 segment 位置后
-          segment.dataset.framestart = `${this.frameend}`;
-          segment.dataset.frameend = `${this.frameend + frames}`;
-          this.setSegmentPosition(segment, this.frameend, this.frameend + frames);
-        }
-        
-        console.log(this.framestart, this.frameend, this.frames, '22222222222')
+      return placeholderLeft < segmentX
+    })
+    const onLeftSegments = segments.filter( (segment) => {
+      const segmentX = getLeftValue(segment);
+      return placeholderLeft > (segmentX + segment.getBoundingClientRect().width * .5)
+    })
+   
+    for (let segment of onLeftSegments) {
+      const segmentFramestart = getDatasetNumberByKey(segment, 'framestart');
+      const segmentFrameend = getDatasetNumberByKey(segment, 'frameend');
+      // 如果左侧片断的左侧有空格(this.framestart 空格开始帧，this.frameend 空格结束帧)
+      if(segmentFramestart > this.framestart){
+        // 向左移动一个片断
+        const framestartMoved = segmentFramestart - this.frames
+        const frameendMoved = segmentFrameend - this.frames
+        this.setSegmentPosition(segment, framestartMoved, frameendMoved);
+        segment.dataset.framestart = `${framestartMoved}`;
+        segment.dataset.frameend = `${frameendMoved}`;
+        this.framestart = frameendMoved
+        this.frameend = frameendMoved + this.frames
       }
     }
+    // 判断右侧片断时，需要先将片断反转从右边头上开始判断一步步向右移动
+    for (let segment of onRightSegments.reverse()) {
+      const segmentFramestart = getDatasetNumberByKey(segment, 'framestart');
+      const segmentFrameend = getDatasetNumberByKey(segment, 'frameend');
+      // 如果右侧片断的右侧有空格(this.framestart 空格开始帧，this.frameend 空格结束帧)
+      if(segmentFramestart < this.framestart){
+        // 向右移动一个片断
+        const framestartMoved = segmentFramestart + this.frames
+        const frameendMoved = segmentFrameend + this.frames
+        this.setSegmentPosition(segment, framestartMoved, frameendMoved);
+        segment.dataset.framestart = `${framestartMoved}`;
+        segment.dataset.frameend = `${frameendMoved}`;
+        this.framestart = segmentFramestart
+        this.frameend = segmentFramestart + this.frames;
+      }
+    }
+
     if(isdrop){
       this.setSegmentPosition(currentSegment, this.framestart, this.frameend);
       currentSegment.dataset.framestart = `${this.framestart}`;
@@ -552,6 +546,13 @@ export abstract class Tracks{
         // 如果足够近代表用户想拖到此轨道上
         if (isCloseEnouphToY(track, e.clientY)) {
           this.drop({e, x, segment, track, tracks, isCopySegment})
+        }
+        const stretchTrack =  this.isStretchTrack(track);
+        // 如果是伸展轨道
+        if(!isCopySegment && stretchTrack){
+          this.setSegmentPosition(segment, this.framestart, this.frameend);
+          segment.dataset.framestart = `${this.framestart}`;
+          segment.dataset.frameend = `${this.frameend}`;
         }
       });
       // 如果没有跨轨道拖动成功，则 x 轴移动
