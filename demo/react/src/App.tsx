@@ -1,22 +1,66 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, SyntheticEvent, useCallback } from "react";
 import "./App.css";
 import Cursor from "./components/Cursor";
+import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "./js/TimelineAxis";
+import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "./js/cursorPointer";
+import { TRACKS_EVENT_CALLBACK_TYPES, DropableArgs } from "./js/trackType";
+import { findEndestSegment } from "./js/trackUtils";
+import { SegmentTracks } from "./js/SegmentTracks";
+import { SegmentTracksOut } from "./js/SegmentTracksOut";
 
 function App() {
-  const [count, setCount] = useState(0);
   const cursorRef = useRef(null);
+  const segmentItemListRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const scrollContentRef = useRef(null);
+  let timeline: TimelineAxis | null;
+  let trackCursor: CursorPointer;
+  let segmentTracks: SegmentTracks;
+  let segmentTracksOut: SegmentTracksOut;
   let zoomRatio = 1;
+  const [stageWidth, setStageWidth] = useState(920);
+  const [scrollContentWidth, setScrollContentWidth] = useState(920);
+
+  const syncByZoom = (zoom: number) => {
+    // 根据缩放比较，减小滚动宽度
+    if (zoom) {
+      timeline?.zoom(zoom);
+      segmentTracks?.scaleX(zoom);
+      // 根据帧数变更游标位置
+      if (trackCursor) {
+        trackCursor.sync();
+      }
+    }
+  }
+  // 左右滚动
+  const handleScroll = (event: any)=>{
+    if (!event) {
+      return;
+    }
+    const dom = event.target as HTMLElement;
+    timeline?.scrollLeft(-dom.scrollLeft);
+  };
   const zoomIn = () => {
     zoomRatio += 0.1;
   };
   const zoomOut = () => {
     zoomRatio -= 0.1;
   };
+  // 增加轨道内容宽度
+  const addTrackWidth = (trackCursor: CursorPointer) => {
+    const [segment, right] = findEndestSegment();
+    if (!segment) {
+      return;
+    }
+    if (scrollContentWidth < right) {
+      setScrollContentWidth(right + 800);
+      trackCursor.refresh();
+    }
+  };
   // 滚轮缩放
-  const handleWheel = (e: WheelEvent) => {
-    e.preventDefault();
+  const handleWheel = (e: any) => {
+    console.log(e, timeline);
+    // e.preventDefault();
     e.deltaY > 0 ? zoomOut() : zoomIn();
     if (zoomRatio <= 0.1 || zoomRatio >= 1.4) {
       return;
@@ -24,13 +68,88 @@ function App() {
     syncByZoom(zoomRatio)
   };
 
-  useEffect(()=> {
+  const initApp = () => {
+    if (
+      !cursorRef.current ||
+      !scrollContentRef.current ||
+      !scrollContainerRef.current
+    ) {
+      return;
+    }
+    // 轨道，轨道容器，可拖入轨道列表
+    if (!segmentItemListRef.current) {
+      return;
+    }
+    const canvas = document.querySelector('#canvasStage') as HTMLElement
+    console.log(canvas)
+    if(!canvas){
+      return
+    }
+    const segmentItemList: HTMLElement = segmentItemListRef.current;
+    const cursor: HTMLElement = cursorRef.current;
+    const scrollContainer: HTMLElement = scrollContainerRef.current;
+    const scrollContent: HTMLElement = scrollContentRef.current;
+    const width = scrollContainer.getBoundingClientRect().width;
     
+    setStageWidth(width)
+    // 初始化时间轴
+    timeline = new TimelineAxis({
+      el: canvas,
+      totalMarks: 500,
+      totalFrames: 1220,
+      stageWidth: stageWidth,
+    });
+    
+    // timeline.addEventListener(TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME, () => {
+    //   trackCursor.sync();
+    // });
+    // // 初始化游标
+    // trackCursor = new CursorPointer(scrollContent, cursor, timeline);
+    // trackCursor.addEventListener(
+    //   CURSOR_POINTER_EVENT_TYPE.CURSOR_UPDATE,
+    //   (currentFrame) => {
+    //     console.log(currentFrame);
+    //     timeline?.setCurrentFrame(currentFrame);
+    //   }
+    // );
+
+    // // 初始化轨道
+    // segmentTracks = new SegmentTracks({ trackCursor, scrollContainer, timeline });
+    // segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
+    //   addTrackWidth(trackCursor);
+    // });
+
+    // // 初始化轨道外可拖 segment 片断
+    // segmentTracksOut = new SegmentTracksOut({
+    //   trackCursor,
+    //   scrollContainer,
+    //   segmentDelegete: segmentItemList,
+    //   timeline,
+    // });
+    // segmentTracksOut.addEventListener(
+    //   TRACKS_EVENT_CALLBACK_TYPES.DRAG_END,
+    //   (a,b,c) => {
+    //     setTimeout(() => {
+    //       addTrackWidth(trackCursor);
+    //     }, 0);
+    //   }
+    // );
+  }
+
+  useEffect(() => {
+    const canvas = document.querySelector('#canvasStage') as HTMLElement
+    if(canvas){
+      initApp();
+    }
+    return ()=> {
+      // timeline?.destroy()
+      console.log(111)
+    }
   })
   return (
     <div className="App">
       <div className="wrapper">
-        <div className="segment-list">
+        <div className="segment-list" ref={segmentItemListRef}>
           <div className="segment-item">拖我</div>
           <div className="segment-item">拖我</div>
           <div className="segment-item">拖我</div>
@@ -40,18 +159,18 @@ function App() {
             <em>(伸缩轨道)</em>
           </div>
         </div>
-        <div className="timeline-container">
+        <div className="timeline-container" onWheel={handleWheel}>
           <div className="track-operation">
             <div className="track-operation-item">普通轨道</div>
             <div className="track-operation-item">普通轨道</div>
             <div className="track-operation-item">伸缩轨道</div>
           </div>
-          <div className="webkit-scrollbar scroll-container" ref={scrollContainerRef}>
-            <div className="timeline-markers">
+          <div className="webkit-scrollbar scroll-container" ref={scrollContainerRef} onScroll={handleScroll}>
+            <div className="timeline-markers" style={ {width: `${stageWidth}px`} }>
               <div id="canvasStage"></div>
             </div>
-            <div className="scroll-content"  ref={scrollContentRef}>
-              <div className="track-list">
+            <div className="scroll-content"  ref={scrollContentRef} style={ {width: `${scrollContentWidth}px`} }>
+              <div className="track-list" style={ {width: `${scrollContentWidth}px`} }>
                 <div className="track">
                   <div className="track-placeholder"></div>
                 </div>
