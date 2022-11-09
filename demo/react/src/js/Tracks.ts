@@ -11,7 +11,6 @@ import {
 
 import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
-import { throttle } from "lodash-es"; 
 
 import {
   createSegmentName,
