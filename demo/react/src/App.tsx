@@ -2,25 +2,25 @@ import { useEffect, useRef, useState, SyntheticEvent, useCallback } from "react"
 import "./App.css";
 import Cursor from "./components/Cursor";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "./js/TimelineAxis";
-import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "./js/cursorPointer";
-import { TRACKS_EVENT_CALLBACK_TYPES, DropableArgs } from "./js/trackType";
+import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "./js/CursorPointer";
+import { TRACKS_EVENT_CALLBACK_TYPES, DropableArgs } from "./js/TrackType";
 import { findEndestSegment } from "./js/trackUtils";
 import { SegmentTracks } from "./js/SegmentTracks";
 import { SegmentTracksOut } from "./js/SegmentTracksOut";
+
+let timeline: TimelineAxis | null;
+let trackCursor: CursorPointer;
+let segmentTracks: SegmentTracks;
+let segmentTracksOut: SegmentTracksOut;
 
 function App() {
   const cursorRef = useRef(null);
   const segmentItemListRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const scrollContentRef = useRef(null);
-  let timeline: TimelineAxis | null;
-  let trackCursor: CursorPointer;
-  let segmentTracks: SegmentTracks;
-  let segmentTracksOut: SegmentTracksOut;
   let zoomRatio = 1;
-  const [stageWidth, setStageWidth] = useState(920);
-  const [scrollContentWidth, setScrollContentWidth] = useState(920);
-
+  const [ stageWidth, setStageWidth ] = useState(920);
+  const [ scrollContentWidth, setScrollContentWidth ] = useState(920);
   const syncByZoom = (zoom: number) => {
     // 根据缩放比较，减小滚动宽度
     if (zoom) {
@@ -59,7 +59,7 @@ function App() {
   };
   // 滚轮缩放
   const handleWheel = (e: any) => {
-    console.log(e, timeline);
+    console.log(e, timeline, zoomRatio);
     // e.preventDefault();
     e.deltaY > 0 ? zoomOut() : zoomIn();
     if (zoomRatio <= 0.1 || zoomRatio >= 1.4) {
@@ -80,74 +80,69 @@ function App() {
     if (!segmentItemListRef.current) {
       return;
     }
-    const canvas = document.querySelector('#canvasStage') as HTMLElement
-    console.log(canvas)
-    if(!canvas){
-      return
+   
+    if(timeline){
+      return;
     }
     const segmentItemList: HTMLElement = segmentItemListRef.current;
     const cursor: HTMLElement = cursorRef.current;
     const scrollContainer: HTMLElement = scrollContainerRef.current;
     const scrollContent: HTMLElement = scrollContentRef.current;
     const width = scrollContainer.getBoundingClientRect().width;
-    
-    setStageWidth(width)
+    setStageWidth(width);
     // 初始化时间轴
     timeline = new TimelineAxis({
-      el: canvas,
+      el: 'canvasStage',
       totalMarks: 500,
       totalFrames: 1220,
       stageWidth: stageWidth,
     });
-    
-    // timeline.addEventListener(TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME, () => {
-    //   trackCursor.sync();
-    // });
+    // console.log(timeline)
+    timeline.addEventListener(TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME, () => {
+      trackCursor.sync();
+    });
     // // 初始化游标
-    // trackCursor = new CursorPointer(scrollContent, cursor, timeline);
-    // trackCursor.addEventListener(
-    //   CURSOR_POINTER_EVENT_TYPE.CURSOR_UPDATE,
-    //   (currentFrame) => {
-    //     console.log(currentFrame);
-    //     timeline?.setCurrentFrame(currentFrame);
-    //   }
-    // );
+    trackCursor = new CursorPointer(scrollContent, cursor, timeline);
+    trackCursor.addEventListener(
+      CURSOR_POINTER_EVENT_TYPE.CURSOR_UPDATE,
+      (currentFrame) => {
+        console.log(currentFrame);
+        timeline?.setCurrentFrame(currentFrame);
+      }
+    );
 
-    // // 初始化轨道
-    // segmentTracks = new SegmentTracks({ trackCursor, scrollContainer, timeline });
-    // segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
-    //   addTrackWidth(trackCursor);
-    // });
+    // 初始化轨道
+    segmentTracks = new SegmentTracks({ trackCursor, scrollContainer, timeline });
+    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
+      addTrackWidth(trackCursor);
+    });
 
-    // // 初始化轨道外可拖 segment 片断
-    // segmentTracksOut = new SegmentTracksOut({
-    //   trackCursor,
-    //   scrollContainer,
-    //   segmentDelegete: segmentItemList,
-    //   timeline,
-    // });
-    // segmentTracksOut.addEventListener(
-    //   TRACKS_EVENT_CALLBACK_TYPES.DRAG_END,
-    //   (a,b,c) => {
-    //     setTimeout(() => {
-    //       addTrackWidth(trackCursor);
-    //     }, 0);
-    //   }
-    // );
+    // 初始化轨道外可拖 segment 片断
+    segmentTracksOut = new SegmentTracksOut({
+      trackCursor,
+      scrollContainer,
+      segmentDelegete: segmentItemList,
+      timeline,
+    });
+    segmentTracksOut.addEventListener(
+      TRACKS_EVENT_CALLBACK_TYPES.DRAG_END,
+      (a,b,c) => {
+        setTimeout(() => {
+          addTrackWidth(trackCursor);
+        }, 0);
+      }
+    );
   }
-
+  const showTest = () => {
+    console.log(timeline);
+  }
+  
   useEffect(() => {
-    const canvas = document.querySelector('#canvasStage') as HTMLElement
-    if(canvas){
-      initApp();
-    }
-    return ()=> {
-      // timeline?.destroy()
-      console.log(111)
-    }
-  })
+    initApp();
+  }, [])
   return (
     <div className="App">
+      <button onClick={showTest}></button>
       <div className="wrapper">
         <div className="segment-list" ref={segmentItemListRef}>
           <div className="segment-item">拖我</div>

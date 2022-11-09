@@ -1,5 +1,5 @@
 import { Tracks } from "./Tracks";
-import { SegmentTracksOutArgs, MouseHandle, DragingArgs, DropArgs } from "./trackType";
+import { SegmentTracksOutArgs, MouseHandle, DragingArgs, DropArgs } from "./TrackType";
 import {
   trackCollisionCheckY,
 } from "./trackUtils";
