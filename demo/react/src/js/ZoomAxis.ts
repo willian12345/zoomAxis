@@ -271,7 +271,4 @@ export class ZoomAxis {
     this.resetToDraw();
     this.redraw();
   }
-  destroy(){
-    this.clearStage();
-  }
 }

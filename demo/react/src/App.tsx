@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState, SyntheticEvent, useCallback } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import "./App.css";
 import Cursor from "./components/Cursor";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "./js/TimelineAxis";
@@ -12,6 +16,18 @@ let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;
 let segmentTracks: SegmentTracks;
 let segmentTracksOut: SegmentTracksOut;
+let isCtrlDown = false
+const handleKeyUp = () => {
+  isCtrlDown = false
+  window.removeEventListener('keyup', handleKeyUp);
+}
+const handleKeyDown = (e: KeyboardEvent) => {
+  console.log(e.key)
+  if(e.key === 'Control'){
+    isCtrlDown = true
+  }
+  window.addEventListener('keyup', handleKeyUp);
+}
 
 function App() {
   const cursorRef = useRef(null);
@@ -19,8 +35,8 @@ function App() {
   const scrollContainerRef = useRef(null);
   const scrollContentRef = useRef(null);
   let zoomRatio = 1;
-  const [ stageWidth, setStageWidth ] = useState(920);
-  const [ scrollContentWidth, setScrollContentWidth ] = useState(920);
+  const [stageWidth, setStageWidth] = useState(920);
+  const [scrollContentWidth, setScrollContentWidth] = useState(920);
   const syncByZoom = (zoom: number) => {
     // 根据缩放比较，减小滚动宽度
     if (zoom) {
@@ -31,13 +47,13 @@ function App() {
         trackCursor.sync();
       }
     }
-  }
+  };
   // 左右滚动
-  const handleScroll = (event: any)=>{
-    if (!event) {
+  const handleScroll = (e: React.UIEvent<HTMLDivElement, UIEvent>) => {
+    if (!e) {
       return;
     }
-    const dom = event.target as HTMLElement;
+    const dom = e.target as HTMLElement;
     timeline?.scrollLeft(-dom.scrollLeft);
   };
   const zoomIn = () => {
@@ -57,15 +73,16 @@ function App() {
       trackCursor.refresh();
     }
   };
+  
   // 滚轮缩放
-  const handleWheel = (e: any) => {
-    console.log(e, timeline, zoomRatio);
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    console.log(isCtrlDown);
     // e.preventDefault();
     e.deltaY > 0 ? zoomOut() : zoomIn();
     if (zoomRatio <= 0.1 || zoomRatio >= 1.4) {
       return;
     }
-    syncByZoom(zoomRatio)
+    syncByZoom(zoomRatio);
   };
 
   const initApp = () => {
@@ -80,8 +97,8 @@ function App() {
     if (!segmentItemListRef.current) {
       return;
     }
-   
-    if(timeline){
+
+    if (timeline) {
       return;
     }
     const segmentItemList: HTMLElement = segmentItemListRef.current;
@@ -90,9 +107,10 @@ function App() {
     const scrollContent: HTMLElement = scrollContentRef.current;
     const width = scrollContainer.getBoundingClientRect().width;
     setStageWidth(width);
+    
     // 初始化时间轴
     timeline = new TimelineAxis({
-      el: 'canvasStage',
+      el: "canvasStage",
       totalMarks: 500,
       totalFrames: 1220,
       stageWidth: stageWidth,
@@ -112,7 +130,11 @@ function App() {
     );
 
     // 初始化轨道
-    segmentTracks = new SegmentTracks({ trackCursor, scrollContainer, timeline });
+    segmentTracks = new SegmentTracks({
+      trackCursor,
+      scrollContainer,
+      timeline,
+    });
     segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
       addTrackWidth(trackCursor);
     });
@@ -126,23 +148,22 @@ function App() {
     });
     segmentTracksOut.addEventListener(
       TRACKS_EVENT_CALLBACK_TYPES.DRAG_END,
-      (a,b,c) => {
+      () => {
         setTimeout(() => {
           addTrackWidth(trackCursor);
         }, 0);
       }
     );
-  }
-  const showTest = () => {
-    console.log(timeline);
-  }
-  
+  };
+  window.addEventListener('keydown', handleKeyDown);
   useEffect(() => {
     initApp();
-  }, [])
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    }
+  });
   return (
     <div className="App">
-      <button onClick={showTest}></button>
       <div className="wrapper">
         <div className="segment-list" ref={segmentItemListRef}>
           <div className="segment-item">拖我</div>
@@ -154,18 +175,32 @@ function App() {
             <em>(伸缩轨道)</em>
           </div>
         </div>
-        <div className="timeline-container" onWheel={handleWheel}>
+        <div className="timeline-container" onWheel={(e) => handleWheel(e)}>
           <div className="track-operation">
             <div className="track-operation-item">普通轨道</div>
             <div className="track-operation-item">普通轨道</div>
             <div className="track-operation-item">伸缩轨道</div>
           </div>
-          <div className="webkit-scrollbar scroll-container" ref={scrollContainerRef} onScroll={handleScroll}>
-            <div className="timeline-markers" style={ {width: `${stageWidth}px`} }>
+          <div
+            className="webkit-scrollbar scroll-container"
+            ref={scrollContainerRef}
+            onScroll={(e) => handleScroll(e)}
+          >
+            <div
+              className="timeline-markers"
+              style={{ width: `${stageWidth}px` }}
+            >
               <div id="canvasStage"></div>
             </div>
-            <div className="scroll-content"  ref={scrollContentRef} style={ {width: `${scrollContentWidth}px`} }>
-              <div className="track-list" style={ {width: `${scrollContentWidth}px`} }>
+            <div
+              className="scroll-content"
+              ref={scrollContentRef}
+              style={{ width: `${scrollContentWidth}px` }}
+            >
+              <div
+                className="track-list"
+                style={{ width: `${scrollContentWidth}px` }}
+              >
                 <div className="track">
                   <div className="track-placeholder"></div>
                 </div>
