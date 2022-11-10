@@ -13,7 +13,6 @@ import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
 
 import {
-  createSegmentName,
   createSegment,
   createSegmentFake,
   getDragTrackCotainer,
@@ -490,6 +489,7 @@ export abstract class Tracks{
       this.framestart = getDatasetNumberByKey(segment, 'framestart')
       this.frameend = getDatasetNumberByKey(segment, 'frameend')
       this.frames = this.frameend - this.framestart
+      console.log(this.framestart, this.frameend, this.frames);
     }
     
     // 高度变为正在拖动的 segment 高度

@@ -381,6 +381,7 @@ onUnmounted(()=> {
     color: green;
     background-color: bisque;
     cursor: move;
+    user-select: none;
   }
   .segment-item-stretch{
     display: flex;
