@@ -24,15 +24,7 @@ export class SegmentTracks extends Tracks {
     if (!target) {
       return;
     }
-    // segment 左侧手柄拖动
-    if (target.classList.contains("segment-handle-left")) {
-      // this.handleLeftDragStart(e, target);
-      this.dragHandleStart(e, target, this.leftHandleMove);
-    }
-    // segment 右侧手柄拖动
-    if (target.classList.contains("segment-handle-right")) {
-      this.dragHandleStart(e, target, this.rightHandleMove);
-    }
+    
     if (target.classList.contains("segment") && this.trackCursor && this.scrollContainer) {
       this.segmentDragStart(e, this.trackCursor, this.scrollContainer, target);
     }

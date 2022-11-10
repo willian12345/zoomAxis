@@ -23,6 +23,7 @@ import {
   getSegmentPlaceholder,
   isContainSplitFromComma,
   getDatasetNumberByKey,
+  sortByLeftValue,
 } from "./trackUtils";
 // 轨道
 export abstract class Tracks{
@@ -286,12 +287,12 @@ export abstract class Tracks{
     const onRightSegments = segments.filter( (segment) => {
       const segmentX = getLeftValue(segment);
       return placeholderLeft < segmentX
-    })
+    }).sort(sortByLeftValue)
     const onLeftSegments = segments.filter( (segment) => {
       const segmentX = getLeftValue(segment);
       return placeholderLeft > (segmentX + segment.getBoundingClientRect().width * .5)
-    })
-   
+    }).sort(sortByLeftValue)
+    
     for (let segment of onLeftSegments) {
       const segmentFramestart = getDatasetNumberByKey(segment, 'framestart');
       const segmentFrameend = getDatasetNumberByKey(segment, 'frameend');
@@ -396,7 +397,6 @@ export abstract class Tracks{
     // 轨道 id
     const trackId = track.dataset.trackId ?? "";
     const segmentTrackId = segment.dataset.trackId ?? "";
-    console.log(trackId, segmentTrackId)
     // 轨道 id 必须相同才能拖动进去
     if (!isContainSplitFromComma(trackId, segmentTrackId)) {
       return;
@@ -489,7 +489,7 @@ export abstract class Tracks{
       this.framestart = getDatasetNumberByKey(segment, 'framestart')
       this.frameend = getDatasetNumberByKey(segment, 'frameend')
       this.frames = this.frameend - this.framestart
-      console.log(this.framestart, this.frameend, this.frames);
+      // console.log(this.framestart, this.frameend, this.frames);
     }
     
     // 高度变为正在拖动的 segment 高度

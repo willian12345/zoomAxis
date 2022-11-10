@@ -176,3 +176,9 @@ export const findEndestSegmentOnTrack =  (track: HTMLElement) => {
 export const getDatasetNumberByKey = (dom: HTMLElement, datasetKey: string):number => {
   return parseFloat(dom.dataset[datasetKey] ?? '0')
 }
+
+export const sortByLeftValue = (segmentA: HTMLElement, segmentB: HTMLElement) => {
+  const segmentAx = getLeftValue(segmentA);
+  const segmentBx = getLeftValue(segmentB);
+  return segmentAx > segmentBx ? 1 : -1;
+}
