@@ -12,8 +12,8 @@ interface MoveFunctionArgs {
 
 // 轨道内 segment 拖拽
 export class SegmentTracks extends Tracks {
-  scrollContainer: HTMLElement | null = null;
-  scrollContainerRect: DOMRect | null = null;
+  scrollContainer: HTMLElement = {} as HTMLElement;
+  scrollContainerRect: DOMRect = {} as DOMRect;
   private mouseDownHandle: MouseHandle = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();

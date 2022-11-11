@@ -29,11 +29,11 @@ import {
 export abstract class Tracks{
   abstract destroy(): void
   private dragEndCallback: Set<TracksEventCallback> | null = null
-  protected scrollContainer: HTMLElement | null = null
+  protected scrollContainer: HTMLElement = {} as HTMLElement
   protected dragoverClass = "dragover"
   protected dragoverErrorClass = "dragover-error"
-  protected trackCursor: CursorPointer | null = null
-  timeline: TimelineAxis | null = null
+  protected trackCursor: CursorPointer = {} as CursorPointer
+  timeline: TimelineAxis = {} as TimelineAxis
   dropableCheck?: DropableCheck
   deleteableCheck?: DeleteableCheck
   ondragover:any = null
