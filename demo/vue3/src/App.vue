@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, Ref } from "vue";
-import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "./js/TimelineAxis";
+import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "../../../src/js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
-import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "./js/cursorPointer";
-import { TRACKS_EVENT_CALLBACK_TYPES, DropableArgs } from "./js/trackType";
-import { findEndestSegment } from "./js/trackUtils";
-import { SegmentTracks } from "./js/SegmentTracks";
-import { SegmentTracksOut } from "./js/SegmentTracksOut";
+import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/cursorPointer";
+import { TRACKS_EVENT_CALLBACK_TYPES, DropableArgs } from "../../../src/js/trackType";
+import { findEndestSegment } from "../../../src/js/trackUtils";
+import { SegmentTracks } from "../../../src/js/SegmentTracks";
+import { SegmentTracksOut } from "../../../src/js/SegmentTracksOut";
 
 let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;

@@ -5,12 +5,12 @@ import React, {
 } from "react";
 import "./App.css";
 import Cursor from "./components/Cursor";
-import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "./js/TimelineAxis";
-import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "./js/CursorPointer";
-import { TRACKS_EVENT_CALLBACK_TYPES, DropableArgs } from "./js/TrackType";
-import { findEndestSegment } from "./js/trackUtils";
-import { SegmentTracks } from "./js/SegmentTracks";
-import { SegmentTracksOut } from "./js/SegmentTracksOut";
+import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "../../../src/js/TimelineAxis";
+import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/CursorPointer";
+import { TRACKS_EVENT_CALLBACK_TYPES, DropableArgs } from "../../../src/js/TrackType";
+import { findEndestSegment } from "../../../src/js/trackUtils";
+import { SegmentTracks } from "../../../src/js/SegmentTracks";
+import { SegmentTracksOut } from "../../../src/js/SegmentTracksOut";
 
 let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;

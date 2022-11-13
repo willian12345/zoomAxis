@@ -1,6 +1,4 @@
 const SPACE_FRAME_WIDTH = 80; // 刻度间距
-const SPACE_FRAME_WIDTH_MIN = 8; // 刻度最小间距
-const SPACE_FRAME_WIDTH_MAX = 100; // 刻度最大间距
 
 // 默认
 const DEFAULT_RATIO_STEP: number[][] = [
@@ -14,6 +12,7 @@ const DEFAULT_RATIO_STEP: number[][] = [
 export interface ZoomAxisArgs {
   el: string | HTMLElement
   totalMarks: number
+  vertical?: boolean
   stageWidth?: number
   ratioMap?: number[][]
 }
@@ -38,8 +37,9 @@ export function roundFun(value: number, n: number) {
   return Math.round(value * Math.pow(10, n)) / Math.pow(10, n);
 }
 export class ZoomAxis {
-  private canvas?: HTMLCanvasElement | null = null
-  private ctx?: CanvasRenderingContext2D | null = null
+  private canvas?: HTMLCanvasElement = {} as HTMLCanvasElement
+  private ctx?: CanvasRenderingContext2D = {} as CanvasRenderingContext2D
+  vertical = false
   private stageWidth = 600 // 最小宽度 600px
   private stageHeightOut = 24
   private stageHeight = this.stageHeightOut * 2
@@ -64,11 +64,12 @@ export class ZoomAxis {
   zoomRatio = 1; // 缩放比例
   width = 600; // 标尺总宽度
 
-  constructor({ el, totalMarks, ratioMap, stageWidth }: ZoomAxisArgs) {
+  constructor({ el, totalMarks, ratioMap, stageWidth, vertical = false }: ZoomAxisArgs) {
     if (!el) {
       console.warn("挂载对象 id 必传");
       return;
     }
+    this.vertical = vertical
     this.canvas = this.createStage(el);
     if (!this.canvas) {
       console.warn("创建canvas失败");
@@ -122,8 +123,8 @@ export class ZoomAxis {
   private setStageWidth(stageWidth?: number) {
     // 获取父级宽度
     if(stageWidth === undefined){
-      stageWidth =
-      this.canvas?.parentElement?.getBoundingClientRect()?.width;
+      const parentDomRect = this.canvas?.parentElement?.getBoundingClientRect();
+      stageWidth = this.vertical ? parentDomRect?.height : parentDomRect?.width;
     }
     
     if (stageWidth) {
