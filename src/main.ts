@@ -11,7 +11,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     </div>
   </div>
   <div class="intro">
-    <h1>用标尺示例</h1>
+    <h1>刻度轴示例</h1>
     <ul>
       <li>按住ctrl键，滚动滚轮可缩放刻度</li>
       <li>demo/vue3.0 文件夹 时间帧轨道示例项目 vue3.0 版本</li>
