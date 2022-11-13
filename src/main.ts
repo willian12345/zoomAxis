@@ -1,23 +1,25 @@
 import './style.css'
-import typescriptLogo from './typescript.svg'
-import { setupCounter } from './counter'
+import { setupAxis } from './axis'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
+  <div class="rulers">
+    <div class="ruler horizontal">
+      <div id="canvasHorizontal"></div>
     </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
+    <div class="ruler vertical">
+      <div id="canvasVertical"></div>
+    </div>
+  </div>
+  <div class="intro">
+    <h1>用标尺示例</h1>
+    <ul>
+      <li>按住ctrl键，滚动滚轮可缩放刻度</li>
+      <li>demo/vue3.0 文件夹 时间帧轨道示例项目 vue3.0 版本</li>
+      <li>demo/react 文件夹 时间帧轨道示例项目 react 版本</li>
+    </ul>
   </div>
 `
+setTimeout(()=> {
+  setupAxis(document.querySelector<HTMLButtonElement>('#canvasHorizontal')!, document.querySelector<HTMLButtonElement>('#canvasVertical')!)
+}, 0)
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
