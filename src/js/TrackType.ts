@@ -5,6 +5,9 @@ import { Tracks } from "./Tracks";
 export enum SegmentType {
   BODY_ANIMATION,
   FACE_ANIMATION,
+  VOICE,
+  SCENE,
+  CAMERA,
 }
 export enum TRACKS_EVENT_CALLBACK_TYPES {
   DRAG_END,
