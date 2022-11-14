@@ -24,6 +24,7 @@ import {
   isContainSplitFromComma,
   getDatasetNumberByKey,
   sortByLeftValue,
+  createSegmentName,
 } from "./trackUtils";
 // 轨道
 export abstract class Tracks{
@@ -41,6 +42,7 @@ export abstract class Tracks{
   framestart = 0
   frameend = 0
   frames = 0
+  currentSegment: HTMLElement | null = null
   constructor({
     trackCursor,
     scrollContainer,
@@ -155,20 +157,20 @@ export abstract class Tracks{
   private async copySegment(segmentTrackId: string, framestart: number) {
     let dom: HTMLElement | null = null;
     if (this.dropableCheck) {
-      // const { dropable, segmentData, segmentName } = await this.dropableCheck(
-      //   segmentTrackId,
-      //   framestart
-      // );
-      // if (dropable && segmentData) {
-      //   dom = createSegment(SegmentType.BODY_ANIMATION);
-      //   dom.appendChild(createSegmentName(segmentName));
-      //   framestart = segmentData.startFrame;
-      //   dom.dataset.framestart = `${framestart}`;
-      //   dom.dataset.frameend = `${segmentData.endFrame}`;
-      //   dom.dataset.frames = `${segmentData.endFrame - framestart}`;
-      //   dom.dataset.segmentId = segmentData.sectionId ?? '';
-      //   dom.dataset.trackId = segmentTrackId ?? '';
-      // }
+      const { dropable, segmentData, segmentName } = await this.dropableCheck(
+        segmentTrackId,
+        framestart
+      );
+      if (dropable && segmentData) {
+        dom = createSegment(SegmentType.BODY_ANIMATION);
+        dom.appendChild(createSegmentName(segmentName));
+        framestart = segmentData.startFrame;
+        dom.dataset.framestart = `${framestart}`;
+        dom.dataset.frameend = `${segmentData.endFrame}`;
+        dom.dataset.frames = `${segmentData.endFrame - framestart}`;
+        dom.dataset.segmentId = segmentData.sectionId ?? '';
+        dom.dataset.trackId = segmentData.trackId ?? '';
+      }
     } else {
       dom = createSegment(SegmentType.BODY_ANIMATION);
       dom.dataset.trackId = ''
@@ -264,11 +266,13 @@ export abstract class Tracks{
       }
       currentSegment.dataset.framestart = String(framestart)
       currentSegment.dataset.frameend = String(frameend)
-      currentSegment.dataset.trackId = currentSegment.dataset.segmentTrackId ?? '';
+      currentSegment.dataset.trackId = track.dataset.trackId ?? '';
       
       this.setSegmentPosition(currentSegment, framestart, frameend);
       const segmentId = currentSegment.dataset.segmentId ?? '';
       this.sliceSegments(track, segmentId, framestart, frameend);
+      this.framestart = framestart
+      this.frameend = frameend
     }else{
       const placeHolder = getSegmentPlaceholder(track)
       if(placeHolder){
@@ -384,6 +388,22 @@ export abstract class Tracks{
     
     return collisionY
   }
+  triggerDroped(segment){
+    const segmentId = segment.dataset.segmentId ?? "";
+    const trackId = segment.dataset.trackId ?? "";
+    const startFrame = parseFloat(segment.dataset.framestart ?? '0');
+    const endFrame = parseFloat(segment.dataset.frameend ?? '0');
+
+    // 拖完后触发回调
+    this.dragEndCallback?.forEach((cb) =>
+    cb(this, TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, {
+      trackId,
+      segmentId,
+      startFrame,
+      endFrame,
+    })
+  );
+  }
   async drop({
     e, x, segment, track, tracks, isCopySegment
   }: DropArgs){
@@ -407,6 +427,7 @@ export abstract class Tracks{
     );
 
     dom = await this.getSegment(isCopySegment, segment, segmentTrackId, framestart)
+    this.currentSegment = dom
     if(!dom){
       return
     }
@@ -416,7 +437,7 @@ export abstract class Tracks{
     // 如果是伸展轨道
     if(stretchTrack){
       this.dropToStretchTrack(track, dom, framestart, isCopySegment);
-      
+      this.triggerDroped(dom);
       return;
     }
     // 普通轨道
@@ -446,7 +467,7 @@ export abstract class Tracks{
         dom.style.width = `${this.timeline?.frameWidth * frames}px`;
       }
     }
-    
+    this.triggerDroped(dom);
   }
   dragStart(
     e: MouseEvent,
@@ -547,6 +568,7 @@ export abstract class Tracks{
           this.drop({e, x, segment, track, tracks, isCopySegment})
         }
         const stretchTrack =  this.isStretchTrack(track);
+        
         // 如果是伸展轨道
         if(!isCopySegment && stretchTrack){
           this.setSegmentPosition(segment, this.framestart, this.frameend);
@@ -554,6 +576,7 @@ export abstract class Tracks{
           segment.dataset.frameend = `${this.frameend}`;
         }
       });
+      
       // 如果没有跨轨道拖动成功，则 x 轴移动
       setTimeout(() => {
         if (dragTrackContainer.children.length) {
@@ -569,7 +592,6 @@ export abstract class Tracks{
         const trackId = segment.dataset.trackId ?? "";
         const startFrame = parseFloat(segment.dataset.framestart ?? '0');
         const endFrame = parseFloat(segment.dataset.frameend ?? '0');
-
         // 拖完后触发回调
         this.dragEndCallback?.forEach((cb) =>
           cb(this, TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, {
