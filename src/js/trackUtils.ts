@@ -73,7 +73,7 @@ export const createSegmentPlaceHolder = () => {
 export const getSegmentPlaceholder = (track: HTMLElement) => {
   const trackPlaceholder: HTMLElement | null =
     track.querySelector(".track-placeholder");
-  let dom = null;
+  let dom: HTMLElement | null = null;
   if (trackPlaceholder) {
     dom = trackPlaceholder.querySelector(".segment-placeholder") as HTMLElement;
     if (!dom) {
