@@ -14,6 +14,7 @@ export class SegmentTracksOut extends Tracks {
     dropableCheck,
     ondragover,
     ondrop,
+    deleteableCheck,
   }: SegmentTracksOutArgs) {
     if (!scrollContainer || !timeline) {
       return;
@@ -25,6 +26,7 @@ export class SegmentTracksOut extends Tracks {
       dropableCheck,
       ondragover,
       ondrop,
+      deleteableCheck,
     });
     this.dropableCheck = dropableCheck;
     if (segmentDelegete) {

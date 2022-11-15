@@ -207,6 +207,18 @@ export abstract class Tracks{
     }
     
   }
+  async removeSegment(segment: HTMLElement){
+    const trackId = segment.dataset.trackId;
+    const segmentId = segment.dataset.segmentId;
+    if (trackId && segmentId && this.deleteableCheck) {
+      const result = await this.deleteableCheck(trackId, segmentId);
+      if (!result) {
+        console.warn("删除失败");
+        return;
+      }
+    }
+    segment.parentNode?.removeChild(segment);
+  }
   private sliceSegments(track: HTMLElement, currentSegmentId: string, framestart: number, frameend: number){
     console.log(currentSegmentId)
     // 过滤出重叠的 segment (在可伸展轨道)
@@ -239,9 +251,7 @@ export abstract class Tracks{
       }
       // 如果开始与结束帧相等，说明被完全覆盖需要删除此segment 
       if(sFramestart === sFrameend){
-        // delete segment 
-        // todo 需要触发删除回调
-        segment.parentNode?.removeChild(segment);
+        this.removeSegment(segment);
       }
       
       this.setSegmentPosition(segment, sFramestart, sFrameend)
