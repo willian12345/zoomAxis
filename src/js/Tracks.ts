@@ -71,7 +71,7 @@ export abstract class Tracks{
     this.initEvent();
     return this;
   }
-  initEvent() {
+  private initEvent() {
     // 点击轨道外部时清除选中过的 segment 状态
     document.body.addEventListener(
       "click",
@@ -282,7 +282,7 @@ export abstract class Tracks{
   }
   // 伸缩轨道内拖动
   
-  collisionXstretch(isCopySegment: boolean, currentSegment:HTMLElement, placeholder: HTMLElement, collisionTrack: HTMLElement, isdrop?:boolean){
+  private collisionXstretch(isCopySegment: boolean, currentSegment:HTMLElement, placeholder: HTMLElement, collisionTrack: HTMLElement, isdrop?:boolean){
     if(isCopySegment){
       return;
     }
@@ -335,7 +335,7 @@ export abstract class Tracks{
       currentSegment.dataset.frameend = `${this.frameend}`;
     }
   }
-  draging({
+  private draging({
     e, isCopySegment, scrollContainerX, segment, dragTrackContainerRect, tracks
   }: DragingArgs){
     const [collisionY, collisionTrack] = trackCollisionCheckY(
@@ -388,12 +388,11 @@ export abstract class Tracks{
     
     return collisionY
   }
-  triggerDroped(segment){
+  private triggerDroped(segment: HTMLElement){
     const segmentId = segment.dataset.segmentId ?? "";
     const trackId = segment.dataset.trackId ?? "";
-    const startFrame = parseFloat(segment.dataset.framestart ?? '0');
-    const endFrame = parseFloat(segment.dataset.frameend ?? '0');
-
+    const startFrame = getDatasetNumberByKey(segment, 'framestart');
+    const endFrame = getDatasetNumberByKey(segment, 'frameend');
     // 拖完后触发回调
     this.dragEndCallback?.forEach((cb) =>
     cb(this, TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, {
@@ -404,7 +403,7 @@ export abstract class Tracks{
     })
   );
   }
-  async drop({
+  private async drop({
     e, x, segment, track, tracks, isCopySegment
   }: DropArgs){
     let framestart = this.getFramestartByX(x);
@@ -428,10 +427,11 @@ export abstract class Tracks{
 
     dom = await this.getSegment(isCopySegment, segment, segmentTrackId, framestart)
     this.currentSegment = dom
+    placeHolder.style.opacity = '0';
     if(!dom){
       return
     }
-    placeHolder.style.opacity = '0';
+    
     const stretchTrack =  this.isStretchTrack(track);
     
     // 如果是伸展轨道
@@ -588,24 +588,30 @@ export abstract class Tracks{
         }
         // 重新允许游标交互
         trackCursor.enable = true;
-        const segmentId = segment.dataset.segmentId ?? "";
-        const trackId = segment.dataset.trackId ?? "";
-        const startFrame = parseFloat(segment.dataset.framestart ?? '0');
-        const endFrame = parseFloat(segment.dataset.frameend ?? '0');
-        // 拖完后触发回调
-        this.dragEndCallback?.forEach((cb) =>
-          cb(this, TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, {
-            trackId,
-            segmentId,
-            startFrame,
-            endFrame,
-          })
-        );
+        // this.triggerDroped(segment)
       }, 0);
       document.removeEventListener("mouseup", mouseup);
       document.removeEventListener("mousemove", mousemove);
     };
     document.addEventListener("mousemove", mousemove);
     document.addEventListener("mouseup", mouseup);
+  }
+  addSegmentByTrackId(segment: {trackId: string, name: string, framestart: number, frameend: number}, type: SegmentType){
+    const tracks: HTMLElement[] = Array.from(
+      document.querySelectorAll(".track")
+    );
+    for(let track of tracks){
+      const dataTrackId = track.dataset.trackId ?? ''
+      console.log(dataTrackId, segment.trackId)
+      if(isContainSplitFromComma(dataTrackId, segment.trackId)){
+        const dom = createSegment(type)
+        const segmentName = createSegmentName(segment.name)
+        dom.appendChild(segmentName)
+        this.setSegmentPosition(dom, segment.framestart, segment.frameend);
+        dom.dataset.framestart = `${segment.framestart}`;
+        dom.dataset.frameend = `${segment.frameend}`;
+        track.appendChild(dom);
+      }
+    }
   }
 }

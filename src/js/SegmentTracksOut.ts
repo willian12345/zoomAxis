@@ -34,7 +34,6 @@ export class SegmentTracksOut extends Tracks {
     this.segmentDelegete.addEventListener("mousedown", this.mousedownHandle);
   }
   private mousedownHandle: MouseHandle = (e: MouseEvent) => {
-    e.preventDefault();
     const target = e.target as HTMLElement;
     if (!target) {
       return;
