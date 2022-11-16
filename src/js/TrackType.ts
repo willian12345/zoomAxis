@@ -44,6 +44,7 @@ export interface TracksArgs {
   trackCursor: CursorPointer
   scrollContainer: HTMLElement
   timeline: TimelineAxis
+  segmentDelegate: HTMLElement
   dropableCheck?: DropableCheck
   deleteableCheck?: DeleteableCheck
   ondragover?:any
@@ -53,8 +54,7 @@ export interface SegmentTracksArgs  extends TracksArgs{
   deleteableCheck?: DeleteableCheck
 }
 export interface SegmentTracksOutArgs extends TracksArgs {
-  segmentDelegete: HTMLElement
-  dropableCheck?: DropableCheck
+  
 }
 
 export interface MouseHandle {
