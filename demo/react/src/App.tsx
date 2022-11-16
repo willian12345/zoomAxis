@@ -134,26 +134,27 @@ function App() {
       trackCursor,
       scrollContainer,
       timeline,
+      segmentDelegate: segmentItemList,
     });
     segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
       addTrackWidth(trackCursor);
     });
 
     // 初始化轨道外可拖 segment 片断
-    segmentTracksOut = new SegmentTracksOut({
-      trackCursor,
-      scrollContainer,
-      segmentDelegete: segmentItemList,
-      timeline,
-    });
-    segmentTracksOut.addEventListener(
-      TRACKS_EVENT_CALLBACK_TYPES.DRAG_END,
-      () => {
-        setTimeout(() => {
-          addTrackWidth(trackCursor);
-        }, 0);
-      }
-    );
+    // segmentTracksOut = new SegmentTracksOut({
+    //   trackCursor,
+    //   scrollContainer,
+    //   segmentDelegete: segmentItemList,
+    //   timeline,
+    // });
+    // segmentTracksOut.addEventListener(
+    //   TRACKS_EVENT_CALLBACK_TYPES.DRAG_END,
+    //   () => {
+    //     setTimeout(() => {
+    //       addTrackWidth(trackCursor);
+    //     }, 0);
+    //   }
+    // );
   };
   window.addEventListener('keydown', handleKeyDown);
   useEffect(() => {
