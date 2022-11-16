@@ -1,5 +1,5 @@
 import { Tracks } from "./Tracks";
-import { findParentElementByClassName, getLeftValue } from "./trackUtils";
+// import { findParentElementByClassName, getLeftValue } from "./trackUtils";
 import { SegmentTracksArgs, MouseHandle } from "./TrackType";
 import { CursorPointer } from "./CursorPointer";
 interface MoveFunctionArgs {
@@ -14,6 +14,30 @@ interface MoveFunctionArgs {
 export class SegmentTracks extends Tracks {
   scrollContainer: HTMLElement = {} as HTMLElement;
   scrollContainerRect: DOMRect = {} as DOMRect;
+  private segmentDelegate: HTMLElement = document.body;
+  constructor({
+    trackCursor,
+    scrollContainer,
+    timeline,
+    segmentDelegate,
+    deleteableCheck,
+    dropableCheck,
+  }: SegmentTracksArgs) {
+    if (!scrollContainer) {
+      return;
+    }
+    super({ trackCursor, scrollContainer, timeline, segmentDelegate, deleteableCheck, dropableCheck });
+    this.scrollContainer = scrollContainer;
+    this.scrollContainerRect = scrollContainer.getBoundingClientRect();
+    this.dropableCheck = dropableCheck;
+    if (segmentDelegate) {
+      this.segmentDelegate = segmentDelegate;
+    }
+    // 代理 segment 鼠标事件
+    this.segmentDelegate.addEventListener("mousedown", this.mousedownDelegateHandle);
+    // 代理 segment 鼠标事件
+    scrollContainer.addEventListener("mousedown", this.mouseDownHandle);
+  }
   private mouseDownHandle: MouseHandle = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -29,20 +53,47 @@ export class SegmentTracks extends Tracks {
       this.segmentDragStart(e, this.trackCursor, this.scrollContainer, target);
     }
   };
-  constructor({
-    trackCursor,
-    scrollContainer,
-    timeline,
-    deleteableCheck,
-  }: SegmentTracksArgs) {
-    if (!scrollContainer) {
+  private mousedownDelegateHandle = (e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (!target) {
       return;
     }
-    super({ trackCursor, scrollContainer, timeline, deleteableCheck });
-    this.scrollContainer = scrollContainer;
-    this.scrollContainerRect = scrollContainer.getBoundingClientRect();
-    // 代理 segment 鼠标事件
-    scrollContainer.addEventListener("mousedown", this.mouseDownHandle);
+    if (!target.classList.contains("segment-item")) {
+      return;
+    }
+    const segment = target;
+    if (this.trackCursor && this.scrollContainer) {
+      this.dragStart(e, this.trackCursor, this.scrollContainer, segment, true);
+    }
+  }
+  private segmentDragStart(
+    e: MouseEvent,
+    trackCursor: CursorPointer,
+    scrollContainer: HTMLElement,
+    segment: HTMLElement
+  ) {
+    this.removeSegmentActivedStatus();
+    segment.classList.add("actived");
+    this.dragStart(e, trackCursor, scrollContainer, segment);
+  }
+  scaleX(ratio: number) {
+    if (!this.scrollContainer || !this.timeline) {
+      return;
+    }
+    const segments: HTMLElement[] = Array.from(
+      this.scrollContainer.querySelectorAll(".segment")
+    );
+    const frameWidth = this.timeline?.frameWidth;
+    segments.forEach((dom: HTMLElement) => {
+      if (!dom.dataset.framestart || !dom.dataset.frameend || !this.timeline) {
+        return;
+      }
+      const framestart = parseFloat(dom.dataset.framestart);
+      const frameend = parseFloat(dom.dataset.frameend);
+      const left = framestart * frameWidth;
+      dom.style.left = `${left}px`;
+      dom.style.width = `${frameWidth * (frameend - framestart)}px`;
+    });
   }
   // segment 左侧手柄拖动
   private leftHandleMove({
@@ -118,36 +169,8 @@ export class SegmentTracks extends Tracks {
     document.addEventListener("mousemove", mousemove);
     document.addEventListener("mouseup", mouseup);
   }
-  private segmentDragStart(
-    e: MouseEvent,
-    trackCursor: CursorPointer,
-    scrollContainer: HTMLElement,
-    segment: HTMLElement
-  ) {
-    this.removeSegmentActivedStatus();
-    segment.classList.add("actived");
-    this.dragStart(e, trackCursor, scrollContainer, segment);
-  }
-  scaleX(ratio: number) {
-    if (!this.scrollContainer || !this.timeline) {
-      return;
-    }
-    const segments: HTMLElement[] = Array.from(
-      this.scrollContainer.querySelectorAll(".segment")
-    );
-    const frameWidth = this.timeline?.frameWidth;
-    segments.forEach((dom: HTMLElement) => {
-      if (!dom.dataset.framestart || !dom.dataset.frameend || !this.timeline) {
-        return;
-      }
-      const framestart = parseFloat(dom.dataset.framestart);
-      const frameend = parseFloat(dom.dataset.frameend);
-      const left = framestart * frameWidth;
-      dom.style.left = `${left}px`;
-      dom.style.width = `${frameWidth * (frameend - framestart)}px`;
-    });
-  }
   override destroy(): void {
     this?.scrollContainer?.removeEventListener("mousedown", this.mouseDownHandle);
+    this.segmentDelegate.removeEventListener("mousedown", this.mousedownDelegateHandle);
   }
 }

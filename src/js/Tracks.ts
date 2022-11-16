@@ -25,6 +25,7 @@ import {
   getDatasetNumberByKey,
   sortByLeftValue,
   createSegmentName,
+  findParentElementByClassName,
 } from "./trackUtils";
 // 轨道
 export abstract class Tracks{
@@ -114,7 +115,6 @@ export abstract class Tracks{
       return;
     }
     if (this.deleteableCheck) {
-      // const trackDom = findParentElementByClassName(activedSegment, 'track');
       const trackId = activedSegment?.dataset.trackId;
       const segmentId = activedSegment.dataset.segmentId;
       if (trackId && segmentId) {
@@ -125,8 +125,11 @@ export abstract class Tracks{
         }
       }
     }
-    activedSegment.parentElement?.removeChild(activedSegment);
-    // todo 如果是可伸缩轨道删除，则需要重新伸缩其它segment填满轨道
+    const trackDom = findParentElementByClassName(activedSegment, 'track');
+    // 如果是可伸缩轨道删除，则需要重新伸缩其它segment填满轨道
+    if(trackDom){
+      activedSegment.parentElement?.removeChild(activedSegment);
+    }
   }
   unMounted() {
     document.body.removeEventListener(
@@ -283,30 +286,35 @@ export abstract class Tracks{
       this.sliceSegments(track, segmentId, framestart, frameend);
       this.framestart = framestart
       this.frameend = frameend
-    }else{
-      const placeHolder = getSegmentPlaceholder(track)
-      if(placeHolder){
-        this.collisionXstretch(isCopySegment, currentSegment, placeHolder, track, true);
-      }
     }
+    // else{
+    //   const placeHolder = getSegmentPlaceholder(track)
+    //   if(placeHolder){
+    //     this.collisionXstretch(isCopySegment, currentSegment, placeHolder, track, true);
+    //   }
+    // }
+  }
+  private getRightSideSegments(segments: HTMLElement[], leftValue: number) {
+    return segments.filter( (segment) => {
+      const segmentX = getLeftValue(segment);
+      return leftValue < segmentX
+    }).sort(sortByLeftValue)
+  }
+  private getLeftSideSegments(segments: HTMLElement[], leftValue: number) {
+    return segments.filter( (segment) => {
+      const segmentX = getLeftValue(segment);
+      return leftValue > (segmentX + segment.getBoundingClientRect().width * .5)
+    }).sort(sortByLeftValue)
   }
   // 伸缩轨道内拖动
-  
   private collisionXstretch(isCopySegment: boolean, currentSegment:HTMLElement, placeholder: HTMLElement, collisionTrack: HTMLElement, isdrop?:boolean){
     if(isCopySegment){
       return;
     }
     let segments = Array.from(collisionTrack.querySelectorAll('.segment')) as HTMLElement[];
     const placeholderLeft = getLeftValue(placeholder);
-    const onRightSegments = segments.filter( (segment) => {
-      const segmentX = getLeftValue(segment);
-      return placeholderLeft < segmentX
-    }).sort(sortByLeftValue)
-    const onLeftSegments = segments.filter( (segment) => {
-      const segmentX = getLeftValue(segment);
-      return placeholderLeft > (segmentX + segment.getBoundingClientRect().width * .5)
-    }).sort(sortByLeftValue)
-    
+    const onRightSegments = this.getRightSideSegments(segments, placeholderLeft)
+    const onLeftSegments = this.getLeftSideSegments(segments, placeholderLeft)
     for (let segment of onLeftSegments) {
       const segmentFramestart = getDatasetNumberByKey(segment, 'framestart');
       const segmentFrameend = getDatasetNumberByKey(segment, 'frameend');
