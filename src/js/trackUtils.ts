@@ -15,7 +15,9 @@ const createDivDom = (className: string) => {
   return dom;
 }
 
-export const createSegment = (type: SegmentType) => {
+// todo: 抽象成单独 Segment 类用于构造 segment
+export const createSegment = (type?: SegmentType) => {
+  console.log(type);
   const dom = document.createElement("div");
   dom.className = "segment segment-action";
   dom.style.width = "80px";
