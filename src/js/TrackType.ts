@@ -23,7 +23,7 @@ export interface TracksEventDragEnd {
   (segmentInfo?: SegmentBasicInfo, segments?: HTMLElement[], eventType?: TRACKS_EVENT_CALLBACK_TYPES): any
 }
 export interface TracksEvent{
-  (segments: HTMLElement[], eventType?: TRACKS_EVENT_CALLBACK_TYPES): any
+  (segments: SegmentBasicInfo[], eventType?: TRACKS_EVENT_CALLBACK_TYPES): any
 }
 export type  TracksEventCallback  = TracksEvent & TracksEventDragEnd
 
