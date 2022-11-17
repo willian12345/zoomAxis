@@ -41,7 +41,7 @@ function App() {
     // 根据缩放比较，减小滚动宽度
     if (zoom) {
       timeline?.zoom(zoom);
-      segmentTracks?.scaleX(zoom);
+      segmentTracks?.syncScale();
       // 根据帧数变更游标位置
       if (trackCursor) {
         trackCursor.sync();
@@ -136,11 +136,15 @@ function App() {
       timeline,
       segmentDelegate: segmentItemList,
     });
-    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
+    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, (segmentInfo) => {
+      console.log(segmentInfo);
       // addTrackWidth(trackCursor);
     });
     segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_CHANGED, (segments) => {
-      console.log(segments)
+      console.log(segments);
+    });
+    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED, (segments) => {
+      console.log(segments);
     });
   };
   window.addEventListener('keydown', handleKeyDown);
