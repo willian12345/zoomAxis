@@ -40,7 +40,7 @@ const syncByZoom = (zoom: number) => {
   // 根据缩放比较，减小滚动宽度
   if (zoom) {
     timeline?.zoom(zoom);
-    segmentTracks?.scaleX(zoom);
+    segmentTracks?.syncScale();
     // 根据帧数变更游标位置
     if (trackCursor) {
       trackCursor.sync();
@@ -164,7 +164,7 @@ onUnmounted(()=> {
         <em>(伸缩轨道)</em>
       </div>
     </div>
-    <div class="timeline-container" @wheel.ctrl="handleWheel">
+    <div class="timeline-container" @wheel="handleWheel">
       <div class="track-operation">
         <div class="track-operation-item">普通轨道</div>
         <div class="track-operation-item">普通轨道</div>

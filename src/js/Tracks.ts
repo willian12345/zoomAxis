@@ -1,7 +1,6 @@
 import {
   TRACKS_EVENT_CALLBACK_TYPES,
   TracksEventCallback,
-  TracksEventSegmentsChanged,
   DeleteableCheck,
   SegmentType,
   DropableCheck,
@@ -32,7 +31,8 @@ import {
 export abstract class Tracks{
   abstract destroy(): void
   private dragEndCallback: Set<TracksEventCallback> | null = null
-  private segmentsChangedCallback: Set<TracksEventSegmentsChanged> | null = null
+  private segmentsChangedCallback: Set<TracksEventCallback> | null = null
+  protected segmentsSlidedCallback: Set<TracksEventCallback> | null = null
   protected scrollContainer: HTMLElement = {} as HTMLElement
   protected dragoverClass = "dragover"
   protected dragoverErrorClass = "dragover-error"
@@ -76,19 +76,19 @@ export abstract class Tracks{
   }
   private initEvent() {
     // 点击轨道外部时清除选中过的 segment 状态
-    document.body.addEventListener(
-      "click",
+    document.addEventListener(
+      "mouseup",
       this.removeSegmentActivedStatus.bind(this)
     );
     // Delete 键删除当前选中的 segment
-    document.body.addEventListener(
+    document.addEventListener(
       "keydown",
       this.removeActivedSegment.bind(this)
     );
   }
   addEventListener(
     eventType: TRACKS_EVENT_CALLBACK_TYPES,
-    callback: TracksEventCallback|TracksEventSegmentsChanged
+    callback: TracksEventCallback
   ) {
     if (eventType === TRACKS_EVENT_CALLBACK_TYPES.DRAG_END) {
       if (!this.dragEndCallback) {
@@ -101,7 +101,13 @@ export abstract class Tracks{
       if (!this.segmentsChangedCallback) {
         this.segmentsChangedCallback = new Set();
       }
-      this.segmentsChangedCallback.add(callback as TracksEventSegmentsChanged);
+      this.segmentsChangedCallback.add(callback);
+    }
+    if(eventType === TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED){
+      if (!this.segmentsSlidedCallback) {
+        this.segmentsSlidedCallback = new Set();
+      }
+      this.segmentsSlidedCallback.add(callback);
     }
   }
   removeActivedSegment(event: KeyboardEvent) {
@@ -164,11 +170,11 @@ export abstract class Tracks{
     }
   }
   unMounted() {
-    document.body.removeEventListener(
+    document.removeEventListener(
       "mousedown",
       this.removeSegmentActivedStatus
     );
-    document.body.removeEventListener("keydown", this.removeActivedSegment);
+    document.removeEventListener("keydown", this.removeActivedSegment);
     this.destroy()
   }
   private putSegmentBack(
@@ -288,7 +294,7 @@ export abstract class Tracks{
     }
     return result
   }
-  private setSegmentPosition(segment: HTMLElement, framestart:number, frameend: number){
+  setSegmentPosition(segment: HTMLElement, framestart:number, frameend: number){
     const segmentLeft = this.getSegmentLeft(framestart);
     segment.style.left = `${segmentLeft}px`;
     const frames = frameend - framestart
@@ -296,47 +302,53 @@ export abstract class Tracks{
       segment.style.width = `${this.timeline?.frameWidth * frames}px`;
     }
   }
-  private dropToStretchTrack(track: HTMLElement, currentSegment: HTMLElement, framestart: number, isCopySegment: boolean){
-    if(isCopySegment){
-      track.appendChild(currentSegment);
-      const totalFrames = this.timeline?.totalFrames ?? 0
-      let frameend = totalFrames
-      // 如果轨道内只有一个 segment 则铺满整个轨道
-      if(track.querySelectorAll('.segment').length === 1){
-        framestart = 0
-      }else if(framestart > totalFrames){
-        framestart = totalFrames
-        // todo: 伸缩轨道增长暂定为 150 帧
-        frameend  = framestart + 300;
-        this.timeline?.setTotalFrames(frameend);
-      }
-      currentSegment.dataset.framestart = String(framestart)
-      currentSegment.dataset.frameend = String(frameend)
-      currentSegment.dataset.trackId = track.dataset.trackId ?? '';
-      
-      this.setSegmentPosition(currentSegment, framestart, frameend);
-      const segmentId = currentSegment.dataset.segmentId ?? '';
-      const result = this.sliceSegments(track, segmentId, framestart, frameend);
-      this.segmentsChangedCallback?.forEach( cb => {
-        cb(result, TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_CHANGED);
-      })
-      this.framestart = framestart
-      this.frameend = frameend
+  private dropToStretchTrack(track: HTMLElement, currentSegment: HTMLElement, framestart: number){
+    track.appendChild(currentSegment);
+    const totalFrames = this.timeline?.totalFrames ?? 0
+    let frameend = totalFrames
+    // 如果轨道内只有一个 segment 则铺满整个轨道
+    if(track.querySelectorAll('.segment').length === 1){
+      framestart = 0
+    }else if(framestart > totalFrames){
+      framestart = totalFrames
+      // todo: 伸缩轨道增长暂定为 150 帧
+      frameend  = framestart + 300;
+      this.timeline?.setTotalFrames(frameend);
     }
+    currentSegment.dataset.framestart = String(framestart)
+    currentSegment.dataset.frameend = String(frameend)
+    currentSegment.dataset.trackId = track.dataset.trackId ?? '';
+    
+    this.setSegmentPosition(currentSegment, framestart, frameend);
+    const segmentId = currentSegment.dataset.segmentId ?? '';
+    const result = this.sliceSegments(track, segmentId, framestart, frameend);
+    this.segmentsChangedCallback?.forEach( cb => {
+      cb(result, TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_CHANGED);
+    })
+    this.framestart = framestart
+    this.frameend = frameend
   }
   // 获取相对于 leftValue 右侧所有 segment
-  private getRightSideSegments(segments: HTMLElement[], leftValue: number) {
+  getRightSideSegments(segments: HTMLElement[], leftValue: number) {
     return segments.filter( (segment) => {
       const segmentX = getLeftValue(segment);
       return leftValue < segmentX
     }).sort(sortByLeftValue)
   }
   // 获取相对于 leftValue 左侧所有 segment
-  private getLeftSideSegments(segments: HTMLElement[], leftValue: number) {
+  getLeftSideSegments(segments: HTMLElement[], leftValue: number) {
     return segments.filter( (segment) => {
       const segmentX = getLeftValue(segment);
       return leftValue > (segmentX + segment.getBoundingClientRect().width * .5)
     }).sort(sortByLeftValue)
+  }
+  getLeftSideSegmentsInTrack(track: HTMLElement,leftValue: number){
+    const segments = Array.from(track.querySelectorAll('.segment')) as HTMLElement[];
+    return this.getLeftSideSegments(segments, leftValue);
+  }
+  getRightSideSegmentsInTrack(track: HTMLElement,leftValue: number){
+    const segments = Array.from(track.querySelectorAll('.segment')) as HTMLElement[];
+    return this.getRightSideSegments(segments, leftValue);
   }
   // 伸缩轨道内拖动
   private collisionXstretch(isCopySegment: boolean, currentSegment:HTMLElement, placeholder: HTMLElement, collisionTrack: HTMLElement, isdrop?:boolean){
@@ -438,20 +450,56 @@ export abstract class Tracks{
     
     return collisionY
   }
-  private triggerDroped(segment: HTMLElement){
+  getSegmentsByTrack(track: HTMLElement): HTMLElement[]{
+    return Array.from<HTMLElement>(track.querySelectorAll('.segment'));
+  }
+  // todo: 暂时先用这种方式实现首尾不让用户拖动
+  private updateSliderHandler(track: HTMLElement){
+    if(this.isStretchTrack(track)){
+      const segments = this.getSegmentsByTrack(track).sort(sortByLeftValue)
+      const handles = Array.from<HTMLElement>(track.querySelectorAll('.segment-handle-left, .segment-handle-right'))
+      // 如果只有一个 segment 则不允许左右手柄拖动
+      if(segments.length === 1){
+        handles.forEach( (handle) => {
+          handle.style.pointerEvents = 'none'
+        })
+      }else{
+        handles.forEach(handle => {
+          handle.style.pointerEvents = 'initial'
+        });
+        const first = segments[0]
+        if(first){
+          const handle = first.querySelector('.segment-handle-left') as HTMLElement
+          handle.style.pointerEvents = 'none'
+        }
+        const last = segments[segments.length - 1]
+        if(last){
+          const handle = last.querySelector('.segment-handle-right') as HTMLElement
+          handle.style.pointerEvents = 'none'
+        }
+      }
+    }
+  }
+  private triggerDragEnd(segment: HTMLElement, track: HTMLElement){
     const segmentId = segment.dataset.segmentId ?? "";
     const trackId = segment.dataset.trackId ?? "";
     const startFrame = getDatasetNumberByKey(segment, 'framestart');
     const endFrame = getDatasetNumberByKey(segment, 'frameend');
-    // 拖完后触发回调
-    this.dragEndCallback?.forEach((cb) =>
-      cb(this, TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, {
+    // 拖动放回原处是异步，拖完也要延时
+    setTimeout(() => {
+      this.updateSliderHandler(track)
+      // 拖完后触发回调
+      this.dragEndCallback?.forEach((cb) =>
+      cb({
+        segment,
+        track,
         trackId,
         segmentId,
         startFrame,
         endFrame,
       })
     );
+    }, 2);
   }
   private async drop({
     e, x, segment, track, tracks, isCopySegment
@@ -486,8 +534,8 @@ export abstract class Tracks{
     
     // 如果是伸展轨道
     if(stretchTrack){
-      this.dropToStretchTrack(track, dom, framestart, isCopySegment);
-      this.triggerDroped(dom);
+      isCopySegment && this.dropToStretchTrack(track, dom, framestart);
+      this.triggerDragEnd(dom, track);
       return;
     }
     // 普通轨道
@@ -517,7 +565,7 @@ export abstract class Tracks{
         dom.style.width = `${this.timeline?.frameWidth * frames}px`;
       }
     }
-    this.triggerDroped(dom);
+    this.triggerDragEnd(dom, track);
   }
   dragStart(
     e: MouseEvent,

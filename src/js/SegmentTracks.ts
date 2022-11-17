@@ -1,6 +1,6 @@
 import { Tracks } from "./Tracks";
-// import { findParentElementByClassName, getLeftValue } from "./trackUtils";
-import { SegmentTracksArgs, MouseHandle } from "./TrackType";
+import { findParentElementByClassName, getLeftValue, getDatasetNumberByKey, } from "./trackUtils";
+import { SegmentTracksArgs, MouseHandle, TRACKS_EVENT_CALLBACK_TYPES } from "./TrackType";
 import { CursorPointer } from "./CursorPointer";
 interface MoveFunctionArgs {
   frameWidth: number;
@@ -48,7 +48,18 @@ export class SegmentTracks extends Tracks {
     if (!target) {
       return;
     }
-    
+    // todo: 手柄事件处理抽象至Segment 类
+    // segment 左侧手柄拖动
+    if (target.classList.contains("segment-handle-left")) {
+      this.dragHandleStart(e, target, this.leftHandleMove);
+      return
+    }
+    // segment 右侧手柄拖动
+    if (target.classList.contains("segment-handle-right")) {
+      this.dragHandleStart(e, target, this.rightHandleMove);
+      return
+    }
+
     if (target.classList.contains("segment") && this.trackCursor && this.scrollContainer) {
       this.segmentDragStart(e, this.trackCursor, this.scrollContainer, target);
     }
@@ -76,7 +87,7 @@ export class SegmentTracks extends Tracks {
     segment.classList.add("actived");
     this.dragStart(e, trackCursor, scrollContainer, segment);
   }
-  scaleX(ratio: number) {
+  syncScale() {
     if (!this.scrollContainer || !this.timeline) {
       return;
     }
@@ -96,13 +107,13 @@ export class SegmentTracks extends Tracks {
     });
   }
   // segment 左侧手柄拖动
-  private leftHandleMove({
+  private leftHandleMove = ({
     frameWidth,
     moveX,
     segmentleftOrigin,
-    widthOrigin,
     segment,
-  }: MoveFunctionArgs) {
+  }: MoveFunctionArgs) =>  {
+    this.trackCursor?.freeze();
     // 鼠标移动距离 x
     const x = segmentleftOrigin + moveX;
     // 需要定位到具体某一帧的位置
@@ -110,37 +121,75 @@ export class SegmentTracks extends Tracks {
     if (currentFrame < 0) {
       currentFrame = 0;
     }
-    const segmentLeft: number = frameWidth * currentFrame;
     const frameend = parseFloat(segment.dataset.frameend ?? "0");
+    if(currentFrame >= frameend){
+      return
+    }
+    const segmentLeft: number = frameWidth * currentFrame;
     const width = (frameend - currentFrame) * frameWidth;
     // 宽度 = 原宽度 - 帧计算后的left值 与原 left 差
     segment.style.width = `${width}px`;
     segment.style.left = `${segmentLeft}px`;
     segment.dataset.framestart = `${currentFrame}`;
+    const result: HTMLElement[] = [segment];
+    // 伸缩轨道，左侧 segment frameend 设为当前调整的 segment 的 framestart
+    const trackDom = findParentElementByClassName(segment, 'track-stretch');
+    if(trackDom){
+      const segmentLeftSide: HTMLElement | undefined = this.getLeftSideSegmentsInTrack(trackDom, segmentLeft).reverse()[0];
+      if(segmentLeftSide){
+        const framestart = getDatasetNumberByKey(segmentLeftSide, 'framestart');
+        this.setSegmentPosition(segmentLeftSide, framestart, currentFrame);
+        segmentLeftSide.dataset.frameend = `${currentFrame}`;
+        result.push(segmentLeftSide);
+      }
+    }
+    this.triggerSlideEvent(result);
   }
   // segment 右侧手柄拖动
-  private rightHandleMove({
+  private rightHandleMove = ({
     frameWidth,
     moveX,
     segmentleftOrigin,
     widthOrigin,
     segment,
-  }: MoveFunctionArgs) {
+  }: MoveFunctionArgs) => {
+    this.trackCursor?.freeze();
     const x = moveX;
     const frameend = Math.round(
       (segmentleftOrigin + widthOrigin + x) / frameWidth
     );
     const framestart = parseFloat(segment.dataset.framestart ?? "0");
+    if(frameend <= framestart){
+      return
+    }
     const width = (frameend - framestart) * frameWidth;
     // 宽度 = 原宽度 - 帧计算后的left值 与原 left 差
     segment.style.width = `${width}px`;
     segment.dataset.frameend = `${frameend}`;
+    const result: HTMLElement[] = [segment];
+    // 伸缩轨道，右侧 segment framestart 设为当前调整的 segment 的 frameend
+    const trackDom = findParentElementByClassName(segment, 'track-stretch');
+    if(trackDom){
+      const segmentRightSide: HTMLElement | undefined = this.getRightSideSegmentsInTrack(trackDom, getLeftValue(segment))[0];
+      if(segmentRightSide){
+        const segmentRightSideFrameend = getDatasetNumberByKey(segmentRightSide, 'frameend');
+        this.setSegmentPosition(segmentRightSide, frameend, segmentRightSideFrameend);
+        segmentRightSide.dataset.framestart = `${frameend}`;
+        result.push(segmentRightSide)
+      }
+    }
+    this.triggerSlideEvent(result);
   }
-  private dragHandleStart(
+  private triggerSlideEvent(result: HTMLElement[]){
+    this.segmentsSlidedCallback?.forEach( cb => {
+      cb(result, TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED);
+    })
+  }
+  private dragHandleStart = (
     e: MouseEvent,
     handle: HTMLElement,
     move: (args: MoveFunctionArgs) => void
-  ) {
+  )  => {
     const segment: HTMLElement = findParentElementByClassName(
       handle,
       "segment"
@@ -163,11 +212,15 @@ export class SegmentTracks extends Tracks {
     const mouseup = (e: MouseEvent) => {
       e.stopPropagation();
       startX = e.clientX;
-      document.removeEventListener("mousemove", mousemove);
-      document.removeEventListener("mouseup", mouseup);
+      setTimeout(() => {
+        this.trackCursor.unfreeze();  
+      }, 0);
+      document.body.removeEventListener("mousemove", mousemove);
+      document.body.removeEventListener("mouseup", mouseup);
     };
-    document.addEventListener("mousemove", mousemove);
-    document.addEventListener("mouseup", mouseup);
+    // 在body上侦听事件，顶级事件留给 Tracks 全局，用于冒泡处理
+    document.body.addEventListener("mousemove", mousemove);
+    document.body.addEventListener("mouseup", mouseup);
   }
   override destroy(): void {
     this?.scrollContainer?.removeEventListener("mousedown", this.mouseDownHandle);
