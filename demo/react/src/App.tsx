@@ -7,10 +7,9 @@ import "./App.css";
 import Cursor from "./components/Cursor";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "../../../src/js/TimelineAxis";
 import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/CursorPointer";
-import { TRACKS_EVENT_CALLBACK_TYPES, DropableArgs } from "../../../src/js/TrackType";
+import { TRACKS_EVENT_CALLBACK_TYPES } from "../../../src/js/TrackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
 import { SegmentTracks } from "../../../src/js/SegmentTracks";
-import { SegmentTracksOut } from "../../../src/js/SegmentTracksOut";
 
 let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;
@@ -137,14 +136,14 @@ function App() {
       segmentDelegate: segmentItemList,
     });
     segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, (segmentInfo) => {
-      console.log(segmentInfo);
+      // console.log(segmentInfo);
       // addTrackWidth(trackCursor);
     });
-    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_CHANGED, (segments) => {
-      console.log(segments);
+    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT, (segments) => {
+      console.log('DROP_EFFECT', segments);
     });
     segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED, (segments) => {
-      console.log(segments);
+      // console.log(segments);
     });
   };
   window.addEventListener('keydown', handleKeyDown);
