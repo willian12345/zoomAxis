@@ -7,6 +7,7 @@ import {
   TracksArgs,
   DragingArgs,
   DropArgs,
+  SegmentBasicInfo,
 } from "./TrackType";
 
 import { CursorPointer } from "./CursorPointer";
@@ -328,7 +329,17 @@ export abstract class Tracks{
     
     this.setSegmentPosition(currentSegment, framestart, frameend);
     const segmentId = currentSegment.dataset.segmentId ?? '';
-    const result = this.sliceSegments(track, segmentId, framestart, frameend);
+    const effectSegments = this.sliceSegments(track, segmentId, framestart, frameend);
+    const result: SegmentBasicInfo[] = effectSegments.map((r):SegmentBasicInfo => {
+      return {
+        trackId: r.dataset.trackId ?? '',
+        segmentId: r.dataset.segmentId ?? '', 
+        startFrame: getDatasetNumberByKey(r, 'framestart'),
+        endFrame:  getDatasetNumberByKey(r, 'frameend'),
+        track,
+        segment: r,
+      }
+    })
     this.segmentDropEffectCallback?.forEach( cb => {
       cb(result, TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT);
     })
