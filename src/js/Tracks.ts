@@ -33,6 +33,7 @@ export abstract class Tracks{
   private dragEndCallback: Set<TracksEventCallback> | null = null
   private segmentsChangedCallback: Set<TracksEventCallback> | null = null
   protected segmentsSlidedCallback: Set<TracksEventCallback> | null = null
+  protected segmentDropEffectCallback: Set<TracksEventCallback> | null = null
   protected scrollContainer: HTMLElement = {} as HTMLElement
   protected dragoverClass = "dragover"
   protected dragoverErrorClass = "dragover-error"
@@ -102,6 +103,12 @@ export abstract class Tracks{
         this.segmentsChangedCallback = new Set();
       }
       this.segmentsChangedCallback.add(callback);
+    }
+    if(eventType === TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT){
+      if (!this.segmentDropEffectCallback) {
+        this.segmentDropEffectCallback = new Set();
+      }
+      this.segmentDropEffectCallback.add(callback);
     }
     if(eventType === TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED){
       if (!this.segmentsSlidedCallback) {
@@ -322,8 +329,8 @@ export abstract class Tracks{
     this.setSegmentPosition(currentSegment, framestart, frameend);
     const segmentId = currentSegment.dataset.segmentId ?? '';
     const result = this.sliceSegments(track, segmentId, framestart, frameend);
-    this.segmentsChangedCallback?.forEach( cb => {
-      cb(result, TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_CHANGED);
+    this.segmentDropEffectCallback?.forEach( cb => {
+      cb(result, TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT);
     })
     this.framestart = framestart
     this.frameend = frameend
@@ -682,10 +689,14 @@ export abstract class Tracks{
           if (isCopySegment) {
             dragTrackContainer.removeChild(segmentCopy);
           }
-          originTrack && this.putSegmentBack(segment, getLeftValue(segment), originTrack);
+          if(originTrack){
+            this.putSegmentBack(segment, getLeftValue(segment), originTrack);
+            this.triggerDragEnd(segment, originTrack);
+          }
         }
         // 重新允许游标交互
         trackCursor.enable = true;
+        
       }, 0);
       document.removeEventListener("mouseup", mouseup);
       document.removeEventListener("mousemove", mousemove);
