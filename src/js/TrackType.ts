@@ -11,12 +11,16 @@ export enum SegmentType {
 }
 export enum TRACKS_EVENT_CALLBACK_TYPES {
   DRAG_END,
+  SEGMENTS_CHANGED,
 }
 export interface SegmentBasicInfo {
   trackId: string, segmentId: string, startFrame: number, endFrame: number
 }
 export interface TracksEventCallback {
   (instance:Tracks, eventType: TRACKS_EVENT_CALLBACK_TYPES, segment?: SegmentBasicInfo): any
+}
+export interface TracksEventSegmentsChanged extends TracksEventCallback {
+  (segments: HTMLElement[], eventType: TRACKS_EVENT_CALLBACK_TYPES): any
 }
 
 
