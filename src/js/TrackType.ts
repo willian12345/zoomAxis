@@ -1,7 +1,6 @@
 
 import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
-import { Tracks } from "./Tracks";
 export enum SegmentType {
   BODY_ANIMATION,
   FACE_ANIMATION,
@@ -10,18 +9,25 @@ export enum SegmentType {
   CAMERA,
 }
 export enum TRACKS_EVENT_CALLBACK_TYPES {
-  DRAG_END,
-  SEGMENTS_CHANGED,
+  DRAG_END, // 拖动结束事件
+  SEGMENTS_CHANGED, // 伸缩轨道覆盖切割事件
+  SEGMENTS_SLIDED, // segment 拖动调节宽度事件
 }
 export interface SegmentBasicInfo {
   trackId: string, segmentId: string, startFrame: number, endFrame: number
+  segment?: HTMLElement,
+  track?:HTMLElement
 }
-export interface TracksEventCallback {
-  (instance:Tracks, eventType: TRACKS_EVENT_CALLBACK_TYPES, segment?: SegmentBasicInfo): any
+export interface TracksEventDragEnd {
+  (segmentInfo?: SegmentBasicInfo, segments?: HTMLElement[], eventType?: TRACKS_EVENT_CALLBACK_TYPES): any
 }
-export interface TracksEventSegmentsChanged extends TracksEventCallback {
-  (segments: HTMLElement[], eventType: TRACKS_EVENT_CALLBACK_TYPES): any
+export interface TracksEventSegmentsChanged {
+  (segments: HTMLElement[], eventType?: TRACKS_EVENT_CALLBACK_TYPES): any
 }
+export interface TracksEventSegmentSlided {
+  (segments: HTMLElement[], eventType?: TRACKS_EVENT_CALLBACK_TYPES): any
+}
+export type TracksEventCallback = TracksEventDragEnd & TracksEventSegmentsChanged
 
 
 export type DropableArgs = {
