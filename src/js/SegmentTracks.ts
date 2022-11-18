@@ -1,6 +1,6 @@
 import { Tracks } from "./Tracks";
 import { findParentElementByClassName, getLeftValue, getDatasetNumberByKey, } from "./trackUtils";
-import { SegmentTracksArgs, MouseHandle, TRACKS_EVENT_CALLBACK_TYPES } from "./TrackType";
+import { SegmentTracksArgs, MouseHandle, TRACKS_EVENT_CALLBACK_TYPES, SegmentBasicInfo } from "./TrackType";
 import { CursorPointer } from "./CursorPointer";
 interface MoveFunctionArgs {
   frameWidth: number;
@@ -166,7 +166,7 @@ export class SegmentTracks extends Tracks {
     // 宽度 = 原宽度 - 帧计算后的left值 与原 left 差
     segment.style.width = `${width}px`;
     segment.dataset.frameend = `${frameend}`;
-    const result: HTMLElement[] = [segment];
+    const segments: HTMLElement[] = [segment];
     // 伸缩轨道，右侧 segment framestart 设为当前调整的 segment 的 frameend
     const trackDom = findParentElementByClassName(segment, 'track-stretch');
     if(trackDom){
@@ -175,12 +175,22 @@ export class SegmentTracks extends Tracks {
         const segmentRightSideFrameend = getDatasetNumberByKey(segmentRightSide, 'frameend');
         this.setSegmentPosition(segmentRightSide, frameend, segmentRightSideFrameend);
         segmentRightSide.dataset.framestart = `${frameend}`;
-        result.push(segmentRightSide)
+        segments.push(segmentRightSide)
       }
+      this.triggerSlideEvent(segments, trackDom);
     }
-    this.triggerSlideEvent(result);
   }
-  private triggerSlideEvent(result: HTMLElement[]){
+  private triggerSlideEvent(segments: HTMLElement[], track: HTMLElement){
+    const result: SegmentBasicInfo[] = segments.map((r):SegmentBasicInfo => {
+      return {
+        trackId: r.dataset.trackId ?? '',
+        segmentId: r.dataset.segmentId ?? '', 
+        startFrame: getDatasetNumberByKey(r, 'framestart'),
+        endFrame:  getDatasetNumberByKey(r, 'frameend'),
+        track,
+        segment: r,
+      }
+    })
     this.segmentsSlidedCallback?.forEach( cb => {
       cb(result, TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED);
     })
