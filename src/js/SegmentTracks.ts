@@ -133,17 +133,19 @@ export class SegmentTracks extends Tracks {
     segment.dataset.framestart = `${currentFrame}`;
     const result: HTMLElement[] = [segment];
     // 伸缩轨道，左侧 segment frameend 设为当前调整的 segment 的 framestart
-    const trackDom = findParentElementByClassName(segment, 'track-stretch');
+    const trackDom = findParentElementByClassName(segment, 'track');
     if(trackDom){
-      const segmentLeftSide: HTMLElement | undefined = this.getLeftSideSegmentsInTrack(trackDom, segmentLeft).reverse()[0];
-      if(segmentLeftSide){
-        const framestart = getDatasetNumberByKey(segmentLeftSide, 'framestart');
-        this.setSegmentPosition(segmentLeftSide, framestart, currentFrame);
-        segmentLeftSide.dataset.frameend = `${currentFrame}`;
-        result.push(segmentLeftSide);
+      if(this.isStretchTrack(trackDom)){
+        const segmentLeftSide: HTMLElement | undefined = this.getLeftSideSegmentsInTrack(trackDom, segmentLeft).reverse()[0];
+        if(segmentLeftSide){
+          const framestart = getDatasetNumberByKey(segmentLeftSide, 'framestart');
+          this.setSegmentPosition(segmentLeftSide, framestart, currentFrame);
+          segmentLeftSide.dataset.frameend = `${currentFrame}`;
+          result.push(segmentLeftSide);
+        }
       }
+      this.triggerSlideEvent(result, trackDom);
     }
-    this.triggerSlideEvent(result);
   }
   // segment 右侧手柄拖动
   private rightHandleMove = ({
@@ -168,15 +170,18 @@ export class SegmentTracks extends Tracks {
     segment.dataset.frameend = `${frameend}`;
     const segments: HTMLElement[] = [segment];
     // 伸缩轨道，右侧 segment framestart 设为当前调整的 segment 的 frameend
-    const trackDom = findParentElementByClassName(segment, 'track-stretch');
+    const trackDom = findParentElementByClassName(segment, 'track');
     if(trackDom){
-      const segmentRightSide: HTMLElement | undefined = this.getRightSideSegmentsInTrack(trackDom, getLeftValue(segment))[0];
-      if(segmentRightSide){
-        const segmentRightSideFrameend = getDatasetNumberByKey(segmentRightSide, 'frameend');
-        this.setSegmentPosition(segmentRightSide, frameend, segmentRightSideFrameend);
-        segmentRightSide.dataset.framestart = `${frameend}`;
-        segments.push(segmentRightSide)
+      if(this.isStretchTrack(trackDom)){
+        const segmentRightSide: HTMLElement | undefined = this.getRightSideSegmentsInTrack(trackDom, getLeftValue(segment))[0];
+        if(segmentRightSide){
+          const segmentRightSideFrameend = getDatasetNumberByKey(segmentRightSide, 'frameend');
+          this.setSegmentPosition(segmentRightSide, frameend, segmentRightSideFrameend);
+          segmentRightSide.dataset.framestart = `${frameend}`;
+          segments.push(segmentRightSide)
+        }
       }
+      // todo 节流
       this.triggerSlideEvent(segments, trackDom);
     }
   }
@@ -192,7 +197,10 @@ export class SegmentTracks extends Tracks {
       }
     })
     this.segmentsSlidedCallback?.forEach( cb => {
-      cb(result, TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED);
+      cb({
+        segments: result,
+        eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED
+      });
     })
   }
   private dragHandleStart = (

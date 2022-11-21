@@ -1,6 +1,7 @@
 import {
   TRACKS_EVENT_CALLBACK_TYPES,
   TracksEventCallback,
+  TracksEvent,
   DeleteableCheck,
   SegmentType,
   DropableCheck,
@@ -87,6 +88,9 @@ export abstract class Tracks{
       "keydown",
       this.removeActivedSegment.bind(this)
     );
+  }
+  addListener(event, callback){
+    
   }
   addEventListener(
     eventType: TRACKS_EVENT_CALLBACK_TYPES,
@@ -341,7 +345,7 @@ export abstract class Tracks{
       }
     })
     this.segmentDropEffectCallback?.forEach( cb => {
-      cb(result, TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT);
+      cb({segments: result, eventType: TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT});
     })
     this.framestart = framestart
     this.frameend = frameend
@@ -388,8 +392,9 @@ export abstract class Tracks{
         this.setSegmentPosition(segment, framestartMoved, frameendMoved);
         segment.dataset.framestart = `${framestartMoved}`;
         segment.dataset.frameend = `${frameendMoved}`;
-        this.framestart = frameendMoved
-        this.frameend = frameendMoved + this.frames
+        this.framestart = frameendMoved;
+        this.frameend = frameendMoved + this.frames;
+        this.triggerDragEnd(segment, collisionTrack);
       }
     }
     // 判断右侧片断时，需要先将片断反转从右边头上开始判断一步步向右移动
@@ -406,6 +411,7 @@ export abstract class Tracks{
         segment.dataset.frameend = `${frameendMoved}`;
         this.framestart = segmentFramestart
         this.frameend = segmentFramestart + this.frames;
+        this.triggerDragEnd(segment, collisionTrack);
       }
     }
 
@@ -471,6 +477,7 @@ export abstract class Tracks{
   getSegmentsByTrack(track: HTMLElement): HTMLElement[]{
     return Array.from<HTMLElement>(track.querySelectorAll('.segment'));
   }
+
   // todo: 暂时先用这种方式实现首尾不让用户拖动
   private updateSliderHandler(track: HTMLElement){
     if(this.isStretchTrack(track)){
@@ -506,15 +513,21 @@ export abstract class Tracks{
     // 拖动放回原处是异步，拖完也要延时
     setTimeout(() => {
       this.updateSliderHandler(track)
+      console.log(startFrame, endFrame)
       // 拖完后触发回调
       this.dragEndCallback?.forEach((cb) =>
       cb({
-        segment,
-        track,
-        trackId,
-        segmentId,
-        startFrame,
-        endFrame,
+          segments: [
+            {
+              segment,
+              track,
+              trackId,
+              segmentId,
+              startFrame,
+              endFrame,
+            }
+          ],
+          eventType: TRACKS_EVENT_CALLBACK_TYPES.DRAG_END
       })
     );
     }, 2);
@@ -568,18 +581,17 @@ export abstract class Tracks{
         segmentLeft = this.getSegmentLeft(framestart);
       }
 
-      const frames = parseFloat(dom.dataset.frames ?? "30");
       dom.dataset.framestart = `${framestart}`;
-      if (!dom.dataset.frameend) {
+      let frameend = getDatasetNumberByKey(dom, 'frameend');
+      if (!frameend) {
         const frameend = framestart + 30; // 默认
         dom.dataset.frameend = `${frameend}`;
-      } else {
-        dom.dataset.frameend = `${framestart + frames}`;
       }
       dom.dataset.trackId = segmentTrackId;
       dom.style.left = `${segmentLeft}px`;
       // todo
       if (this.timeline) {
+        const frames = frameend - framestart;
         dom.style.width = `${this.timeline?.frameWidth * frames}px`;
       }
     }
@@ -732,6 +744,10 @@ export abstract class Tracks{
         dom.dataset.segmentId = `${segment.segmentId}`
         dom.dataset.trackId = `${segment.trackId}`
         track.appendChild(dom);
+        // 更新是否可拖动手柄
+        if(this.isStretchTrack(track)){
+          this.updateSliderHandler(track);
+        }
       }
     }
   }
