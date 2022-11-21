@@ -19,7 +19,7 @@ const createDivDom = (className: string) => {
 export const createSegment = (type?: SegmentType) => {
   console.log(type);
   const dom = document.createElement("div");
-  dom.className = "segment segment-action";
+  dom.className = "segment";
   dom.style.width = "80px";
   dom.style.height = "24px";
   dom.style.left = "0";

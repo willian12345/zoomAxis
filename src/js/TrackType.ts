@@ -19,13 +19,11 @@ export interface SegmentBasicInfo {
   segment?: HTMLElement,
   track?:HTMLElement
 }
-export interface TracksEventDragEnd {
-  (segmentInfo?: SegmentBasicInfo, segments?: HTMLElement[], eventType?: TRACKS_EVENT_CALLBACK_TYPES): any
-}
+export type TrackEventCallbackArgs = {segments: SegmentBasicInfo[], eventType?: TRACKS_EVENT_CALLBACK_TYPES}
 export interface TracksEvent{
-  (segments: SegmentBasicInfo[], eventType?: TRACKS_EVENT_CALLBACK_TYPES): any
+  (e: TrackEventCallbackArgs): void
 }
-export type  TracksEventCallback  = TracksEvent & TracksEventDragEnd
+export type  TracksEventCallback  = TracksEvent
 
 
 export type DropableArgs = {
