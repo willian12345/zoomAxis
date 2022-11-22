@@ -1,7 +1,6 @@
 import {
   TRACKS_EVENT_CALLBACK_TYPES,
   TracksEventCallback,
-  TracksEvent,
   DeleteableCheck,
   SegmentType,
   DropableCheck,
@@ -28,6 +27,7 @@ import {
   sortByLeftValue,
   createSegmentName,
   findParentElementByClassName,
+  collisionCheckFrame,
 } from "./trackUtils";
 // 轨道
 export abstract class Tracks{
@@ -157,25 +157,27 @@ export abstract class Tracks{
       const deletedFramestart = getDatasetNumberByKey(activedSegment, 'framestart');
       const deletedFrameend = getDatasetNumberByKey(activedSegment, 'frameend');
       const frames = deletedFrameend - deletedFramestart;
-      const segments: HTMLElement[] = Array.from(trackDom.querySelectorAll('.segment'));
-      const segmentRightSide: HTMLElement | undefined = this.getRightSideSegments(segments, getLeftValue(activedSegment))[0];
-      // 如果右侧有 segment 则将右侧segment 起始帧移到被删除segment的起始帧
-      if(segmentRightSide){
-        let framestart = getDatasetNumberByKey(segmentRightSide, 'framestart');
-        const frameend = getDatasetNumberByKey(segmentRightSide, 'frameend');
-        framestart = framestart - frames;
-        this.setSegmentPosition(segmentRightSide, framestart, frameend);
-        segmentRightSide.dataset.framestart = `${framestart}`;
-      }else{
-        // 右侧没有且左侧有，则将左侧 segment 结束帧移到被删除 segment 结束帧
-        const segmentLeftSide: HTMLElement | undefined = this.getLeftSideSegments(segments, getLeftValue(activedSegment)).reverse()[0];
-        console.log(segmentLeftSide)
-        if(segmentLeftSide){
-          const framestart = getDatasetNumberByKey(segmentLeftSide, 'framestart');
-          let frameend = getDatasetNumberByKey(segmentLeftSide, 'frameend');
-          frameend = frameend + frames;
-          this.setSegmentPosition(segmentLeftSide, framestart, frameend);
-          segmentLeftSide.dataset.frameend = `${frameend}`;
+      if( this.isStretchTrack(trackDom)){
+        const segments: HTMLElement[] = Array.from(trackDom.querySelectorAll('.segment'));
+        const segmentRightSide: HTMLElement | undefined = this.getRightSideSegments(segments, getLeftValue(activedSegment))[0];
+        // 如果右侧有 segment 则将右侧segment 起始帧移到被删除segment的起始帧
+        if(segmentRightSide){
+          let framestart = getDatasetNumberByKey(segmentRightSide, 'framestart');
+          const frameend = getDatasetNumberByKey(segmentRightSide, 'frameend');
+          framestart = framestart - frames;
+          this.setSegmentPosition(segmentRightSide, framestart, frameend);
+          segmentRightSide.dataset.framestart = `${framestart}`;
+        }else{
+          // 右侧没有且左侧有，则将左侧 segment 结束帧移到被删除 segment 结束帧
+          const segmentLeftSide: HTMLElement | undefined = this.getLeftSideSegments(segments, getLeftValue(activedSegment)).reverse()[0];
+          console.log(segmentLeftSide)
+          if(segmentLeftSide){
+            const framestart = getDatasetNumberByKey(segmentLeftSide, 'framestart');
+            let frameend = getDatasetNumberByKey(segmentLeftSide, 'frameend');
+            frameend = frameend + frames;
+            this.setSegmentPosition(segmentLeftSide, framestart, frameend);
+            segmentLeftSide.dataset.frameend = `${frameend}`;
+          }
         }
       }
       activedSegment.parentElement?.removeChild(activedSegment);
@@ -226,7 +228,10 @@ export abstract class Tracks{
       }
     } else {
       dom = createSegment(SegmentType.BODY_ANIMATION);
-      dom.dataset.trackId = ''
+      const frameend = framestart + 30;
+      dom.dataset.framestart = `${framestart}`;
+      dom.dataset.frameend = `${frameend}`;
+      dom.dataset.trackId = segmentTrackId ?? '';
     }
     return dom;
   }
@@ -289,6 +294,7 @@ export abstract class Tracks{
       }
       return false
     });
+
     for(let i=0,j=segments.length; i<j;i++){
       const segment: HTMLElement = segments[i];
       let sFramestart = parseFloat(segment.dataset.framestart ?? '0');
@@ -513,7 +519,6 @@ export abstract class Tracks{
     // 拖动放回原处是异步，拖完也要延时
     setTimeout(() => {
       this.updateSliderHandler(track)
-      console.log(startFrame, endFrame)
       // 拖完后触发回调
       this.dragEndCallback?.forEach((cb) =>
       cb({
@@ -536,7 +541,6 @@ export abstract class Tracks{
     e, x, segment, track, tracks, isCopySegment
   }: DropArgs){
     let framestart = this.getFramestartByX(x);
-    let segmentLeft = this.getSegmentLeft(framestart);
     const placeHolder = getSegmentPlaceholder(track);
     if (!placeHolder) {
       return;
@@ -569,6 +573,11 @@ export abstract class Tracks{
       this.triggerDragEnd(dom, track);
       return;
     }
+    // 拖动复制入轨时，需要再次判断放入轨道成功后帧数范围是不是产生碰撞
+    if(isCopySegment && collisionCheckFrame(dom, track)){
+      console.log('frame collision')
+      return 
+    }
     // 普通轨道
     if (!isCollistion || magnet) {
       track.appendChild(dom);
@@ -578,22 +587,14 @@ export abstract class Tracks{
         const magnetLeft: number = getLeftValue(magnetTo);
         const x = magnetLeft + magnetToRect.width;
         framestart = this.getFramestartByX(x);
-        segmentLeft = this.getSegmentLeft(framestart);
+        // segmentLeft = this.getSegmentLeft(framestart);
       }
-
+      let fs = getDatasetNumberByKey(dom, 'framestart');
+      let fd = getDatasetNumberByKey(dom, 'frameend');
+      const frameend = framestart + (fd - fs);
+      this.setSegmentPosition(dom, framestart, frameend);
       dom.dataset.framestart = `${framestart}`;
-      let frameend = getDatasetNumberByKey(dom, 'frameend');
-      if (!frameend) {
-        const frameend = framestart + 30; // 默认
-        dom.dataset.frameend = `${frameend}`;
-      }
-      dom.dataset.trackId = segmentTrackId;
-      dom.style.left = `${segmentLeft}px`;
-      // todo
-      if (this.timeline) {
-        const frames = frameend - framestart;
-        dom.style.width = `${this.timeline?.frameWidth * frames}px`;
-      }
+      dom.dataset.frameend = `${frameend}`;
     }
     this.triggerDragEnd(dom, track);
   }
@@ -710,6 +711,14 @@ export abstract class Tracks{
         if (dragTrackContainer.children.length) {
           // 如果是复制
           if (isCopySegment) {
+
+            // todo 如果是放入轨道后才能获取帧数，则需要在此处另外碰撞检测，如果碰撞则删除拖入的 segment
+            // const track = findParentElementByClassName(segment, '.track') as HTMLElement;
+            // console.log(segment, track, 3333)
+            // const [isCollistion]  = collisionCheckX(segment, track);
+            // if(isCollistion){
+            //   segment.parentElement?.removeChild(segment);
+            // }
             dragTrackContainer.removeChild(segmentCopy);
           }
           if(originTrack){
