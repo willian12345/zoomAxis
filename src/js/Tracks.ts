@@ -575,7 +575,8 @@ export abstract class Tracks{
     }
     // 拖动复制入轨时，需要再次判断放入轨道成功后帧数范围是不是产生碰撞
     if(isCopySegment && collisionCheckFrame(dom, track)){
-      console.log('frame collision')
+      console.log('frame collision');
+      this.deleteableCheck && this.deleteableCheck(trackId, dom.dataset.segmentId ?? '');
       return 
     }
     // 普通轨道
