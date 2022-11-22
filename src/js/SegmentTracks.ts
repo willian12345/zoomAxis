@@ -1,5 +1,5 @@
 import { Tracks } from "./Tracks";
-import { findParentElementByClassName, getLeftValue, getDatasetNumberByKey, } from "./trackUtils";
+import { findParentElementByClassName, getLeftValue, getDatasetNumberByKey, findEndestSegmentOnTrack} from "./trackUtils";
 import { SegmentTracksArgs, MouseHandle, TRACKS_EVENT_CALLBACK_TYPES, SegmentBasicInfo } from "./TrackType";
 import { CursorPointer } from "./CursorPointer";
 interface MoveFunctionArgs {
@@ -11,6 +11,7 @@ interface MoveFunctionArgs {
 }
 
 // 轨道内 segment 拖拽
+// todo 抽取 Track 类
 export class SegmentTracks extends Tracks {
   scrollContainer: HTMLElement = {} as HTMLElement;
   scrollContainerRect: DOMRect = {} as DOMRect;
@@ -118,30 +119,47 @@ export class SegmentTracks extends Tracks {
     const x = segmentleftOrigin + moveX;
     // 需要定位到具体某一帧的位置
     let currentFrame = Math.round(x / frameWidth);
-    if (currentFrame < 0) {
-      currentFrame = 0;
-    }
     const frameend = parseFloat(segment.dataset.frameend ?? "0");
     if(currentFrame >= frameend){
       return
     }
-    const segmentLeft: number = frameWidth * currentFrame;
-    const width = (frameend - currentFrame) * frameWidth;
-    // 宽度 = 原宽度 - 帧计算后的left值 与原 left 差
-    segment.style.width = `${width}px`;
-    segment.style.left = `${segmentLeft}px`;
-    segment.dataset.framestart = `${currentFrame}`;
     const result: HTMLElement[] = [segment];
     // 伸缩轨道，左侧 segment frameend 设为当前调整的 segment 的 framestart
     const trackDom = findParentElementByClassName(segment, 'track');
     if(trackDom){
-      if(this.isStretchTrack(trackDom)){
-        const segmentLeftSide: HTMLElement | undefined = this.getLeftSideSegmentsInTrack(trackDom, segmentLeft).reverse()[0];
-        if(segmentLeftSide){
-          const framestart = getDatasetNumberByKey(segmentLeftSide, 'framestart');
-          this.setSegmentPosition(segmentLeftSide, framestart, currentFrame);
-          segmentLeftSide.dataset.frameend = `${currentFrame}`;
-          result.push(segmentLeftSide);
+      // 从拖动原点开始算找出最近的左侧 segment 
+      const segmentLeftSide: HTMLElement | undefined = this.getLeftSideSegmentsInTrack(trackDom, segmentleftOrigin).reverse()[0];
+      // 如果是首个 segment
+      if(!segmentLeftSide){
+        // 最小拖到 0
+        if(currentFrame < 0){
+          currentFrame = 0;
+        }
+        console.log(currentFrame, 8888)
+        this.setSegmentPosition(segment, currentFrame, frameend);
+        segment.dataset.framestart = `${currentFrame}`;
+        console.log(currentFrame, 99999)
+      }else if(this.isStretchTrack(trackDom)){
+        // 根据left 
+        const segmentLeftSide: HTMLElement | undefined = this.getLeftSideSegmentsInTrack(trackDom, getLeftValue(segment)).reverse()[0];
+        // 伸缩轨道
+        const framestart = getDatasetNumberByKey(segmentLeftSide, 'framestart');
+        this.setSegmentPosition(segment, currentFrame, frameend);
+        segment.dataset.framestart = `${currentFrame}`;
+        this.setSegmentPosition(segmentLeftSide, framestart, currentFrame);
+        segmentLeftSide.dataset.frameend = `${currentFrame}`;
+        result.push(segmentLeftSide);
+      }else{
+        // 左侧有 segment 的情况，最多拖到左侧 segment 的 frameend
+        const sideSegmentFrameend = getDatasetNumberByKey(segmentLeftSide, 'frameend');
+        // 小于左侧则等于左侧
+        if(currentFrame < sideSegmentFrameend){
+          currentFrame = sideSegmentFrameend
+          this.setSegmentPosition(segment, currentFrame, frameend);
+          segment.dataset.framestart = `${currentFrame}`;
+        }else{
+          this.setSegmentPosition(segment, currentFrame, frameend);
+          segment.dataset.framestart = `${currentFrame}`;  
         }
       }
       this.triggerSlideEvent(result, trackDom);
@@ -157,28 +175,41 @@ export class SegmentTracks extends Tracks {
   }: MoveFunctionArgs) => {
     this.trackCursor?.freeze();
     const x = moveX;
-    const frameend = Math.round(
+    let frameend = Math.round(
       (segmentleftOrigin + widthOrigin + x) / frameWidth
     );
     const framestart = parseFloat(segment.dataset.framestart ?? "0");
     if(frameend <= framestart){
       return
     }
-    const width = (frameend - framestart) * frameWidth;
-    // 宽度 = 原宽度 - 帧计算后的left值 与原 left 差
-    segment.style.width = `${width}px`;
-    segment.dataset.frameend = `${frameend}`;
     const segments: HTMLElement[] = [segment];
     // 伸缩轨道，右侧 segment framestart 设为当前调整的 segment 的 frameend
     const trackDom = findParentElementByClassName(segment, 'track');
     if(trackDom){
-      if(this.isStretchTrack(trackDom)){
+      const segmentRightSide: HTMLElement | undefined = this.getRightSideSegmentsInTrack(trackDom, segmentleftOrigin)[0];
+      if(!segmentRightSide){
+        this.setSegmentPosition(segment, framestart, frameend);
+        segment.dataset.frameend = `${frameend}`;
+      }else if(this.isStretchTrack(trackDom)){
         const segmentRightSide: HTMLElement | undefined = this.getRightSideSegmentsInTrack(trackDom, getLeftValue(segment))[0];
         if(segmentRightSide){
           const segmentRightSideFrameend = getDatasetNumberByKey(segmentRightSide, 'frameend');
+          this.setSegmentPosition(segment, framestart, frameend);
+          segment.dataset.frameend = `${frameend}`;
           this.setSegmentPosition(segmentRightSide, frameend, segmentRightSideFrameend);
           segmentRightSide.dataset.framestart = `${frameend}`;
           segments.push(segmentRightSide)
+        }
+      }else{
+        const sideBorderFrame = getDatasetNumberByKey(segmentRightSide, 'framestart');
+        // 小于左侧则等于左侧
+        if(frameend > sideBorderFrame){
+          frameend = sideBorderFrame
+          this.setSegmentPosition(segment, framestart, frameend);
+          segment.dataset.frameend = `${frameend}`;
+        }else{
+          this.setSegmentPosition(segment, framestart, frameend);
+          segment.dataset.frameend = `${frameend}`;
         }
       }
       // todo 节流
@@ -212,6 +243,8 @@ export class SegmentTracks extends Tracks {
       handle,
       "segment"
     ) as HTMLElement;
+    e.stopPropagation();
+    e.preventDefault();
     const left: number = getLeftValue(segment) as number;
     const width = segment.getBoundingClientRect().width;
     let startX = e.clientX;
@@ -225,6 +258,7 @@ export class SegmentTracks extends Tracks {
         segmentleftOrigin: left,
         widthOrigin: width,
         segment,
+
       });
     };
     const mouseup = (e: MouseEvent) => {
@@ -239,6 +273,33 @@ export class SegmentTracks extends Tracks {
     // 在body上侦听事件，顶级事件留给 Tracks 全局，用于冒泡处理
     document.body.addEventListener("mousemove", mousemove);
     document.body.addEventListener("mouseup", mouseup);
+  }
+  // 伸缩轨道内最后一个 segment 结束帧对齐整个轨道最后一帧
+  stretchSegmentToEnd(endFrame: number){
+    if(!endFrame){
+      return
+    }
+    // 获取所有轨道
+    const tracks: HTMLElement[] = Array.from(
+      document.querySelectorAll(".track")
+    );
+    if(!tracks.length){
+      return
+    }
+    tracks.forEach( track => {
+      if(this.isStretchTrack(track)){
+        const [ segment ] = findEndestSegmentOnTrack(track);
+        if(segment){
+          const framestart = getDatasetNumberByKey(segment, 'framestart');
+          const frameend = getDatasetNumberByKey(segment, 'frameend');
+          if(frameend < endFrame){
+            this.setSegmentPosition(segment, framestart, endFrame);
+            segment.dataset.frameend = `${endFrame}`;
+            this.triggerSlideEvent([segment], track);
+          }
+        }
+      }
+    })
   }
   override destroy(): void {
     this?.scrollContainer?.removeEventListener("mousedown", this.mouseDownHandle);

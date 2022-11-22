@@ -155,6 +155,7 @@ function App() {
   }, []);
   return (
     <div className="App">
+      <input type="text" />
       <div className="wrapper">
         <div className="segment-list" ref={segmentItemListRef}>
           <div className="segment-item">拖我</div>

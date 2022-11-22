@@ -89,10 +89,10 @@ export const getSegmentPlaceholder = (track: HTMLElement) => {
 type  collisionCheckXResult = [collision:boolean, magnet: boolean, magnetTo?:HTMLElement]
 // 轨道内 segment x 轴横向碰撞检测
 export const collisionCheckX = (
-  placeholder: HTMLElement,
+  target: HTMLElement,
   track: HTMLElement
 ): collisionCheckXResult => {
-  const placeholderRect = placeholder.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
   const segments: HTMLElement[] = Array.from(
     track.querySelectorAll(".segment")
   );
@@ -104,21 +104,43 @@ export const collisionCheckX = (
     const segmentRect = segment.getBoundingClientRect();
     // placeholder与 segment 都属于轨道内，left 值取 style内的值 即相对坐标
     const segmentLeft = getLeftValue(segment);
-    const placeholderLeft = getLeftValue(placeholder);
-    const closeDistance = placeholderLeft - (segmentLeft + segmentRect.width);
+    const targetLeft = getLeftValue(target);
+    const closeDistance = targetLeft - (segmentLeft + segmentRect.width);
     if(closeDistance <= 0 && closeDistance >= -CLOSE_ENOUPH_SEGMENT_X){
       return [true, true, segment]
     }
     // x 轴碰撞检测
     if (
-      placeholderLeft + placeholderRect.width > segmentLeft &&
-      placeholderLeft < segmentLeft + segmentRect.width
+      targetLeft + targetRect.width > segmentLeft &&
+      targetLeft < segmentLeft + segmentRect.width
     ) {
       return [true, false];
     }
   }
   return [false, false];
 };
+export const getSegmentsByTrack = (track: HTMLElement): HTMLElement[] => {
+  const segments: HTMLElement[] = Array.from(
+    track.querySelectorAll(".segment")
+  );
+  return segments
+}
+export const collisionCheckFrame = (target: HTMLElement,  track: HTMLElement): boolean => {
+  const [framestart, frameend] = getFrameRange(target);
+  const segments = getSegmentsByTrack(track);
+  for(let segment of segments){
+    const [start, end] = getFrameRange(segment);
+    if(
+        framestart < start && frameend > end // 完整覆盖
+        || framestart > start && framestart < end
+        || frameend < end && frameend > start
+    ){
+      console.log(framestart, frameend, start, end)
+      return true
+    }
+  }
+  return false
+}
 
 // 离Y轴是否足够近
 export const isCloseEnouphToY = (track: HTMLElement, mouseY: number) => {
@@ -177,6 +199,11 @@ export const findEndestSegmentOnTrack =  (track: HTMLElement) => {
 // 获取 dom dataset 数值
 export const getDatasetNumberByKey = (dom: HTMLElement, datasetKey: string):number => {
   return parseFloat(dom.dataset[datasetKey] ?? '0')
+}
+export const getFrameRange = (dom: HTMLElement):[number, number] => {
+  const framestart =  getDatasetNumberByKey(dom, 'framestart');
+  const frameend =  getDatasetNumberByKey(dom, 'frameend');
+  return [framestart, frameend];
 }
 
 export const sortByLeftValue = (segmentA: HTMLElement, segmentB: HTMLElement) => {
