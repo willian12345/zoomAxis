@@ -1,5 +1,5 @@
 // 创建 segment
-import { SegmentType } from './TrackType'
+import { SegmentBasicInfo, SegmentType } from './TrackType'
 const CLOSE_ENOUPH_DISTANCE_Y = 10; // 距离 y 是否够近
 const CLOSE_ENOUPH_SEGMENT_X = 60; // 距离 segment x是否够近
 let segmentUUID = 1
@@ -37,7 +37,16 @@ export const createSegmentFake = (rect: DOMRect) => {
   dom.style.width = `${rect.width}px`;
   dom.style.borderRadius = "4px";
   return dom;
-};
+}
+export const createSegmentToTrack = (segmentName: string, segmentType: SegmentType, segmentInfo: SegmentBasicInfo): HTMLElement => {
+  const dom = createSegment(segmentType);
+  dom.appendChild(createSegmentName(segmentName));
+  dom.dataset.framestart = `${segmentInfo.startFrame}`;
+  dom.dataset.frameend = `${segmentInfo.endFrame}`;
+  dom.dataset.segmentId = `${segmentInfo.segmentId}`;
+  dom.dataset.trackId = `${segmentInfo.trackId}`;
+  return dom;
+}
 export const findParentElementByClassName = (dom: HTMLElement, parentClassName: string) => {
   let parent = dom.parentElement;
   while(parent && !parent.classList.contains(parentClassName)){

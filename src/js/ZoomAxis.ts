@@ -2,8 +2,8 @@ const SPACE_FRAME_WIDTH = 80; // 刻度间距
 
 // 默认
 const DEFAULT_RATIO_STEP: number[][] = [
-  [0.1, 10],
-  [0.2, 5],
+  [0.1, 100],
+  [0.2, 20],
   [0.7, 3],
   [0.8, 2],
   [0.9, 1],
@@ -94,7 +94,7 @@ export class ZoomAxis {
     this.ctx.textBaseline = "top";
   }
   // 设置缩放等级对应缩放显示时间
-  private setRatioStep(ratioMap: number[][] = DEFAULT_RATIO_STEP) {
+  setRatioStep(ratioMap: number[][] = DEFAULT_RATIO_STEP) {
     this.ratioMap.clear();
     ratioMap.forEach((element) => {
       this.ratioMap.set(element[0], element[1]);

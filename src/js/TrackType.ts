@@ -25,20 +25,20 @@ export interface TracksEvent{
 }
 export type  TracksEventCallback  = TracksEvent
 
-
+export type responsedSegmentData = {
+  duration: number
+  endFrame: number
+  keys: []
+  rowIndex: number
+  sectionId: string
+  startFrame: number
+  state: number
+  trackId: string
+}
 export type DropableArgs = {
   dropable: boolean
   segmentName: string
-  segmentData?: {
-    duration: number
-    endFrame: number
-    keys: []
-    rowIndex: number
-    sectionId: string
-    startFrame: number
-    state: number
-    trackId: string
-  }
+  segmentData?: responsedSegmentData | null
 }
 export interface DropableCheck {
   (trackId: string, startFrame: number): Promise<DropableArgs>
