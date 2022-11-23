@@ -28,6 +28,7 @@ import {
   createSegmentName,
   findParentElementByClassName,
   collisionCheckFrame,
+  getFrameRange,
 } from "./trackUtils";
 // 轨道
 export abstract class Tracks {
@@ -291,49 +292,41 @@ export abstract class Tracks {
     }
     segment.parentNode?.removeChild(segment);
   }
-  private sliceSegments(
+  private sliceSegment(
     track: HTMLElement,
     currentSegmentId: string,
     framestart: number,
     frameend: number
-  ): HTMLElement[] {
-    const result: HTMLElement[] = [];
+  ): [HTMLElement|null, number] {
+    let result: HTMLElement|null = null;
+    let collisionSegmentFrameend = -1;
     // 过滤出重叠的 segment (在可伸展轨道)
     let segments = Array.from<HTMLElement>(track.querySelectorAll(".segment"));
-    // 如果只有刚拖入的 segment 则不需要客外处理
+    // 如果只有刚拖入的 segment 则不需要额外处理
     if (segments.length === 1) {
-      return result;
+      return [result, collisionSegmentFrameend];
     }
-    segments = segments.filter((segment: HTMLElement) => {
-      const segmentFramestart = getDatasetNumberByKey(segment, "framestart");
-      const segmentFrameend = getDatasetNumberByKey(segment, "frameend");
+    const collisionSegment = segments.find((segment: HTMLElement) => {
+      const [segmentFramestart, segmentFrameend] = getFrameRange(segment);
       // 碰撞检测（通过计算开始帧与结束帧）且不是自身
-      if (
-        framestart < segmentFrameend &&
-        frameend > segmentFramestart &&
-        segment.dataset.segmentId !== currentSegmentId
-      ) {
+      if (framestart >= segmentFramestart && framestart < segmentFrameend) {
         return true;
       }
       return false;
-    });
-
-    for (let i = 0, j = segments.length; i < j; i++) {
-      const segment: HTMLElement = segments[i];
-      let sFramestart = parseFloat(segment.dataset.framestart ?? "0");
-      let sFrameend = parseFloat(segment.dataset.frameend ?? "0");
-      // 将结束帧移动至 framestart 开始帧
+    }) ?? null;
+    if(collisionSegment){
+      let [ sFramestart, sFrameend] = getFrameRange(collisionSegment);
+      collisionSegmentFrameend = sFrameend;
       if (sFrameend > framestart && sFramestart < framestart) {
         sFrameend = framestart;
-        segment.dataset.frameend = `${framestart}`;
-        this.setSegmentPosition(segment, sFramestart, sFrameend);
-        result.push(segment);
+        collisionSegment.dataset.frameend = `${framestart}`;
+        this.setSegmentPosition(collisionSegment, sFramestart, sFrameend);
       } else if (sFramestart > framestart) {
-        // framestart 之后的 segment 都要删掉
-        this.removeSegment(segment);
+        // 如果是完全覆盖则需要删除覆盖下的segment
+        this.removeSegment(collisionSegment);
       }
     }
-    return result;
+    return [collisionSegment, collisionSegmentFrameend];
   }
   getSegmentsByTrack(track: HTMLElement): HTMLElement[] {
     return Array.from<HTMLElement>(track.querySelectorAll(".segment"));
@@ -368,6 +361,7 @@ export abstract class Tracks {
     if (track.querySelectorAll(".segment").length === 1) {
       framestart = 0;
     } else if (framestart > totalFrames) {
+      // 如果是拖到了伸缩轨道最后，则往后加长
       framestart = totalFrames;
       // todo: 伸缩轨道增长暂定为 150 帧
       frameend = framestart + 300;
@@ -376,30 +370,33 @@ export abstract class Tracks {
     currentSegment.dataset.framestart = String(framestart);
     currentSegment.dataset.frameend = String(frameend);
     currentSegment.dataset.trackId = track.dataset.trackId ?? "";
-
-    this.setSegmentPosition(currentSegment, framestart, frameend);
     const segmentId = currentSegment.dataset.segmentId ?? "";
-    const effectSegments = this.sliceSegments(
+    this.setSegmentPosition(currentSegment, framestart, frameend);
+
+    const [effectSegment, effectSegmentOriginFrameend] = this.sliceSegment(
       track,
       segmentId,
       framestart,
       frameend
     );
-    const result: SegmentBasicInfo[] = effectSegments.map(
-      (r): SegmentBasicInfo => {
-        return {
-          trackId: r.dataset.trackId ?? "",
-          segmentId: r.dataset.segmentId ?? "",
-          startFrame: getDatasetNumberByKey(r, "framestart"),
-          endFrame: getDatasetNumberByKey(r, "frameend"),
-          track,
-          segment: r,
-        };
-      }
-    );
+    if(!effectSegment){
+      return
+    }
+    frameend = effectSegmentOriginFrameend;
+    currentSegment.dataset.frameend = String(frameend);
+    this.setSegmentPosition(currentSegment, framestart, frameend);
+    const [effectedFramestart, effectedFrameend] = getFrameRange(effectSegment)
+    const result = {
+      trackId: effectSegment.dataset.trackId ?? "",
+      segmentId: effectSegment.dataset.segmentId ?? "",
+      startFrame:effectedFramestart,
+      endFrame: effectedFrameend,
+      track,
+      segment: effectSegment,
+    };
     this.segmentDropEffectCallback?.forEach((cb) => {
       cb({
-        segments: result,
+        segments: [result],
         eventType: TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT,
       });
     });
