@@ -1,6 +1,6 @@
 import { Tracks } from "./Tracks";
-import { findParentElementByClassName, getLeftValue, getDatasetNumberByKey, findEndestSegmentOnTrack} from "./trackUtils";
-import { SegmentTracksArgs, MouseHandle, TRACKS_EVENT_CALLBACK_TYPES, SegmentBasicInfo } from "./TrackType";
+import { findParentElementByClassName, getLeftValue, getDatasetNumberByKey, findEndestSegmentOnTrack, getFrameRange, createSegmentToTrack, isContainSplitFromComma} from "./trackUtils";
+import { SegmentTracksArgs, MouseHandle, TRACKS_EVENT_CALLBACK_TYPES, SegmentBasicInfo, SegmentType } from "./TrackType";
 import { CursorPointer } from "./CursorPointer";
 interface MoveFunctionArgs {
   frameWidth: number;
@@ -135,10 +135,8 @@ export class SegmentTracks extends Tracks {
         if(currentFrame < 0){
           currentFrame = 0;
         }
-        console.log(currentFrame, 8888)
         this.setSegmentPosition(segment, currentFrame, frameend);
         segment.dataset.framestart = `${currentFrame}`;
-        console.log(currentFrame, 99999)
       }else if(this.isStretchTrack(trackDom)){
         // 根据left 
         const segmentLeftSide: HTMLElement | undefined = this.getLeftSideSegmentsInTrack(trackDom, getLeftValue(segment)).reverse()[0];
@@ -218,11 +216,12 @@ export class SegmentTracks extends Tracks {
   }
   private triggerSlideEvent(segments: HTMLElement[], track: HTMLElement){
     const result: SegmentBasicInfo[] = segments.map((r):SegmentBasicInfo => {
+      const [ startFrame, endFrame ] = getFrameRange(r);
       return {
         trackId: r.dataset.trackId ?? '',
         segmentId: r.dataset.segmentId ?? '', 
-        startFrame: getDatasetNumberByKey(r, 'framestart'),
-        endFrame:  getDatasetNumberByKey(r, 'frameend'),
+        startFrame,
+        endFrame,
         track,
         segment: r,
       }
@@ -280,18 +279,11 @@ export class SegmentTracks extends Tracks {
       return
     }
     // 获取所有轨道
-    const tracks: HTMLElement[] = Array.from(
-      document.querySelectorAll(".track")
-    );
-    if(!tracks.length){
-      return
-    }
-    tracks.forEach( track => {
+    this.getTracks().forEach( track => {
       if(this.isStretchTrack(track)){
         const [ segment ] = findEndestSegmentOnTrack(track);
         if(segment){
-          const framestart = getDatasetNumberByKey(segment, 'framestart');
-          const frameend = getDatasetNumberByKey(segment, 'frameend');
+          const [framestart, frameend] = getFrameRange(segment);
           if(frameend < endFrame){
             this.setSegmentPosition(segment, framestart, endFrame);
             segment.dataset.frameend = `${endFrame}`;
@@ -300,6 +292,26 @@ export class SegmentTracks extends Tracks {
         }
       }
     })
+  }
+  getEndestSegmentFrameRange(trackId: string): [number, number]{
+    let track = this.getTrackById(trackId);
+    if(!track){
+      return [-1, -1];
+    }
+    const [ segment ] = findEndestSegmentOnTrack(track);
+    if(segment){
+      return getFrameRange(segment);
+    }
+    return [0, 0];
+  }
+  addNewSegmentByTrackId(trackId: string, segmentType: SegmentType, segmentName: string, segmentInfo: SegmentBasicInfo){
+    const track = this.getTrackById(trackId)
+    if(!track){
+      return
+    }
+    const dom = createSegmentToTrack(segmentName, segmentType, segmentInfo);
+    this.setSegmentPosition(dom, segmentInfo.startFrame, segmentInfo.endFrame);
+    track.appendChild(dom);
   }
   override destroy(): void {
     this?.scrollContainer?.removeEventListener("mousedown", this.mouseDownHandle);
