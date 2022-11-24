@@ -310,6 +310,11 @@ export class SegmentTracks extends Tracks {
       return
     }
     const dom = createSegmentToTrack(segmentName, segmentType, segmentInfo);
+    if(this.isStretchTrack(track)){
+      const cursorCurrentFrame = this.timeline?.currentFrame;
+      this.dropToStretchTrack(track, dom, cursorCurrentFrame)
+      return
+    }
     this.setSegmentPosition(dom, segmentInfo.startFrame, segmentInfo.endFrame);
     track.appendChild(dom);
   }
