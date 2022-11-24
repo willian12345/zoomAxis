@@ -292,6 +292,24 @@ export abstract class Tracks {
     }
     segment.parentNode?.removeChild(segment);
   }
+  getCollisionByFrameInSegments(frame: number, segments: HTMLElement[]){
+    return segments.find((segment: HTMLElement) => {
+      const [segmentFramestart, segmentFrameend] = getFrameRange(segment);
+      // 碰撞检测（通过计算开始帧与结束帧）且不是自身
+      if (frame >= segmentFramestart && frame < segmentFrameend) {
+        return true;
+      }
+      return false;
+    }) ?? null;
+  }
+  getCollisionByCurrentframe(frame: number, trackId: string){
+    const track = this.getTrackById(trackId);
+    if(!track){
+      return null
+    }
+    const segments = this.getSegmentsByTrack(track);
+    return this.getCollisionByFrameInSegments(frame, segments);
+  }
   private sliceSegment(
     track: HTMLElement,
     currentSegmentId: string,
@@ -306,22 +324,15 @@ export abstract class Tracks {
     if (segments.length === 1) {
       return [result, collisionSegmentFrameend];
     }
-    const collisionSegment = segments.find((segment: HTMLElement) => {
-      const [segmentFramestart, segmentFrameend] = getFrameRange(segment);
-      // 碰撞检测（通过计算开始帧与结束帧）且不是自身
-      if (framestart >= segmentFramestart && framestart < segmentFrameend) {
-        return true;
-      }
-      return false;
-    }) ?? null;
+    const collisionSegment = this.getCollisionByFrameInSegments(framestart, segments);
     if(collisionSegment){
-      let [ sFramestart, sFrameend] = getFrameRange(collisionSegment);
+      let [ sFramestart, sFrameend ] = getFrameRange(collisionSegment);
       collisionSegmentFrameend = sFrameend;
       if (sFrameend > framestart && sFramestart < framestart) {
         sFrameend = framestart;
         collisionSegment.dataset.frameend = `${framestart}`;
         this.setSegmentPosition(collisionSegment, sFramestart, sFrameend);
-      } else if (sFramestart > framestart) {
+      } else if (sFramestart >= framestart) {
         // 如果是完全覆盖则需要删除覆盖下的segment
         this.removeSegment(collisionSegment);
       }
@@ -349,7 +360,7 @@ export abstract class Tracks {
       segment.style.width = `${this.timeline?.frameWidth * frames}px`;
     }
   }
-  private dropToStretchTrack(
+  dropToStretchTrack(
     track: HTMLElement,
     currentSegment: HTMLElement,
     framestart: number
