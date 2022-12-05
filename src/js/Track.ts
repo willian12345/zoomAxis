@@ -1,3 +1,5 @@
+import { Segment } from "./Segment"
+
 /**
  * Track 基础 dom 结构
  * <div class="track">
@@ -6,18 +8,22 @@
  * </div>
  */
 interface TrackArgs {
+  trackId: string
   trackClass?: string
   trackPlaceholderClass?: string
 }
 export class Track {
   dom = {} as HTMLElement
-  id = ''
+  trackId = ''
   trackClass = ''
   trackPlaceholderClass = ''
+  childs:Segment[] = []
   constructor({ 
+    trackId,
     trackClass = 'track', 
     trackPlaceholderClass = 'track-placeholder' 
   }: TrackArgs) {
+    this.trackId = trackId
     this.trackClass = trackClass
     this.trackPlaceholderClass = trackPlaceholderClass
     this.dom = this.createDom();
@@ -25,10 +31,17 @@ export class Track {
   private createDom(): HTMLElement {
     const div = document.createElement('div');
     div.innerHTML = `
-      div class="${this.trackClass}">
+      div class="${this.trackClass}" data-track-id="${this.trackId}">
         <div class="${this.trackPlaceholderClass}"></div>
       </div>
       `;
     return div.firstElementChild as HTMLElement;
   }
+  addChild(segment: Segment){
+    const exist = this.childs.find((child: Segment)=> child.segmentId === segment.segmentId);
+    if(!exist){
+      this.childs.push(segment);
+    }
+  }
+
 }
