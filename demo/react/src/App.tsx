@@ -158,10 +158,10 @@ function App() {
       <input type="text" />
       <div className="wrapper">
         <div className="segment-list" ref={segmentItemListRef}>
-          <div className="segment-item">拖我</div>
-          <div className="segment-item">拖我</div>
-          <div className="segment-item">拖我</div>
-          <div className="segment-item">拖我</div>
+          <div className="segment-item" data-track-id="a">拖我</div>
+          <div className="segment-item" data-track-id="a">拖我</div>
+          <div className="segment-item" data-track-id="a">拖我</div>
+          <div className="segment-item" data-track-id="a">拖我</div>
           <div className="segment-item segment-item-stretch">
             拖我
             <em>(伸缩轨道)</em>
@@ -193,13 +193,13 @@ function App() {
                 className="track-list"
                 style={{ width: `${scrollContentWidth}px` }}
               >
-                <div className="track">
+                <div className="track" data-track-id="a">
                   <div className="track-placeholder"></div>
                 </div>
-                <div className="track">
+                <div className="track" data-track-id="a">
                   <div className="track-placeholder"></div>
                 </div>
-                <div className="track track-stretch">
+                <div className="track track-stretch" data-track-id="c">
                   <div className="track-placeholder"></div>
                 </div>
               </div>

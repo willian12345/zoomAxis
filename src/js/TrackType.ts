@@ -15,7 +15,10 @@ export enum TRACKS_EVENT_CALLBACK_TYPES {
   SEGMENTS_SLIDED, // segment 拖动调节宽度事件
 }
 export interface SegmentBasicInfo {
-  trackId: string, segmentId: string, startFrame: number, endFrame: number
+  trackId: string, 
+  segmentId: string, 
+  startFrame: number, 
+  endFrame: number
   segment?: HTMLElement,
   track?:HTMLElement
 }
@@ -77,7 +80,7 @@ export interface DragingArgs {
 export interface DropArgs {
   e: MouseEvent, 
   x: number, 
-  segment: HTMLElement, 
+  segmentDom: HTMLElement, 
   track: HTMLElement, 
   tracks: HTMLElement[], 
   isCopySegment: boolean, 
