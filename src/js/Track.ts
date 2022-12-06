@@ -17,7 +17,7 @@ export class Track {
   trackId = ''
   trackClass = ''
   trackPlaceholderClass = ''
-  childs:Segment[] = []
+  childs:Map<string, Segment> = new Map()
   constructor({ 
     trackId,
     trackClass = 'track', 
@@ -38,10 +38,18 @@ export class Track {
     return div.firstElementChild as HTMLElement;
   }
   addChild(segment: Segment){
-    const exist = this.childs.find((child: Segment)=> child.segmentId === segment.segmentId);
-    if(!exist){
-      this.childs.push(segment);
-    }
+    segment.setTrackId(this.trackId);
+    this.childs.set(segment.segmentId, segment);
+    // const exist = this.childs.find((child: Segment)=> child.segmentId === segment.segmentId);
+    // if(!exist){
+    //   this.childs.push(segment);
+    // }
   }
-
+  removeChild(segment: Segment){
+    this.childs.delete(segment.segmentId);
+    // const exist = this.childs.find((child: Segment)=> child.segmentId === segment.segmentId);
+    // if(!exist){
+    //   this.childs.push(segment);
+    // }
+  }
 }

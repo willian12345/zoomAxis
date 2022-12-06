@@ -56,6 +56,7 @@ import { SegmentType,SegmentBasicInfo } from "./trackType"
     }
     this.trackId = segmentInfo.trackId ?? ''
   }
+  // 设置轨道 id
   setTrackId(trackId: string){
     this.trackId = trackId
     this.dom.dataset.trackId = trackId
@@ -70,6 +71,7 @@ import { SegmentType,SegmentBasicInfo } from "./trackType"
       class="${this.segmentClass}" 
       data-segment-id="${this.segmentId}" 
       data-track-id="${this.trackId}" 
+      data-track-type="${this.type}"
       data-framestart="${this._framestart}" 
       data-frameend="${this._frameend}"
       style="width: ${this.width}; height: ${this.height}; left: ${this.left};">

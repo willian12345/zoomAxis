@@ -24,6 +24,7 @@ import {
   isCloseEnouphToY,
   getSegmentPlaceholder,
   isContainSplitFromComma,
+  isContainTrackType,
   getDatasetNumberByKey,
   sortByLeftValue,
   createSegmentName,
@@ -51,7 +52,7 @@ export abstract class Tracks {
   framestart = 0;
   frameend = 0;
   frames = 0;
-  trackTree:Record<string, any> = {};
+  trackTree:Map<string, Track> = new Map();
   currentSegment: Segment | null = null;
   constructor({
     trackCursor,
@@ -84,7 +85,7 @@ export abstract class Tracks {
     tracks.forEach( (track:HTMLElement) => {
       const trackId: string = track.dataset.trackId ?? '';
       const trackClass = new Track({trackId})
-      this.trackTree[trackId] = trackClass;
+      this.trackTree.set(trackId, trackClass);
     });
     this.initEvent();
     return this;
@@ -295,9 +296,12 @@ export abstract class Tracks {
     if (copy) {
       return await this.copySegment(segmentTrackId, framestart);
     } else {
-      const track:Track = this.trackTree[segmentTrackId];
-      console.log(this.trackTree);
-      const segment = track.childs.find((child: Segment) => child.segmentId === segmentDom.dataset.segmentId) ?? null
+      const track:Track|null = this.trackTree.get(segmentTrackId) ?? null;
+      if(!track){
+        return null
+      }
+      console.log(this.trackTree, track, segmentDom, track);
+      const segment = track.childs.get(segmentDom.dataset.segmentId ?? '') ?? null
       return segment;
     }
   }
@@ -543,10 +547,12 @@ export abstract class Tracks {
       // 离轨道足够近
       let placeHolder = getSegmentPlaceholder(collisionTrack);
       collisionTrack.classList.add(this.dragoverClass);
-      const trackId = collisionTrack.dataset.trackId ?? "";
-      const segmentTrackId = segment.dataset.trackId ?? "";
+      // const trackId = collisionTrack.dataset.trackId ?? "";
+      const trackType = collisionTrack.dataset.trackType ?? "";
+      // const segmentTrackId = segment.dataset.trackId ?? "";
+      const segmentTrackType = segment.dataset.trackType ?? "";
       // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
-      if (!isContainSplitFromComma(trackId, segmentTrackId)) {
+      if (!isContainTrackType(trackType, segmentTrackType)) {
         collisionTrack.classList.add(this.dragoverErrorClass);
       }
       if (!placeHolder) {
@@ -647,6 +653,18 @@ export abstract class Tracks {
       );
     }, 2);
   }
+  getCurrentSegment(segmentDom: HTMLElement):Segment | null{
+    const segmentId = segmentDom.dataset.segmentId ?? '';
+    const trackId = segmentDom.dataset.trackId ?? '';
+    if(segmentId === '' ||　trackId === ''){
+      return null
+    }
+    const track = this.trackTree.get(trackId)
+    if(!track){
+      return null
+    }
+    return track.childs.get(segmentId) ?? null
+  }
   private async drop({
     e,
     x,
@@ -662,13 +680,16 @@ export abstract class Tracks {
     }
     // 轨道 id
     const trackId = track.dataset.trackId ?? "";
+    const trackType = track.dataset.trackType ?? "";
     const segmentTrackId = segmentDom.dataset.trackId ?? "";
+    const segmentTrackType = segmentDom.dataset.trackType ?? "";
 
     // 轨道 id 必须相同才能拖动进去
-    if (!isContainSplitFromComma(trackId, segmentTrackId)) {
+    if (!isContainTrackType(trackType, segmentTrackType)) {
       placeHolder.style.opacity = "0";
       return;
     }
+    
     const [isCollistion, magnet, magnetTo] = collisionCheckX(
       placeHolder,
       track
@@ -679,6 +700,7 @@ export abstract class Tracks {
       segmentTrackId,
       framestart
     );
+    console.log(segment,333);
     this.currentSegment = segment
     placeHolder.style.opacity = "0";
     if (!segment?.dom) {
@@ -703,7 +725,10 @@ export abstract class Tracks {
     // 普通轨道
     if (!isCollistion || magnet) {
       track.appendChild(segment.dom);
-      this.trackTree[segmentTrackId].addChild(segment);
+      if(segment.trackId !== trackId){
+        this.trackTree.get(segment.trackId)?.removeChild(segment);
+      }
+      this.trackTree.get(trackId)?.addChild(segment);
       // 如果 x 轴磁吸，则需要根据磁吸的 segment 重新计算 framestart 与 segmentLeft 值
       if (magnet && magnetTo) {
         const magnetToRect: DOMRect = magnetTo.getBoundingClientRect();
@@ -759,10 +784,12 @@ export abstract class Tracks {
     }
 
     if (!isCopySegment) {
-      this.framestart = getDatasetNumberByKey(segmentDom, "framestart");
-      this.frameend = getDatasetNumberByKey(segmentDom, "frameend");
-      this.frames = this.frameend - this.framestart;
-      // console.log(this.framestart, this.frameend, this.frames);
+      const currentSegment = this.getCurrentSegment(segmentDom);
+      if(currentSegment){
+        this.framestart = currentSegment.framestart;
+        this.frameend =currentSegment.frameend;
+        this.frames = this.frameend - this.framestart;
+      }
     }
 
     // 高度变为正在拖动的 segment 高度

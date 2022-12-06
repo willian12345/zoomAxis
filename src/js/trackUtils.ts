@@ -162,13 +162,22 @@ export const isCloseEnouphToY = (track: HTMLElement, mouseY: number) => {
   const distanceY = Math.abs(trackRect.top + trackRect.height * 0.5 - mouseY);
   return distanceY < CLOSE_ENOUPH_DISTANCE_Y;
 };
-
+// 是否包含 trackId 
 export const isContainSplitFromComma = (trackIds: string, trackId: string) => {
   if(trackIds === trackId){
     return true
   }
   return trackIds.split(',').find((splitTrackId)=> {
     return splitTrackId === trackId
+  })
+}
+// 是否包含 trackType
+export const isContainTrackType = (trackTypes: string, trackType: string) => {
+  if(trackTypes === trackType){
+    return true
+  }
+  return trackTypes.split(',').find((splitTrackType)=> {
+    return splitTrackType === trackType
   })
 
 }
