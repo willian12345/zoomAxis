@@ -158,20 +158,20 @@ function App() {
       <input type="text" />
       <div className="wrapper">
         <div className="segment-list" ref={segmentItemListRef}>
-          <div className="segment-item" data-track-id="a">拖我</div>
-          <div className="segment-item" data-track-id="a">拖我</div>
-          <div className="segment-item" data-track-id="a">拖我</div>
-          <div className="segment-item" data-track-id="a">拖我</div>
-          <div className="segment-item segment-item-stretch">
-            拖我
+          <div className="segment-item" data-track-id="a" data-track-type="0">拖我</div>
+          <div className="segment-item" data-track-id="a" data-track-type="0">拖我</div>
+          <div className="segment-item" data-track-id="b" data-track-type="0">拖我b</div>
+          <div className="segment-item" data-track-id="b" data-track-type="0">拖我b</div>
+          <div className="segment-item segment-item-stretch" data-track-id="c"  data-track-type="1">
+            拖我c
             <em>(伸缩轨道)</em>
           </div>
         </div>
         <div className="timeline-container" onWheel={(e) => handleWheel(e)}>
           <div className="track-operation">
-            <div className="track-operation-item">普通轨道</div>
-            <div className="track-operation-item">普通轨道</div>
-            <div className="track-operation-item">伸缩轨道</div>
+            <div className="track-operation-item">普通轨道a</div>
+            <div className="track-operation-item">普通轨道b</div>
+            <div className="track-operation-item">伸缩轨道c</div>
           </div>
           <div
             className="webkit-scrollbar scroll-container"
@@ -193,13 +193,13 @@ function App() {
                 className="track-list"
                 style={{ width: `${scrollContentWidth}px` }}
               >
-                <div className="track" data-track-id="a">
+                <div className="track" data-track-id="a" data-track-type="0">
                   <div className="track-placeholder"></div>
                 </div>
-                <div className="track" data-track-id="a">
+                <div className="track" data-track-id="b" data-track-type="0">
                   <div className="track-placeholder"></div>
                 </div>
-                <div className="track track-stretch" data-track-id="c">
+                <div className="track track-stretch" data-track-id="c" data-track-type="1">
                   <div className="track-placeholder"></div>
                 </div>
               </div>
