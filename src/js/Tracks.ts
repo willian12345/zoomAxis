@@ -29,6 +29,7 @@ import {
   findParentElementByClassName,
   collisionCheckFrame,
   getFrameRange,
+  createKeyFrame,
 } from "./trackUtils";
 // 轨道
 export abstract class Tracks {
@@ -36,6 +37,7 @@ export abstract class Tracks {
   private dragEndCallback: Set<TracksEventCallback> | null = null;
   private segmentsChangedCallback: Set<TracksEventCallback> | null = null;
   protected segmentsSlidedCallback: Set<TracksEventCallback> | null = null;
+  protected segmentsSlideEndCallback: Set<TracksEventCallback> | null = null;
   protected segmentDropEffectCallback: Set<TracksEventCallback> | null = null;
   protected scrollContainer: HTMLElement = {} as HTMLElement;
   protected dragoverClass = "dragover";
@@ -80,12 +82,21 @@ export abstract class Tracks {
   }
   private initEvent() {
     // 点击轨道外部时清除选中过的 segment 状态
-    document.addEventListener(
-      "mouseup",
-      this.removeSegmentActivedStatus.bind(this)
-    );
     // Delete 键删除当前选中的 segment
     document.addEventListener("keydown", this.removeActivedSegment.bind(this));
+    this.scrollContainer.addEventListener('mousedown', this.keyframeMousedownHandle);
+  }
+  keyframeMousedownHandle(e: MouseEvent){
+    const target = e.target as HTMLElement;
+    if(!target) return;
+    const segment = findParentElementByClassName(target, 'segment');
+    if(segment){
+      const sks = Array.from(segment.querySelectorAll('.segment-keyframe')) as HTMLElement[];
+      sks.forEach( sk => sk.classList.remove('actived'));
+    }
+    if(target.classList.contains("segment-keyframe")){
+      target.classList.add('actived');
+    }
   }
   addListener(event, callback) { }
   addEventListener(
@@ -117,6 +128,12 @@ export abstract class Tracks {
       }
       this.segmentsSlidedCallback.add(callback);
     }
+    if (eventType === TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDE_END) {
+      if (!this.segmentsSlideEndCallback) {
+        this.segmentsSlideEndCallback = new Set();
+      }
+      this.segmentsSlideEndCallback.add(callback);
+    }
   }
   removeActivedSegment(event: KeyboardEvent) {
     if (event.key !== "Delete") {
@@ -124,9 +141,12 @@ export abstract class Tracks {
     }
     this.deleteActivedSegment();
   }
-  removeSegmentActivedStatus() {
+  removeSegmentActivedStatus(e: MouseEvent, currentSegment?: HTMLElement) {
+    //todo: e.target 判断当前点击对象是否是 clickoutside
     this.scrollContainer?.querySelectorAll(".segment").forEach((segment) => {
-      segment.classList.remove("actived");
+      if(currentSegment !== segment){
+        segment.classList.remove("actived");
+      }
     });
   }
   async deleteActivedSegment() {
@@ -347,6 +367,9 @@ export abstract class Tracks {
   }
   getTrackById(trackId: string){
     return this.getTracks().find((track: HTMLElement) => isContainSplitFromComma(track.dataset.trackId ?? '', trackId));
+  }
+  getSegmentBySegmentIdOnTrack(segmentId: string, track: HTMLElement){
+    return this.getSegmentsByTrack(track).find( (segment) => segment.dataset.segmentId === segmentId)
   }
   setSegmentPosition(
     segment: HTMLElement,
@@ -832,7 +855,7 @@ export abstract class Tracks {
           }
           if (originTrack) {
             this.putSegmentBack(segment, getLeftValue(segment), originTrack);
-            this.triggerDragEnd(segment, originTrack);
+            // this.triggerDragEnd(segment, originTrack);
           }
         }
         // 重新允许游标交互
@@ -844,6 +867,74 @@ export abstract class Tracks {
     document.addEventListener("mousemove", mousemove);
     document.addEventListener("mouseup", mouseup);
   }
+  getSegmentById(segmentId: string){
+    const tracks = this.getTracks()
+    for(let track of tracks){
+      const segments = this.getSegmentsByTrack(track);
+      const segment = segments.find((segment:HTMLElement) =>  segment.dataset.segmentId === segmentId);
+      if(segment){
+        return segment
+      }
+    }
+    return null
+  }
+  // 通过 segmentId 和 trackId 获取
+  getSegmentOnTrack(segmentId: string, trackId?: string){
+    if(!trackId){
+      return this.getSegmentById(segmentId)
+    }
+    const track = this.getTrackById(trackId);
+    if(!track){
+      return null
+    }
+    const segment = this.getSegmentBySegmentIdOnTrack(segmentId, track);
+    if(!segment){
+      return null
+    }
+    return segment
+  }
+  getKeyframes(segment: HTMLElement){
+    return Array.from(segment.querySelectorAll('.segment-keyframe')) as HTMLElement[]
+  }
+  // 添加关键帧
+  addKeyFrame(segmentId: string, trackId: string, frame: number){
+    if(!this.timeline){
+      return
+    }
+    const segment = this.getSegmentOnTrack(segmentId, trackId);
+    if(!segment){
+      return
+    }
+    const frameWidth = this.timeline?.frameWidth ?? 0;
+    const [framestart] = getFrameRange(segment);
+    const keyframeDom = createKeyFrame();
+    keyframeDom.dataset.frame = String(frame);
+    keyframeDom.style.left = `${frameWidth * (frame - framestart)}px`;
+    segment.appendChild(keyframeDom);
+  }
+  deleteKeyframe(segmentId: string, trackId: string, frame: number){
+    const segment = this.getSegmentOnTrack(segmentId, trackId);
+    if(!segment){
+      return
+    }
+    const keyframes = this.getKeyframes(segment);
+    const keyframeDom = keyframes.find((keyframe: HTMLElement)=>{
+      return keyframe.dataset.frame === String(frame);
+    })
+    if(keyframeDom){
+      keyframeDom.parentElement?.removeChild(keyframeDom);
+    }
+  }
+  deleteAllKeyframe(segmentId: string, trackId: string){
+    const segment = this.getSegmentOnTrack(segmentId, trackId);
+    if(!segment){
+      return
+    }
+    const keyframes = this.getKeyframes(segment);
+    keyframes.forEach((keyframe: HTMLElement)=>{
+      keyframe.parentElement?.removeChild(keyframe)
+    })
+  }
   addSegmentByTrackId(
     segment: {
       trackId: string;
@@ -852,6 +943,7 @@ export abstract class Tracks {
       framestart: number;
       frameend: number;
     },
+    segmentExtra?: any,
     type?: SegmentType
   ) {
     const tracks: HTMLElement[] = Array.from(

@@ -16,6 +16,7 @@ export class SegmentTracks extends Tracks {
   scrollContainer: HTMLElement = {} as HTMLElement;
   scrollContainerRect: DOMRect = {} as DOMRect;
   private segmentDelegate: HTMLElement = document.body;
+  private lastEffectSegments: SegmentBasicInfo [] = []
   constructor({
     trackCursor,
     scrollContainer,
@@ -88,9 +89,16 @@ export class SegmentTracks extends Tracks {
     scrollContainer: HTMLElement,
     segment: HTMLElement
   ) {
-    this.removeSegmentActivedStatus();
     segment.classList.add("actived");
+    this.removeSegmentActivedStatus(e, segment);
     this.dragStart(e, trackCursor, scrollContainer, segment);
+  }
+  private syncScaleKeyframes(segment: HTMLElement, frameWidth: number, framestart: number){
+    const keyframes = this.getKeyframes(segment);
+    keyframes.forEach((keyframeDom: HTMLElement)=> {
+      const frame = getDatasetNumberByKey(keyframeDom, 'frame');
+      keyframeDom.style.left = `${frameWidth * (frame - framestart)}px`;
+    })
   }
   syncScale() {
     if (!this.scrollContainer || !this.timeline) {
@@ -109,6 +117,7 @@ export class SegmentTracks extends Tracks {
       const left = framestart * frameWidth;
       dom.style.left = `${left}px`;
       dom.style.width = `${frameWidth * (frameend - framestart)}px`;
+      this.syncScaleKeyframes(dom, frameWidth, framestart);
     });
   }
   // segment 左侧手柄拖动
@@ -164,7 +173,7 @@ export class SegmentTracks extends Tracks {
           segment.dataset.framestart = `${currentFrame}`;  
         }
       }
-      this.triggerSlideEvent(result, trackDom);
+      this.lastEffectSegments = this.triggerSlideEvent(result, trackDom);
     }
   }
   // segment 右侧手柄拖动
@@ -215,7 +224,7 @@ export class SegmentTracks extends Tracks {
         }
       }
       // todo 节流
-      this.triggerSlideEvent(segments, trackDom);
+      this.lastEffectSegments = this.triggerSlideEvent(segments, trackDom);
     }
   }
   private triggerSlideEvent(segments: HTMLElement[], track: HTMLElement){
@@ -234,6 +243,15 @@ export class SegmentTracks extends Tracks {
       cb({
         segments: result,
         eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED
+      });
+    })
+    return result;
+  }
+  private triggerSlideEndEvent(){
+    this.segmentsSlideEndCallback?.forEach( cb => {
+      cb({
+        segments: this.lastEffectSegments,
+        eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDE_END
       });
     })
   }
@@ -270,6 +288,7 @@ export class SegmentTracks extends Tracks {
       setTimeout(() => {
         this.trackCursor.unfreeze();  
       }, 0);
+      this.triggerSlideEndEvent()
       document.body.removeEventListener("mousemove", mousemove);
       document.body.removeEventListener("mouseup", mouseup);
     };

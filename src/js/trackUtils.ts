@@ -31,6 +31,11 @@ export const createSegment = (type?: SegmentType) => {
   dom.appendChild(handleRightDom);
   return dom;
 };
+export const createKeyFrame = () => {
+  const dom = document.createElement("div");
+  dom.className = "segment-keyframe";
+  return dom;
+}
 export const createSegmentFake = (rect: DOMRect) => {
   const dom = document.createElement("div");
   dom.className = "segment-fake";
