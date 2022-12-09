@@ -9,7 +9,8 @@ export function getTranslateXY(element: HTMLElement) {
   };
 }
 export enum CURSOR_POINTER_EVENT_TYPE {
-  CURSOR_UPDATE,
+  UPDATE,
+  DRAG_END,
 }
 interface EventCallbackCursorPointer {
   (currentFrame: number, cursorX: number): any;
@@ -28,6 +29,8 @@ export class CursorPointer {
     this._enable = bool;
   }
   private cursorUpdateCallbackSet: Set<EventCallbackCursorPointer> | null =
+    null;
+  private cursorDragEndCallbackSet: Set<EventCallbackCursorPointer> | null =
     null;
   constructor(
     scrollContentDom: HTMLElement,
@@ -56,6 +59,7 @@ export class CursorPointer {
         cursorEl.removeEventListener("mouseup", handleMouseup);
         document.removeEventListener("mouseup", handleMouseup);
         document.removeEventListener("mousemove", handleMousemove);
+        this.triggerDragEnd(timeline, this.getX(e.clientX, scrollContentDom));
         
       };
       const handleMousemove = (e: MouseEvent) => {
@@ -77,7 +81,17 @@ export class CursorPointer {
         return;
       }
       this.cursorUpdate(timeline, this.getX(e.clientX, scrollContentDom));
+      this.triggerDragEnd(timeline, this.getX(e.clientX, scrollContentDom));
     });
+  }
+  private triggerDragEnd(timelineAxis: TimelineAxis, x){
+    const currentFrame = Math.round(x / timelineAxis.frameWidth);
+    const left = timelineAxis.frameWidth * currentFrame;
+    if(this.cursorDragEndCallbackSet?.size){
+      this.cursorDragEndCallbackSet.forEach((cb) => {
+        cb(currentFrame, left);
+      });
+    }
   }
   private getX(clientX: number, scrollContentDom: HTMLElement) {
     let x =
@@ -115,10 +129,19 @@ export class CursorPointer {
     eventType: CURSOR_POINTER_EVENT_TYPE,
     cb: EventCallbackCursorPointer
   ) {
-    if (!this.cursorUpdateCallbackSet) {
-      this.cursorUpdateCallbackSet = new Set();
+    if(eventType === CURSOR_POINTER_EVENT_TYPE.UPDATE){
+      if (!this.cursorUpdateCallbackSet) {
+        this.cursorUpdateCallbackSet = new Set();
+      }
+      this.cursorUpdateCallbackSet.add(cb);
     }
-    this.cursorUpdateCallbackSet.add(cb);
+    if(eventType === CURSOR_POINTER_EVENT_TYPE.DRAG_END){
+      if (!this.cursorDragEndCallbackSet) {
+        this.cursorDragEndCallbackSet = new Set();
+      }
+      this.cursorDragEndCallbackSet.add(cb);
+    }
+    
     return this;
   }
   sync() {

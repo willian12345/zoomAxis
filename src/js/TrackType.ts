@@ -13,19 +13,24 @@ export enum TRACKS_EVENT_CALLBACK_TYPES {
   DROP_EFFECT, // 伸缩轨道覆盖切割事件
   SEGMENTS_CHANGED, 
   SEGMENTS_SLIDED, // segment 拖动调节宽度事件
+  SEGMENTS_SLIDE_END, // segment 拖动调节完毕
 }
 export interface SegmentBasicInfo {
-  trackId: string, segmentId: string, startFrame: number, endFrame: number
+  trackId: string, 
+  segmentId: string, 
+  startFrame: number, 
+  endFrame: number,
   segment?: HTMLElement,
-  track?:HTMLElement
+  track?:HTMLElement,
+  sectionId?: string,
 }
 export type TrackEventCallbackArgs = {segments: SegmentBasicInfo[], eventType?: TRACKS_EVENT_CALLBACK_TYPES}
 export interface TracksEvent{
   (e: TrackEventCallbackArgs): void
 }
 export type  TracksEventCallback  = TracksEvent
-
-export type responsedSegmentData = {
+// 添加成功至轨道后标准的回复格式
+export type ResponsedSegmentData = {
   duration: number
   endFrame: number
   keys: []
@@ -38,7 +43,7 @@ export type responsedSegmentData = {
 export type DropableArgs = {
   dropable: boolean
   segmentName: string
-  segmentData?: responsedSegmentData | null
+  segmentData?: ResponsedSegmentData | null
 }
 export interface DropableCheck {
   (trackId: string, startFrame: number): Promise<DropableArgs>
