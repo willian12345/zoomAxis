@@ -39,6 +39,7 @@ export abstract class Tracks {
   protected segmentsSlidedCallback: Set<TracksEventCallback> | null = null;
   protected segmentsSlideEndCallback: Set<TracksEventCallback> | null = null;
   protected segmentDropEffectCallback: Set<TracksEventCallback> | null = null;
+  protected segmentSelectedCallback: Set<TracksEventCallback> | null = null;
   protected scrollContainer: HTMLElement = {} as HTMLElement;
   protected dragoverClass = "dragover";
   protected dragoverErrorClass = "dragover-error";
@@ -48,6 +49,8 @@ export abstract class Tracks {
   deleteableCheck?: DeleteableCheck;
   ondragover: any = null;
   ondrop: any = null;
+  originFramestart = 0;
+  originFrameend = 0;
   framestart = 0;
   frameend = 0;
   frames = 0;
@@ -134,6 +137,12 @@ export abstract class Tracks {
       }
       this.segmentsSlideEndCallback.add(callback);
     }
+    if (eventType === TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_SELECTED) {
+      if (!this.segmentSelectedCallback) {
+        this.segmentSelectedCallback = new Set();
+      }
+      this.segmentSelectedCallback.add(callback);
+    }
   }
   removeActivedSegment(event: KeyboardEvent) {
     if (event.key !== "Delete") {
@@ -141,7 +150,7 @@ export abstract class Tracks {
     }
     this.deleteActivedSegment();
   }
-  removeSegmentActivedStatus(e: MouseEvent, currentSegment?: HTMLElement) {
+  removeSegmentActivedStatus(e?: MouseEvent, currentSegment?: HTMLElement) {
     //todo: e.target 判断当前点击对象是否是 clickoutside
     this.scrollContainer?.querySelectorAll(".segment").forEach((segment) => {
       if(currentSegment !== segment){
@@ -502,7 +511,6 @@ export abstract class Tracks {
         segment.dataset.frameend = `${frameendMoved}`;
         this.framestart = frameendMoved;
         this.frameend = frameendMoved + this.frames;
-        this.triggerDragEnd(segment, collisionTrack);
       }
     }
     // 判断右侧片断时，需要先将片断反转从右边头上开始判断一步步向右移动
@@ -519,7 +527,6 @@ export abstract class Tracks {
         segment.dataset.frameend = `${frameendMoved}`;
         this.framestart = segmentFramestart;
         this.frameend = segmentFramestart + this.frames;
-        this.triggerDragEnd(segment, collisionTrack);
       }
     }
 
@@ -623,13 +630,40 @@ export abstract class Tracks {
       }
     }
   }
+  private triggerSelected(){
+    const selectedActived =  Array.from(this.scrollContainer?.querySelectorAll('.segment.actived')) as HTMLElement[];
+    const segments = selectedActived.map( (segment):SegmentBasicInfo => {
+      const track = findParentElementByClassName(segment, 'track') ?? undefined;
+      const trackId = track?.dataset.trackId ?? '';
+      const segmentId = segment.dataset.segmentId ?? '';
+      const [startFrame, endFrame] = getFrameRange(segment);
+      return {
+        segment,
+        track,
+        trackId,
+        segmentId,
+        startFrame,
+        endFrame,
+      }
+    })
+    this.segmentSelectedCallback?.forEach((cb) =>
+      cb({
+        segments,
+        eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_SELECTED,
+      })
+    );
+  }
   private triggerDragEnd(segment: HTMLElement, track: HTMLElement) {
     const segmentId = segment.dataset.segmentId ?? "";
     const trackId = segment.dataset.trackId ?? "";
-    const startFrame = getDatasetNumberByKey(segment, "framestart");
-    const endFrame = getDatasetNumberByKey(segment, "frameend");
+    const [startFrame, endFrame] = getFrameRange(segment);
+    // 如果拖动后与拖动前帧数未变，不需要触发拖动回调
+    if(this.originFramestart === startFrame  && this.originFrameend === endFrame){
+      return;
+    }
     // 拖动放回原处是异步，拖完也要延时
     setTimeout(() => {
+      
       this.updateSliderHandler(track);
       // 拖完后触发回调
       this.dragEndCallback?.forEach((cb) =>
@@ -761,10 +795,12 @@ export abstract class Tracks {
     }
 
     if (!isCopySegment) {
-      this.framestart = getDatasetNumberByKey(segment, "framestart");
-      this.frameend = getDatasetNumberByKey(segment, "frameend");
+      const [framestart, frameend] = getFrameRange(segment);
+      this.framestart = framestart;
+      this.frameend = frameend;
       this.frames = this.frameend - this.framestart;
-      // console.log(this.framestart, this.frameend, this.frames);
+      this.originFramestart = framestart;
+      this.originFrameend = frameend;
     }
 
     // 高度变为正在拖动的 segment 高度
@@ -855,12 +891,13 @@ export abstract class Tracks {
           }
           if (originTrack) {
             this.putSegmentBack(segment, getLeftValue(segment), originTrack);
-            // this.triggerDragEnd(segment, originTrack);
           }
         }
         // 重新允许游标交互
         trackCursor.enable = true;
       }, 0);
+      this.originFramestart = 0;
+      this.originFrameend = 0;
       document.removeEventListener("mouseup", mouseup);
       document.removeEventListener("mousemove", mousemove);
     };
@@ -935,6 +972,15 @@ export abstract class Tracks {
       keyframe.parentElement?.removeChild(keyframe)
     })
   }
+  select(segmentId: string){
+    const segment = this.getSegmentById(segmentId);
+    if(!segment){
+      return;
+    }
+    this.removeSegmentActivedStatus()
+    segment.classList.add("actived");
+    this.triggerSelected();
+  }
   addSegmentByTrackId(
     segment: {
       trackId: string;
@@ -966,6 +1012,21 @@ export abstract class Tracks {
           this.updateSliderHandler(track);
         }
       }
+    }
+  }
+  getSegmentBasicInfoByDom(segment: HTMLElement): SegmentBasicInfo{
+    const trackId = segment.dataset.trackId ?? '';
+    const segmentId = segment.dataset.segmentId ?? '';
+    const [startFrame, endFrame] = getFrameRange(segment);
+    const sectionId = segmentId;
+    const track = findParentElementByClassName(segment, 'track');
+    return {
+      segmentId,
+      trackId,
+      startFrame,
+      endFrame,
+      sectionId,
+      track,
     }
   }
 }
