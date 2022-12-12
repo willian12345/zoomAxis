@@ -14,6 +14,7 @@ export enum TRACKS_EVENT_CALLBACK_TYPES {
   SEGMENTS_CHANGED, 
   SEGMENTS_SLIDED, // segment 拖动调节宽度事件
   SEGMENTS_SLIDE_END, // segment 拖动调节完毕
+  SEGMENT_SELECTED, // 选中
 }
 export interface SegmentBasicInfo {
   trackId: string, 
@@ -21,7 +22,7 @@ export interface SegmentBasicInfo {
   startFrame: number, 
   endFrame: number,
   segment?: HTMLElement,
-  track?:HTMLElement,
+  track?:HTMLElement | null,
   sectionId?: string,
 }
 export type TrackEventCallbackArgs = {segments: SegmentBasicInfo[], eventType?: TRACKS_EVENT_CALLBACK_TYPES}
