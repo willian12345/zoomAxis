@@ -16,7 +16,8 @@ export class SegmentTracks extends Tracks {
   scrollContainer: HTMLElement = {} as HTMLElement;
   scrollContainerRect: DOMRect = {} as DOMRect;
   private segmentDelegate: HTMLElement = document.body;
-  private lastEffectSegments: SegmentBasicInfo [] = []
+  private lastEffectSegments: SegmentBasicInfo [] = [];
+  private mousedownTimer = 0
   constructor({
     trackCursor,
     scrollContainer,
@@ -39,6 +40,14 @@ export class SegmentTracks extends Tracks {
     this.segmentDelegate.addEventListener("mousedown", this.mousedownDelegateHandle);
     // 代理 segment 鼠标事件
     scrollContainer.addEventListener("mousedown", this.mouseDownHandle);
+    scrollContainer.addEventListener('mouseup', () => {
+      this.clearTimer();
+    })
+  }
+  private clearTimer(){
+    if(this.mousedownTimer){
+      clearTimeout(this.mousedownTimer);
+    }
   }
   private mouseDownHandle: MouseHandle = (e: MouseEvent) => {
     e.preventDefault();
@@ -91,7 +100,11 @@ export class SegmentTracks extends Tracks {
   ) {
     segment.classList.add("actived");
     this.removeSegmentActivedStatus(e, segment);
-    this.dragStart(e, trackCursor, scrollContainer, segment);
+    this.clearTimer();
+    this.mousedownTimer = setTimeout(()=> {
+      this.dragStart(e, trackCursor, scrollContainer, segment);  
+    }, 1000);
+    this.triggerSelected();
   }
   private syncScaleKeyframes(segment: HTMLElement, frameWidth: number, framestart: number){
     const keyframes = this.getKeyframes(segment);
