@@ -101,7 +101,6 @@ export abstract class Tracks {
       target.classList.add('actived');
     }
   }
-  addListener(event, callback) { }
   addEventListener(
     eventType: TRACKS_EVENT_CALLBACK_TYPES,
     callback: TracksEventCallback
@@ -630,7 +629,7 @@ export abstract class Tracks {
       }
     }
   }
-  private triggerSelected(){
+  protected triggerSelected(){
     const selectedActived =  Array.from(this.scrollContainer?.querySelectorAll('.segment.actived')) as HTMLElement[];
     const segments = selectedActived.map( (segment):SegmentBasicInfo => {
       const track = findParentElementByClassName(segment, 'track') ?? undefined;
@@ -657,6 +656,7 @@ export abstract class Tracks {
     const segmentId = segment.dataset.segmentId ?? "";
     const trackId = segment.dataset.trackId ?? "";
     const [startFrame, endFrame] = getFrameRange(segment);
+    console.log(this.originFramestart, this.originFrameend, startFrame, endFrame)
     // 如果拖动后与拖动前帧数未变，不需要触发拖动回调
     if(this.originFramestart === startFrame  && this.originFrameend === endFrame){
       return;
@@ -801,6 +801,7 @@ export abstract class Tracks {
       this.frames = this.frameend - this.framestart;
       this.originFramestart = framestart;
       this.originFrameend = frameend;
+      console.log(framestart, frameend, 999);
     }
 
     // 高度变为正在拖动的 segment 高度
@@ -895,9 +896,10 @@ export abstract class Tracks {
         }
         // 重新允许游标交互
         trackCursor.enable = true;
+        this.originFramestart = 0;
+        this.originFrameend = 0;
       }, 0);
-      this.originFramestart = 0;
-      this.originFrameend = 0;
+      
       document.removeEventListener("mouseup", mouseup);
       document.removeEventListener("mousemove", mousemove);
     };
