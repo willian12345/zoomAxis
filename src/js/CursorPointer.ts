@@ -111,7 +111,10 @@ export class CursorPointer {
     if (!this.cursorEl) {
       return;
     }
-    const currentFrame = Math.round(x / timelineAxis.frameWidth);
+    let currentFrame = Math.round(x / timelineAxis.frameWidth);
+    if(currentFrame > timelineAxis.totalFrames){
+      currentFrame = timelineAxis.totalFrames;
+    }
     const left = timelineAxis.frameWidth * currentFrame;
     // 游标拖动的 left 值根据当前帧与每帧所占宽度计算
     this.cursorEl.style.transform = `translateX(${left}px)`;

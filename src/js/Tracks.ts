@@ -40,6 +40,7 @@ export abstract class Tracks {
   protected segmentsSlideEndCallback: Set<TracksEventCallback> | null = null;
   protected segmentDropEffectCallback: Set<TracksEventCallback> | null = null;
   protected segmentSelectedCallback: Set<TracksEventCallback> | null = null;
+  protected segmentDeletedCallback: Set<TracksEventCallback> | null = null;
   protected scrollContainer: HTMLElement = {} as HTMLElement;
   protected dragoverClass = "dragover";
   protected dragoverErrorClass = "dragover-error";
@@ -71,12 +72,14 @@ export abstract class Tracks {
     this.trackCursor = trackCursor;
     this.scrollContainer = scrollContainer;
 
+    //todo: 回调检测类函数放到注释侦听函数内注册
     if (dropableCheck) {
       this.dropableCheck = dropableCheck;
     }
     if (deleteableCheck) {
       this.deleteableCheck = deleteableCheck;
     }
+    
     this.ondragover = ondragover;
     this.ondrop = ondrop;
 
@@ -142,6 +145,13 @@ export abstract class Tracks {
       }
       this.segmentSelectedCallback.add(callback);
     }
+    if (eventType === TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_DELETED) {
+      if (!this.segmentDeletedCallback) {
+        this.segmentDeletedCallback = new Set();
+      }
+      this.segmentDeletedCallback.add(callback);
+    }
+
   }
   removeActivedSegment(event: KeyboardEvent) {
     if (event.key !== "Delete") {
@@ -164,25 +174,12 @@ export abstract class Tracks {
     if (!activedSegment) {
       return;
     }
-    if (this.deleteableCheck) {
-      const trackId = activedSegment?.dataset.trackId;
-      const segmentId = activedSegment.dataset.segmentId;
-      if (trackId && segmentId) {
-        const result = await this.deleteableCheck(trackId, segmentId);
-        if (!result) {
-          console.warn("删除失败");
-          return;
-        }
-      }
-    }
+    const [deletedFramestart, deletedFrameend] = getFrameRange(activedSegment);
     const trackDom = findParentElementByClassName(activedSegment, "track");
+    
+    
     // 如果是可伸缩轨道删除，则需要重新伸缩其它segment填满轨道
     if (trackDom) {
-      const deletedFramestart = getDatasetNumberByKey(
-        activedSegment,
-        "framestart"
-      );
-      const deletedFrameend = getDatasetNumberByKey(activedSegment, "frameend");
       const frames = deletedFrameend - deletedFramestart;
       if (this.isStretchTrack(trackDom)) {
         const segments: HTMLElement[] = Array.from(
@@ -220,7 +217,35 @@ export abstract class Tracks {
           }
         }
       }
-      activedSegment.parentElement?.removeChild(activedSegment);
+      if (this.deleteableCheck) {
+        const trackId = activedSegment?.dataset.trackId;
+        const segmentId = activedSegment.dataset.segmentId;
+        if (trackId && segmentId) {
+          const result = await this.deleteableCheck(trackId, segmentId);
+          if (!result) {
+            console.warn("删除失败");
+            return;
+          }
+          const resultWraped = {
+            trackId,
+            segmentId,
+            startFrame: deletedFramestart,
+            endFrame: deletedFrameend,
+            track: trackDom,
+            segment: activedSegment,
+          };
+          activedSegment.parentElement?.removeChild(activedSegment);
+          this.segmentDeletedCallback?.forEach((cb) => {
+            cb({
+              segments: [resultWraped],
+              eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_DELETED,
+            });
+          });
+        }
+      }else{
+        console.warn('没有添加 deleteableCheck 回调');
+        activedSegment.parentElement?.removeChild(activedSegment);
+      }
     }
   }
   unMounted() {
@@ -945,10 +970,10 @@ export abstract class Tracks {
       return
     }
     const frameWidth = this.timeline?.frameWidth ?? 0;
-    const [framestart] = getFrameRange(segment);
+    // const [framestart] = getFrameRange(segment);
     const keyframeDom = createKeyFrame();
     keyframeDom.dataset.frame = String(frame);
-    keyframeDom.style.left = `${frameWidth * (frame - framestart)}px`;
+    keyframeDom.style.left = `${frameWidth * (frame)}px`;
     segment.appendChild(keyframeDom);
   }
   deleteKeyframe(segmentId: string, trackId: string, frame: number){

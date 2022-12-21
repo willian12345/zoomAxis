@@ -13,8 +13,9 @@ export enum TRACKS_EVENT_CALLBACK_TYPES {
   DROP_EFFECT, // 伸缩轨道覆盖切割事件
   SEGMENTS_CHANGED, 
   SEGMENTS_SLIDED, // segment 拖动调节宽度事件
-  SEGMENTS_SLIDE_END, // segment 拖动调节完毕
+  SEGMENTS_SLIDE_END, // segment 拖动调节完毕后影响到的其它segment
   SEGMENT_SELECTED, // 选中
+  SEGMENT_DELETED, // 删除
 }
 export interface SegmentBasicInfo {
   trackId: string, 
