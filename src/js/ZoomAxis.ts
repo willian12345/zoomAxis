@@ -14,6 +14,7 @@ export interface ZoomAxisArgs {
   totalMarks: number
   vertical?: boolean
   stageWidth?: number
+  ratio?: number
   ratioMap?: number[][]
 }
 
@@ -64,7 +65,7 @@ export class ZoomAxis {
   zoomRatio = 1; // 缩放比例
   width = 600; // 标尺总宽度
 
-  constructor({ el, totalMarks, ratioMap, stageWidth, vertical = false }: ZoomAxisArgs) {
+  constructor({ el, totalMarks, ratio, ratioMap, stageWidth, vertical = false }: ZoomAxisArgs) {
     if (!el) {
       console.warn("挂载对象 id 必传");
       return;
@@ -80,10 +81,12 @@ export class ZoomAxis {
 
     this.initCanvas();
     this.totalMarks = totalMarks
-    this.setWidth();
+    if(ratio !== undefined){
+      this.zoomRatio = ratio
+    }
+    this.zoomByRatio();
 
     this.drawLine();
-    
   }
   initCanvas(){
     if(!this.canvas){

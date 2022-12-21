@@ -33,8 +33,8 @@ export class TimelineAxis extends ZoomAxis{
     // 每个标尺宽度/ (帧频 / (标尺周期值/标尺周期值代表的时间秒数))
     return this.markWidth / (this.frameRate / (this.spacecycle / this.spaceTimeSecond))
   }
-  constructor({ el, totalFrames = 0, totalMarks, frameRate, ratioMap }: TimelineAxisArgs){
-    super({ el, totalMarks,  ratioMap });
+  constructor({ el, totalFrames = 0, totalMarks, frameRate, ratio, ratioMap }: TimelineAxisArgs){
+    super({ el, totalMarks, ratio,  ratioMap });
     this.totalFrames = totalFrames;
     this.frameRate = frameRate ?? FRAME_RATE;
     this.setFrameIntervalTime();

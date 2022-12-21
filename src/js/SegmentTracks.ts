@@ -103,7 +103,7 @@ export class SegmentTracks extends Tracks {
     this.clearTimer();
     this.mousedownTimer = setTimeout(()=> {
       this.dragStart(e, trackCursor, scrollContainer, segment);  
-    }, 1000);
+    }, 300);
     this.triggerSelected();
   }
   private syncScaleKeyframes(segment: HTMLElement, frameWidth: number, framestart: number){
@@ -301,7 +301,8 @@ export class SegmentTracks extends Tracks {
       setTimeout(() => {
         this.trackCursor.unfreeze();  
       }, 0);
-      this.triggerSlideEndEvent()
+      //注意： 宽度调节完毕后，影响到的相关 segment 不能同时调整需要另外再调用，所以使用了新的 SEGMENTS_SLIDE_END 事件
+      this.triggerSlideEndEvent();
       document.body.removeEventListener("mousemove", mousemove);
       document.body.removeEventListener("mouseup", mouseup);
     };
