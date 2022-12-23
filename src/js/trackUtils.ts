@@ -1,35 +1,24 @@
 // 创建 segment
-import { SegmentBasicInfo, SegmentType } from './TrackType'
+import { SegmentBasicInfo, SegmentType, SegmentConstructInfo } from './TrackType'
+import { Segment } from './Segment';
 const CLOSE_ENOUPH_DISTANCE_Y = 10; // 距离 y 是否够近
-const CLOSE_ENOUPH_SEGMENT_X = 60; // 距离 segment x是否够近
-let segmentUUID = 1
+const CLOSE_ENOUPH_SEGMENT_X = 60; // 距离 segment x是否够
 export const createSegmentName = (text: string) => {
   const dom = document.createElement("div");
   dom.className = "segment-name";
   dom.innerText = text;
   return dom;
 }
-const createDivDom = (className: string) => {
+export const createDivDom = (className: string) => {
   const dom = document.createElement('div');
   dom.className = className;
   return dom;
 }
 
 // todo: 抽象成单独 Segment 类用于构造 segment
-export const createSegment = (type?: SegmentType) => {
-  console.log(type);
-  const dom = document.createElement("div");
-  dom.className = "segment";
-  dom.style.width = "80px";
-  dom.style.height = "24px";
-  dom.style.left = "0";
-  dom.dataset.segmentId = `${++segmentUUID}`;
-  dom.dataset.trackId = '';
-  const handleLeftDom = createDivDom('segment-handle segment-handle-left');
-  const handleRightDom = createDivDom('segment-handle segment-handle-right');
-  dom.prepend(handleLeftDom);
-  dom.appendChild(handleRightDom);
-  return dom;
+export const createSegment = (segmentInfo: SegmentConstructInfo ) => {
+  const segment = new Segment(segmentInfo);
+  return segment;
 };
 export const createKeyFrame = () => {
   const dom = document.createElement("div");
@@ -44,13 +33,15 @@ export const createSegmentFake = (rect: DOMRect) => {
   return dom;
 }
 export const createSegmentToTrack = (segmentName: string, segmentType: SegmentType, segmentInfo: SegmentBasicInfo): HTMLElement => {
-  const dom = createSegment(segmentType);
-  dom.appendChild(createSegmentName(segmentName));
-  dom.dataset.framestart = `${segmentInfo.startFrame}`;
-  dom.dataset.frameend = `${segmentInfo.endFrame}`;
-  dom.dataset.segmentId = `${segmentInfo.segmentId}`;
-  dom.dataset.trackId = `${segmentInfo.trackId}`;
-  return dom;
+  const segment = createSegment({
+    trackId: segmentInfo.trackId,
+    framestart: segmentInfo.startFrame,
+    frameend: segmentInfo.endFrame,
+    name: segmentName,
+    segmentId: segmentInfo.segmentId,
+    segmentType,
+  });
+  return segment.dom;
 }
 export const findParentElementByClassName = (dom: HTMLElement, parentClassName: string) => {
   let parent = dom.parentElement;
@@ -149,7 +140,6 @@ export const collisionCheckFrame = (target: HTMLElement,  track: HTMLElement): b
         || framestart > start && framestart < end
         || frameend < end && frameend > start
     ){
-      console.log(framestart, frameend, start, end)
       return true
     }
   }

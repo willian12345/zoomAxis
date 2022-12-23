@@ -89,3 +89,16 @@ export interface DropArgs {
   tracks: HTMLElement[], 
   isCopySegment: boolean, 
 }
+
+// Segment 构造参数
+export type SegmentConstructInfo = {
+  trackId: string,
+  framestart: number,
+  frameend: number,
+  segmentType: SegmentType,
+  name?: string,
+  segmentId?: string,
+  width?: number|string,
+  height?: number|string,
+  left?: number|string,
+}
