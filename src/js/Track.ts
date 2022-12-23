@@ -5,30 +5,41 @@
  *  <div class="segment"></div>
  * </div>
  */
+import { Segment } from './Segment';
 interface TrackArgs {
   trackClass?: string
   trackPlaceholderClass?: string
+  dom: HTMLElement
 }
 export class Track {
   dom = {} as HTMLElement
-  id = ''
+  trackId = ''
   trackClass = ''
   trackPlaceholderClass = ''
+  segments: Map<string, Segment> = new Map()
   constructor({ 
     trackClass = 'track', 
-    trackPlaceholderClass = 'track-placeholder' 
+    trackPlaceholderClass = 'track-placeholder' ,
+    dom
   }: TrackArgs) {
     this.trackClass = trackClass
     this.trackPlaceholderClass = trackPlaceholderClass
-    this.dom = this.createDom();
+    // dom  暂时写在 html 文件内
+    this.dom = dom;
+    this.trackId = dom.dataset.trackId ?? ''
   }
-  private createDom(): HTMLElement {
-    const div = document.createElement('div');
-    div.innerHTML = `
-      div class="${this.trackClass}">
-        <div class="${this.trackPlaceholderClass}"></div>
-      </div>
-      `;
-    return div.firstElementChild as HTMLElement;
+  addSegment(segment: Segment){
+    this.segments.set(segment.segmentId, segment);
+    this.dom.appendChild(segment.dom);
+    segment.setTrackId(this.trackId);
   }
+  // private createDom(): HTMLElement {
+  //   const div = document.createElement('div');
+  //   div.innerHTML = `
+  //     div class="${this.trackClass}">
+  //       <div class="${this.trackPlaceholderClass}"></div>
+  //     </div>
+  //     `;
+  //   return div.firstElementChild as HTMLElement;
+  // }
 }

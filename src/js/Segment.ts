@@ -5,32 +5,49 @@
  *  <div class="segment-handle segment-handle-right"></div>
  * </div>
  */
-let segmentIdIndex = 0
+import { SegmentConstructInfo, SegmentType } from './TrackType'
 
+let segmentIdIndex = 0
 export class Segment {
   framestart = 0
   frameend = 0
   frames = 0
-  width = '80px'
-  height = '24px'
-  left = '0'
+  width:string|number = '80px'
+  height:string|number = '24px'
+  left:string|number = '0'
   segmentId = ''
   segmentClass = 'segment segment-action'
   dom = {} as HTMLElement
   trackId = ''
-  constructor({trackId = ''}){
-    this.trackId = trackId
+  segmentType = SegmentType.BODY_ANIMATION
+  constructor(args: SegmentConstructInfo){
+    this.trackId = args.trackId;
+    this.segmentId = args.segmentId ?? this.createSegmentId();
+    this.framestart = args.framestart
+    this.frameend = args.frameend
+    if(args.width !== undefined){
+      this.width = args.width
+    }
+    if(args.height !== undefined){
+      this.height = args.height
+    }
+    if(args.left !== undefined){
+      this.left = args.left
+    }
+    this.framestart = args.framestart
+    this.framestart = args.framestart
+    this.segmentType = args.segmentType
     this.dom = this.createDom();
   }
   private createSegmentId() {
-    return segmentIdIndex++;
+    return String(segmentIdIndex++);
   }
   private createDom () {
     const div = document.createElement('div');
     div.innerHTML = `
         <div 
           class="${this.segmentClass}" 
-          data-segment-id="${this.createSegmentId()}" 
+          data-segment-id="${this.segmentId}" 
           data-track-id="${this.trackId}" 
           data-framestart="${this.framestart}" 
           data-frameend="${this.frameend}"
@@ -40,5 +57,9 @@ export class Segment {
         </div>
       `;
     return div.firstElementChild as HTMLElement;
+  }
+  setTrackId(trackId: string){
+    this.trackId = trackId
+    this.dom.dataset.trackId = trackId
   }
 }

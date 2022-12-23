@@ -12,6 +12,8 @@ import {
 
 import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
+import { Track } from "./Track";
+import { Segment } from "./Segment";
 
 import {
   createSegment,
@@ -25,7 +27,6 @@ import {
   isContainSplitFromComma,
   getDatasetNumberByKey,
   sortByLeftValue,
-  createSegmentName,
   findParentElementByClassName,
   collisionCheckFrame,
   getFrameRange,
@@ -56,6 +57,7 @@ export abstract class Tracks {
   frameend = 0;
   frames = 0;
   currentSegment: HTMLElement | null = null;
+  virtualTracks: Track[] = []
   constructor({
     trackCursor,
     scrollContainer,
@@ -79,12 +81,21 @@ export abstract class Tracks {
     if (deleteableCheck) {
       this.deleteableCheck = deleteableCheck;
     }
+    this.initTracks()
     
     this.ondragover = ondragover;
     this.ondrop = ondrop;
 
     this.initEvent();
     return this;
+  }
+  initTracks() {
+    const arr = Array.from(this.scrollContainer.querySelectorAll('.track')) as HTMLElement[];
+    this.virtualTracks = arr.map( trackDom => {
+      return new Track({
+        dom: trackDom
+      })
+    })
   }
   private initEvent() {
     // 点击轨道外部时清除选中过的 segment 状态
@@ -271,33 +282,37 @@ export abstract class Tracks {
       }
     }
   }
-  private async copySegment(segmentTrackId: string, framestart: number) {
-    let dom: HTMLElement | null = null;
+  private async copySegment(segmentTrackId: string, framestart: number, segmentType: SegmentType) {
+    let virtualSegment: Segment | null = null;
     if (this.dropableCheck) {
       const { dropable, segmentData, segmentName } = await this.dropableCheck(
         segmentTrackId,
         framestart
       );
       if (dropable && segmentData) {
-        dom = createSegment(SegmentType.BODY_ANIMATION);
-        dom.appendChild(createSegmentName(segmentName));
         framestart = segmentData.startFrame;
-        dom.dataset.framestart = `${framestart}`;
-        dom.dataset.frameend = `${segmentData.endFrame}`;
-        dom.dataset.frames = `${segmentData.endFrame - framestart}`;
-        dom.dataset.segmentId = segmentData.sectionId ?? "";
-        dom.dataset.trackId = segmentData.trackId ?? "";
+        virtualSegment = createSegment({
+          trackId: segmentData.trackId ?? "",
+          segmentId: segmentData.sectionId,
+          framestart: framestart,
+          frameend: segmentData.endFrame,
+          name: segmentName,
+          segmentType,
+        });
       }else{
         return null;
       }
     } else {
-      dom = createSegment(SegmentType.BODY_ANIMATION);
       const frameend = framestart + 30;
-      dom.dataset.framestart = `${framestart}`;
-      dom.dataset.frameend = `${frameend}`;
-      dom.dataset.trackId = segmentTrackId ?? "";
+      virtualSegment = createSegment({
+        trackId: segmentTrackId ?? "",
+        framestart,
+        frameend,
+        name: '',
+        segmentType,
+      });
     }
-    return dom;
+    return virtualSegment;
   }
   private getFramestartByX(x: number): number {
     const frameWidth: number = this.timeline?.frameWidth ?? 0;
@@ -318,19 +333,18 @@ export abstract class Tracks {
   protected isStretchSegment(segment: HTMLElement) {
     return segment.classList.contains("segment-stretch");
   }
+  
   private async getSegment(
     copy: boolean,
     segment: HTMLElement,
     segmentTrackId: string,
-    framestart: number
-  ): Promise<HTMLElement | null> {
+    framestart: number,
+    segmentType: SegmentType,
+  ): Promise<Segment | null> {
     if (copy) {
-      return await this.copySegment(segmentTrackId, framestart);
+      return await this.copySegment(segmentTrackId, framestart, segmentType);
     } else {
-      if (!segment.dataset.trackId) {
-        segment.dataset.trackId = "";
-      }
-      return segment;
+      return this.getVirtualSegment(segment.dataset.trackId ?? '', segment.dataset.segmentId ?? '');
     }
   }
   async removeSegment(segment: HTMLElement) {
@@ -344,6 +358,22 @@ export abstract class Tracks {
       }
     }
     segment.parentNode?.removeChild(segment);
+  }
+  getVirtualTrack(trackId: string){
+    if(!trackId.length){
+      console.warn('注意：轨道 id 为空');
+    }
+    return this.virtualTracks.find( vt => vt.trackId === trackId) ?? null;
+  }
+  getVirtualSegment(trackId: string, segmentId: string){
+    if(!trackId.length || !segmentId.length){
+      console.warn('注意：轨道或片断 id 为空');
+    }
+    const virtualTrack = this.virtualTracks.find( vt => vt.trackId === trackId)
+    if(!virtualTrack){
+      return null
+    }
+    return virtualTrack.segments.get(segmentId) ?? null
   }
   getCollisionByFrameInSegments(frame: number, segments: HTMLElement[]){
     return segments.find((segment: HTMLElement) => {
@@ -396,7 +426,7 @@ export abstract class Tracks {
     return Array.from<HTMLElement>(track.querySelectorAll(".segment"));
   }
   getTracks(){
-    return Array.from<HTMLElement>(this.scrollContainer.querySelectorAll(".track"));
+    return this.virtualTracks.map( vt => vt.dom);
   }
   getTrackById(trackId: string){
     return this.getTracks().find((track: HTMLElement) => isContainSplitFromComma(track.dataset.trackId ?? '', trackId));
@@ -422,6 +452,7 @@ export abstract class Tracks {
     framestart: number
   ) {
     track.appendChild(currentSegment);
+    // todo 加入虚拟轨道
     const totalFrames = this.timeline?.totalFrames ?? 0;
     let frameend = totalFrames;
     // 如果轨道内只有一个 segment 则铺满整个轨道
@@ -576,10 +607,10 @@ export abstract class Tracks {
       // 离轨道足够近
       let placeHolder = getSegmentPlaceholder(collisionTrack);
       collisionTrack.classList.add(this.dragoverClass);
-      const trackId = collisionTrack.dataset.trackId ?? "";
-      const segmentTrackId = segment.dataset.trackId ?? "";
+      const trackType = collisionTrack.dataset.trackType ?? "";
+      const segmentType = segment.dataset.segmentType ?? "";
       // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
-      if (!isContainSplitFromComma(trackId, segmentTrackId)) {
+      if (!isContainSplitFromComma(trackType, segmentType)) {
         collisionTrack.classList.add(this.dragoverErrorClass);
       }
       if (!placeHolder) {
@@ -681,7 +712,7 @@ export abstract class Tracks {
     const segmentId = segment.dataset.segmentId ?? "";
     const trackId = segment.dataset.trackId ?? "";
     const [startFrame, endFrame] = getFrameRange(segment);
-    console.log(this.originFramestart, this.originFrameend, startFrame, endFrame)
+    // console.log(this.originFramestart, this.originFrameend, startFrame, endFrame)
     // 如果拖动后与拖动前帧数未变，不需要触发拖动回调
     if(this.originFramestart === startFrame  && this.originFrameend === endFrame){
       return;
@@ -709,11 +740,9 @@ export abstract class Tracks {
     }, 2);
   }
   private async drop({
-    e,
     x,
     segment,
     track,
-    tracks,
     isCopySegment,
   }: DropArgs) {
     let framestart = this.getFramestartByX(x);
@@ -723,10 +752,12 @@ export abstract class Tracks {
     }
     let dom: HTMLElement | null = null;
     // 轨道 id
-    const trackId = track.dataset.trackId ?? "";
-    const segmentTrackId = segment.dataset.trackId ?? "";
+    const trackId = track.dataset.trackId ?? '';
+    const trackType = track.dataset.trackType ?? '';
+    const segmentTrackId = segment.dataset.trackId ?? '';
+    const segmentTypeStr = segment.dataset.segmentType ?? '0';
     // 轨道 id 必须相同才能拖动进去
-    if (!isContainSplitFromComma(trackId, segmentTrackId)) {
+    if (!isContainSplitFromComma(trackType, segmentTypeStr)) {
       placeHolder.style.opacity = "0";
       return;
     }
@@ -735,13 +766,15 @@ export abstract class Tracks {
       track
     );
 
-    dom = await this.getSegment(
+    const virtualSegment = await this.getSegment(
       isCopySegment,
       segment,
       segmentTrackId,
-      framestart
+      framestart,
+      parseInt(segmentTypeStr),
     );
-    this.currentSegment = dom;
+    dom = virtualSegment?.dom ?? null;
+    this.currentSegment = dom
     placeHolder.style.opacity = "0";
     if (!dom) {
       return;
@@ -764,17 +797,18 @@ export abstract class Tracks {
     }
     // 普通轨道
     if (!isCollistion || magnet) {
-      track.appendChild(dom);
+      const virtualTrack = this.getVirtualTrack(track.dataset.trackId ?? '');
+      if(virtualTrack && virtualSegment){
+        virtualTrack.addSegment(virtualSegment);
+      }
       // 如果 x 轴磁吸，则需要根据磁吸的 segment 重新计算 framestart 与 segmentLeft 值
       if (magnet && magnetTo) {
         const magnetToRect: DOMRect = magnetTo.getBoundingClientRect();
         const magnetLeft: number = getLeftValue(magnetTo);
         const x = magnetLeft + magnetToRect.width;
         framestart = this.getFramestartByX(x);
-        // segmentLeft = this.getSegmentLeft(framestart);
       }
-      let fs = getDatasetNumberByKey(dom, "framestart");
-      let fd = getDatasetNumberByKey(dom, "frameend");
+      const [fs, fd] = getFrameRange(dom);
       const frameend = framestart + (fd - fs);
       this.setSegmentPosition(dom, framestart, frameend);
       dom.dataset.framestart = `${framestart}`;
@@ -794,9 +828,7 @@ export abstract class Tracks {
       return;
     }
     // 获取所有轨道
-    const tracks: HTMLElement[] = Array.from(
-      document.querySelectorAll(".track")
-    );
+    const tracks: HTMLElement[] = this.virtualTracks.map( vt => vt.dom)
     // 全局拖动容器
     const dragTrackContainer = getDragTrackCotainer() as HTMLElement;
     // 拖动前原轨道
@@ -826,7 +858,6 @@ export abstract class Tracks {
       this.frames = this.frameend - this.framestart;
       this.originFramestart = framestart;
       this.originFrameend = frameend;
-      console.log(framestart, frameend, 999);
     }
 
     // 高度变为正在拖动的 segment 高度
@@ -906,13 +937,6 @@ export abstract class Tracks {
         if (dragTrackContainer.children.length) {
           // 如果是复制
           if (isCopySegment) {
-            // todo 如果是放入轨道后才能获取帧数，则需要在此处另外碰撞检测，如果碰撞则删除拖入的 segment
-            // const track = findParentElementByClassName(segment, '.track') as HTMLElement;
-            // console.log(segment, track, 3333)
-            // const [isCollistion]  = collisionCheckX(segment, track);
-            // if(isCollistion){
-            //   segment.parentElement?.removeChild(segment);
-            // }
             dragTrackContainer.removeChild(segmentCopy);
           }
           if (originTrack) {
@@ -1009,36 +1033,25 @@ export abstract class Tracks {
     this.triggerSelected();
   }
   addSegmentByTrackId(
-    segment: {
+    segmentConstructInfo: {
       trackId: string;
       segmentId: string;
       name: string;
       framestart: number;
       frameend: number;
+      segmentType: SegmentType;
     },
-    segmentExtra?: any,
-    type?: SegmentType
   ) {
-    const tracks: HTMLElement[] = Array.from(
-      document.querySelectorAll(".track")
-    );
-    for (let track of tracks) {
-      const dataTrackId = track.dataset.trackId ?? "";
-      if (isContainSplitFromComma(dataTrackId, segment.trackId)) {
-        const dom = createSegment(type);
-        const segmentName = createSegmentName(segment.name);
-        dom.appendChild(segmentName);
-        this.setSegmentPosition(dom, segment.framestart, segment.frameend);
-        dom.dataset.framestart = `${segment.framestart}`;
-        dom.dataset.frameend = `${segment.frameend}`;
-        dom.dataset.segmentId = `${segment.segmentId}`;
-        dom.dataset.trackId = `${segment.trackId}`;
-        track.appendChild(dom);
-        // 更新是否可拖动手柄
-        if (this.isStretchTrack(track)) {
-          this.updateSliderHandler(track);
-        }
-      }
+    const virtualTrack = this.getVirtualTrack(segmentConstructInfo.trackId);
+    if(!virtualTrack){
+      return;
+    }
+    const segment = createSegment(segmentConstructInfo);
+    this.setSegmentPosition(segment.dom, segment.framestart, segment.frameend);
+    virtualTrack.addSegment(segment);
+    // 更新是否可拖动手柄
+    if (this.isStretchTrack(virtualTrack.dom)) {
+      this.updateSliderHandler(virtualTrack.dom);
     }
   }
   getSegmentBasicInfoByDom(segment: HTMLElement): SegmentBasicInfo{
