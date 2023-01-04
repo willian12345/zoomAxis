@@ -32,7 +32,7 @@ export const createSegmentFake = (rect: DOMRect) => {
   dom.style.borderRadius = "4px";
   return dom;
 }
-export const createSegmentToTrack = (segmentName: string, segmentType: SegmentType, segmentInfo: SegmentBasicInfo): HTMLElement => {
+export const createSegmentToTrack = (segmentName: string, segmentType: SegmentType, segmentInfo: SegmentBasicInfo): Segment => {
   const segment = createSegment({
     trackId: segmentInfo.trackId,
     framestart: segmentInfo.startFrame,
@@ -41,7 +41,7 @@ export const createSegmentToTrack = (segmentName: string, segmentType: SegmentTy
     segmentId: segmentInfo.segmentId,
     segmentType,
   });
-  return segment.dom;
+  return segment;
 }
 export const findParentElementByClassName = (dom: HTMLElement, parentClassName: string) => {
   let parent = dom.parentElement;

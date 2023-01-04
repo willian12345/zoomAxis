@@ -31,15 +31,11 @@ export class Track {
   addSegment(segment: Segment){
     this.segments.set(segment.segmentId, segment);
     this.dom.appendChild(segment.dom);
-    segment.setTrackId(this.trackId);
+    segment.setTrack(this);
   }
-  // private createDom(): HTMLElement {
-  //   const div = document.createElement('div');
-  //   div.innerHTML = `
-  //     div class="${this.trackClass}">
-  //       <div class="${this.trackPlaceholderClass}"></div>
-  //     </div>
-  //     `;
-  //   return div.firstElementChild as HTMLElement;
-  // }
+  removeSegment(segment: Segment){
+    this.segments.delete(segment.segmentId)
+    this.segments.set(segment.segmentId, segment);
+    this.dom.removeChild(segment.dom);
+  }
 }

@@ -74,7 +74,6 @@ export abstract class Tracks {
     this.trackCursor = trackCursor;
     this.scrollContainer = scrollContainer;
 
-    //todo: 回调检测类函数放到注释侦听函数内注册
     if (dropableCheck) {
       this.dropableCheck = dropableCheck;
     }
@@ -89,7 +88,7 @@ export abstract class Tracks {
     this.initEvent();
     return this;
   }
-  initTracks() {
+  private initTracks() {
     const arr = Array.from(this.scrollContainer.querySelectorAll('.track')) as HTMLElement[];
     this.virtualTracks = arr.map( trackDom => {
       return new Track({
@@ -114,6 +113,36 @@ export abstract class Tracks {
     if(target.classList.contains("segment-keyframe")){
       target.classList.add('actived');
     }
+  }
+  private async deleteSegment (trackId: string, segmentId: string) {
+    let result = true;
+    const virtualSegment = this.getVirtualSegment(trackId, segmentId);
+    if(this.deleteableCheck){
+      result = await this.deleteableCheck(trackId, segmentId);
+      if (!result) {
+        console.warn("删除失败");
+        return result;
+      }
+      if(!virtualSegment){
+        return result;
+      }
+      const resultWraped = {
+        trackId,
+        segmentId,
+        startFrame: virtualSegment.framestart,
+        endFrame: virtualSegment.frameend,
+        track: virtualSegment.parentTrack?.dom,
+        segment: virtualSegment.dom,
+      };
+      this.segmentDeletedCallback?.forEach((cb) => {
+        cb({
+          segments: [resultWraped],
+          eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_DELETED,
+        });
+      });
+    }
+    virtualSegment?.parentTrack?.removeSegment(virtualSegment);
+    return result
   }
   addEventListener(
     eventType: TRACKS_EVENT_CALLBACK_TYPES,
@@ -215,7 +244,6 @@ export abstract class Tracks {
               segments,
               getLeftValue(activedSegment)
             ).reverse()[0];
-          console.log(segmentLeftSide);
           if (segmentLeftSide) {
             const framestart = getDatasetNumberByKey(
               segmentLeftSide,
@@ -228,35 +256,9 @@ export abstract class Tracks {
           }
         }
       }
-      if (this.deleteableCheck) {
-        const trackId = activedSegment?.dataset.trackId;
-        const segmentId = activedSegment.dataset.segmentId;
-        if (trackId && segmentId) {
-          const result = await this.deleteableCheck(trackId, segmentId);
-          if (!result) {
-            console.warn("删除失败");
-            return;
-          }
-          const resultWraped = {
-            trackId,
-            segmentId,
-            startFrame: deletedFramestart,
-            endFrame: deletedFrameend,
-            track: trackDom,
-            segment: activedSegment,
-          };
-          activedSegment.parentElement?.removeChild(activedSegment);
-          this.segmentDeletedCallback?.forEach((cb) => {
-            cb({
-              segments: [resultWraped],
-              eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_DELETED,
-            });
-          });
-        }
-      }else{
-        console.warn('没有添加 deleteableCheck 回调');
-        activedSegment.parentElement?.removeChild(activedSegment);
-      }
+      const trackId = activedSegment?.dataset.trackId ?? '';
+      const segmentId = activedSegment.dataset.segmentId ?? '';
+      this.deleteSegment(trackId, segmentId);
     }
   }
   unMounted() {
@@ -348,16 +350,9 @@ export abstract class Tracks {
     }
   }
   async removeSegment(segment: HTMLElement) {
-    const trackId = segment.dataset.trackId;
-    const segmentId = segment.dataset.segmentId;
-    if (trackId && segmentId && this.deleteableCheck) {
-      const result = await this.deleteableCheck(trackId, segmentId);
-      if (!result) {
-        console.warn("删除失败");
-        return;
-      }
-    }
-    segment.parentNode?.removeChild(segment);
+    const trackId = segment.dataset.trackId ?? '';
+    const segmentId = segment.dataset.segmentId ?? '';
+    this.deleteSegment(trackId, segmentId);
   }
   getVirtualTrack(trackId: string){
     if(!trackId.length){
@@ -451,7 +446,6 @@ export abstract class Tracks {
     currentSegment: HTMLElement,
     framestart: number
   ) {
-    track.appendChild(currentSegment);
     // todo 加入虚拟轨道
     const totalFrames = this.timeline?.totalFrames ?? 0;
     let frameend = totalFrames;
@@ -774,12 +768,16 @@ export abstract class Tracks {
       parseInt(segmentTypeStr),
     );
     dom = virtualSegment?.dom ?? null;
+    
     this.currentSegment = dom
     placeHolder.style.opacity = "0";
     if (!dom) {
       return;
     }
-
+    const virtualTrack = this.getVirtualTrack(track.dataset.trackId ?? '');
+    if(virtualTrack && virtualSegment){
+      virtualTrack.addSegment(virtualSegment);
+    }
     const stretchTrack = this.isStretchTrack(track);
 
     // 如果是伸展轨道
@@ -791,16 +789,12 @@ export abstract class Tracks {
     // 拖动复制入轨时，需要再次判断放入轨道成功后帧数范围是不是产生碰撞
     if (isCopySegment && collisionCheckFrame(dom, track)) {
       console.log("frame collision");
-      this.deleteableCheck &&
-        this.deleteableCheck(trackId, dom.dataset.segmentId ?? "");
+      this.deleteSegment(trackId, dom.dataset.segmentId ?? "")
       return;
     }
     // 普通轨道
     if (!isCollistion || magnet) {
-      const virtualTrack = this.getVirtualTrack(track.dataset.trackId ?? '');
-      if(virtualTrack && virtualSegment){
-        virtualTrack.addSegment(virtualSegment);
-      }
+      
       // 如果 x 轴磁吸，则需要根据磁吸的 segment 重新计算 framestart 与 segmentLeft 值
       if (magnet && magnetTo) {
         const magnetToRect: DOMRect = magnetTo.getBoundingClientRect();
@@ -1027,6 +1021,9 @@ export abstract class Tracks {
     const segment = this.getSegmentById(segmentId);
     if(!segment){
       return;
+    }
+    if(segment.classList.contains('actived')){
+      return
     }
     this.removeSegmentActivedStatus()
     segment.classList.add("actived");
