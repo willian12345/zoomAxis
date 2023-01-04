@@ -98,13 +98,14 @@ export class SegmentTracks extends Tracks {
     scrollContainer: HTMLElement,
     segment: HTMLElement
   ) {
-    segment.classList.add("actived");
-    this.removeSegmentActivedStatus(e, segment);
+    this.select(segment.dataset.segmentId ?? '');
+    // segment.classList.add("actived");
+    // this.removeSegmentActivedStatus(e, segment);
     this.clearTimer();
     this.mousedownTimer = setTimeout(()=> {
       this.dragStart(e, trackCursor, scrollContainer, segment);  
     }, 300);
-    this.triggerSelected();
+    // this.triggerSelected();
   }
   private syncScaleKeyframes(segment: HTMLElement, frameWidth: number, framestart: number){
     const keyframes = this.getKeyframes(segment);
@@ -342,18 +343,19 @@ export class SegmentTracks extends Tracks {
     return [0, 0];
   }
   addNewSegmentByTrackId(trackId: string, segmentType: SegmentType, segmentName: string, segmentInfo: SegmentBasicInfo){
-    const track = this.getTrackById(trackId)
+    const track = this.getTrackById(trackId);
     if(!track){
       return
     }
-    const dom = createSegmentToTrack(segmentName, segmentType, segmentInfo);
+    const virtualTrack = this.getVirtualTrack(trackId)
+    const virtualSegment = createSegmentToTrack(segmentName, segmentType, segmentInfo);
+    virtualTrack?.addSegment(virtualSegment);
     if(this.isStretchTrack(track)){
       const cursorCurrentFrame = this.timeline?.currentFrame;
-      this.dropToStretchTrack(track, dom, cursorCurrentFrame)
+      this.dropToStretchTrack(track, virtualSegment.dom, cursorCurrentFrame)
       return
     }
-    this.setSegmentPosition(dom, segmentInfo.startFrame, segmentInfo.endFrame);
-    track.appendChild(dom);
+    this.setSegmentPosition(virtualSegment.dom, segmentInfo.startFrame, segmentInfo.endFrame);
   }
   override destroy(): void {
     this?.scrollContainer?.removeEventListener("mousedown", this.mouseDownHandle);
