@@ -99,6 +99,8 @@ export type SegmentConstructInfo = {
   name?: string,
   segmentId?: string,
   width?: number|string,
+  frameWidth: number,
   height?: number|string,
   left?: number|string,
+
 }
