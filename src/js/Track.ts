@@ -16,8 +16,9 @@ export class Track {
   trackId = ''
   trackClass = ''
   trackPlaceholderClass = ''
-  segments: Map<string, Segment> = new Map()
-  constructor({ 
+  segments: Map<string, Segment> = new Map() // 轨道内的 segment 
+  subTracks: Map<string, Track> = new Map() // 子轨道
+  constructor({
     trackClass = 'track', 
     trackPlaceholderClass = 'track-placeholder' ,
     dom
@@ -37,5 +38,14 @@ export class Track {
     this.segments.delete(segment.segmentId)
     this.segments.set(segment.segmentId, segment);
     this.dom.removeChild(segment.dom);
+  }
+  getSegments(){
+    let result: Segment[] = Array.from(this.segments.values())
+    if(this.subTracks){
+      for(const [_, subtrack] of this.subTracks){
+        result = [...result, ...subtrack.getSegments()];
+      }
+    }
+    return result;
   }
 }

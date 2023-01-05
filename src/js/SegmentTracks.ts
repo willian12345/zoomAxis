@@ -348,7 +348,7 @@ export class SegmentTracks extends Tracks {
       return
     }
     const virtualTrack = this.getVirtualTrack(trackId)
-    const virtualSegment = createSegmentToTrack(segmentName, segmentType, segmentInfo);
+    const virtualSegment = createSegmentToTrack(segmentName, segmentType, segmentInfo, this.timeline.frameWidth);
     virtualTrack?.addSegment(virtualSegment);
     if(this.isStretchTrack(track)){
       const cursorCurrentFrame = this.timeline?.currentFrame;

@@ -32,7 +32,7 @@ export const createSegmentFake = (rect: DOMRect) => {
   dom.style.borderRadius = "4px";
   return dom;
 }
-export const createSegmentToTrack = (segmentName: string, segmentType: SegmentType, segmentInfo: SegmentBasicInfo): Segment => {
+export const createSegmentToTrack = (segmentName: string, segmentType: SegmentType, segmentInfo: SegmentBasicInfo, frameWidth: number): Segment => {
   const segment = createSegment({
     trackId: segmentInfo.trackId,
     framestart: segmentInfo.startFrame,
@@ -40,6 +40,7 @@ export const createSegmentToTrack = (segmentName: string, segmentType: SegmentTy
     name: segmentName,
     segmentId: segmentInfo.segmentId,
     segmentType,
+    frameWidth,
   });
   return segment;
 }

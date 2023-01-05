@@ -201,11 +201,8 @@ export abstract class Tracks {
   }
   removeSegmentActivedStatus(e?: MouseEvent, currentSegment?: HTMLElement) {
     //todo: e.target 判断当前点击对象是否是 clickoutside
-    this.scrollContainer?.querySelectorAll(".segment").forEach((segment) => {
-      if(currentSegment !== segment){
-        segment.classList.remove("actived");
-      }
-    });
+    const virtualSegments = this.getVirtualSegmentAll();
+    virtualSegments.forEach( vs => vs.setActived(false))
   }
   async deleteActivedSegment() {
     const activedSegment: HTMLElement = this.scrollContainer?.querySelector(
@@ -300,6 +297,7 @@ export abstract class Tracks {
           frameend: segmentData.endFrame,
           name: segmentName,
           segmentType,
+          frameWidth: this.timeline.frameWidth,
         });
       }else{
         return null;
@@ -312,6 +310,7 @@ export abstract class Tracks {
         frameend,
         name: '',
         segmentType,
+        frameWidth: this.timeline.frameWidth,
       });
     }
     return virtualSegment;
@@ -359,6 +358,13 @@ export abstract class Tracks {
       console.warn('注意：轨道 id 为空');
     }
     return this.virtualTracks.find( vt => vt.trackId === trackId) ?? null;
+  }
+  getVirtualSegmentAll(){
+    let result:Segment[] = []
+    for(const vt of this.virtualTracks){
+      result = [...result, ...vt.getSegments()]
+    }
+    return result
   }
   getVirtualSegment(trackId: string, segmentId: string){
     if(!trackId.length || !segmentId.length){
@@ -949,6 +955,15 @@ export abstract class Tracks {
     document.addEventListener("mousemove", mousemove);
     document.addEventListener("mouseup", mouseup);
   }
+  getVirtualSegmentById(segmentId: string){
+    for(let track of this.virtualTracks){
+      const segment = track.segments.get(segmentId);
+      if(segment){
+        return segment
+      }
+    }
+    return null
+  }
   getSegmentById(segmentId: string){
     const tracks = this.getTracks()
     for(let track of tracks){
@@ -1018,15 +1033,15 @@ export abstract class Tracks {
     })
   }
   select(segmentId: string){
-    const segment = this.getSegmentById(segmentId);
-    if(!segment){
+    const virtualSegment = this.getVirtualSegmentById(segmentId);
+    if(!virtualSegment){
       return;
     }
-    if(segment.classList.contains('actived')){
-      return
+    if(virtualSegment.actived){
+      return;
     }
     this.removeSegmentActivedStatus()
-    segment.classList.add("actived");
+    virtualSegment.setActived(true);
     this.triggerSelected();
   }
   addSegmentByTrackId(

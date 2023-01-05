@@ -22,11 +22,14 @@ export class Segment {
   segmentType = SegmentType.BODY_ANIMATION
   name = ''
   parentTrack:Track|null = null
+  actived = false
+  frameWidth = 0
   constructor(args: SegmentConstructInfo){
     this.trackId = args.trackId;
     this.segmentId = args.segmentId ?? this.createSegmentId();
     this.framestart = args.framestart
     this.frameend = args.frameend
+    this.frameWidth = args.frameWidth
     if(args.width !== undefined){
       this.width = args.width
     }
@@ -70,5 +73,23 @@ export class Segment {
   setTrack(track: Track){
     this.parentTrack = track
     this.setTrackId(track.trackId)
+  }
+  setActived(bool: boolean){
+    if(bool){
+      this.actived = true
+      this.dom.classList.add("actived"); 
+    }else{
+      this.actived = false
+      this.dom.classList.remove("actived");
+    }
+  }
+  setPosition(){
+    
+    const segmentLeft = this.getSegmentLeft(framestart);
+    segment.style.left = `${segmentLeft}px`;
+    const frames = frameend - framestart;
+    if (this.timeline) {
+      segment.style.width = `${this.timeline?.frameWidth * frames}px`;
+    }
   }
 }
