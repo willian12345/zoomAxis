@@ -85,11 +85,11 @@ export class Segment {
   }
   setPosition(){
     
-    const segmentLeft = this.getSegmentLeft(framestart);
-    segment.style.left = `${segmentLeft}px`;
-    const frames = frameend - framestart;
-    if (this.timeline) {
-      segment.style.width = `${this.timeline?.frameWidth * frames}px`;
-    }
+    // const segmentLeft = this.getSegmentLeft(framestart);
+    // segment.style.left = `${segmentLeft}px`;
+    // const frames = frameend - framestart;
+    // if (this.timeline) {
+    //   segment.style.width = `${this.timeline?.frameWidth * frames}px`;
+    // }
   }
 }

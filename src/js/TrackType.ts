@@ -7,6 +7,7 @@ export enum SegmentType {
   VOICE,
   SCENE,
   CAMERA,
+  EFFECT,
 }
 export enum TRACKS_EVENT_CALLBACK_TYPES {
   DRAG_END, // 拖动结束事件
@@ -16,6 +17,7 @@ export enum TRACKS_EVENT_CALLBACK_TYPES {
   SEGMENTS_SLIDE_END, // segment 拖动调节完毕后影响到的其它segment
   SEGMENT_SELECTED, // 选中
   SEGMENT_DELETED, // 删除
+  SEGMENT_ADDED, // 添加
 }
 export interface SegmentBasicInfo {
   trackId: string, 

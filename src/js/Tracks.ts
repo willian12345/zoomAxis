@@ -42,6 +42,7 @@ export abstract class Tracks {
   protected segmentDropEffectCallback: Set<TracksEventCallback> | null = null;
   protected segmentSelectedCallback: Set<TracksEventCallback> | null = null;
   protected segmentDeletedCallback: Set<TracksEventCallback> | null = null;
+  protected segmentAddedCallback: Set<TracksEventCallback> | null = null;
   protected scrollContainer: HTMLElement = {} as HTMLElement;
   protected dragoverClass = "dragover";
   protected dragoverErrorClass = "dragover-error";
@@ -190,6 +191,12 @@ export abstract class Tracks {
         this.segmentDeletedCallback = new Set();
       }
       this.segmentDeletedCallback.add(callback);
+    }
+    if (eventType === TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_ADDED) {
+      if (!this.segmentAddedCallback) {
+        this.segmentAddedCallback = new Set();
+      }
+      this.segmentAddedCallback.add(callback);
     }
 
   }
