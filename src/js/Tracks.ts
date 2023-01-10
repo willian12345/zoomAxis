@@ -412,7 +412,7 @@ export abstract class Tracks {
     // 过滤出重叠的 segment (在可伸展轨道)
     let segments = Array.from<HTMLElement>(track.querySelectorAll(".segment"));
     // 如果只有刚拖入的 segment 则不需要额外处理
-    if (segments.length === 1) {
+    if (segments.length === 0) {
       return [result, collisionSegmentFrameend];
     }
     const collisionSegment = this.getCollisionByFrameInSegments(framestart, segments);
@@ -463,7 +463,7 @@ export abstract class Tracks {
     const totalFrames = this.timeline?.totalFrames ?? 0;
     let frameend = totalFrames;
     // 如果轨道内只有一个 segment 则铺满整个轨道
-    if (track.querySelectorAll(".segment").length === 1) {
+    if (track.querySelectorAll(".segment").length === 0) {
       framestart = 0;
     } else if (framestart > totalFrames) {
       // 如果是拖到了伸缩轨道最后，则往后加长
@@ -477,7 +477,6 @@ export abstract class Tracks {
     currentSegment.dataset.trackId = track.dataset.trackId ?? "";
     const segmentId = currentSegment.dataset.segmentId ?? "";
     this.setSegmentPosition(currentSegment, framestart, frameend);
-
     const [effectSegment, effectSegmentOriginFrameend] = this.sliceSegment(
       track,
       segmentId,
@@ -522,8 +521,10 @@ export abstract class Tracks {
     return segments
       .filter((segment) => {
         const segmentX = getLeftValue(segment);
+        // ？？ 是否拖动手柄时也使用此判断 todo
+        const _leftValue = segmentX + segment.getBoundingClientRect().width * 0.5;
         return (
-          leftValue > segmentX + segment.getBoundingClientRect().width * 0.5
+          leftValue > _leftValue
         );
       })
       .sort(sortByLeftValue);
@@ -746,6 +747,15 @@ export abstract class Tracks {
       );
     }, 2);
   }
+  protected addSegment(track?:Track|null, segment?: Segment|null){
+    if(!track || !segment) return;
+    track.addSegment(segment);
+    if(this.segmentAddedCallback){
+      this.segmentAddedCallback.forEach(cb => {
+        cb({track, segment})
+      });
+    }
+  }
   private async drop({
     x,
     segment,
@@ -788,17 +798,17 @@ export abstract class Tracks {
       return;
     }
     const virtualTrack = this.getVirtualTrack(track.dataset.trackId ?? '');
-    if(virtualTrack && virtualSegment){
-      virtualTrack.addSegment(virtualSegment);
-    }
+    
     const stretchTrack = this.isStretchTrack(track);
 
     // 如果是伸展轨道
     if (stretchTrack) {
       isCopySegment && this.dropToStretchTrack(track, dom, framestart);
       this.triggerDragEnd(dom, track);
+      this.addSegment(virtualTrack, virtualSegment);
       return;
     }
+    this.addSegment(virtualTrack, virtualSegment);
     // 拖动复制入轨时，需要再次判断放入轨道成功后帧数范围是不是产生碰撞
     if (isCopySegment && collisionCheckFrame(dom, track)) {
       console.log("frame collision");
@@ -1065,9 +1075,9 @@ export abstract class Tracks {
     if(!virtualTrack){
       return;
     }
-    const segment = createSegment(segmentConstructInfo);
+    const segment = createSegment({...segmentConstructInfo, frameWidth: this.timeline.frameWidth});
     this.setSegmentPosition(segment.dom, segment.framestart, segment.frameend);
-    virtualTrack.addSegment(segment);
+    this.addSegment(virtualTrack, segment);
     // 更新是否可拖动手柄
     if (this.isStretchTrack(virtualTrack.dom)) {
       this.updateSliderHandler(virtualTrack.dom);
