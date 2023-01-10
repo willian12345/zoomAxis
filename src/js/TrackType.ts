@@ -1,6 +1,8 @@
 
 import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
+import { Track } from './Track';
+import { Segment } from "./Segment";
 export enum SegmentType {
   BODY_ANIMATION,
   FACE_ANIMATION,
@@ -28,9 +30,11 @@ export interface SegmentBasicInfo {
   track?:HTMLElement | null,
   sectionId?: string,
 }
-export type TrackEventCallbackArgs = {segments: SegmentBasicInfo[], eventType?: TRACKS_EVENT_CALLBACK_TYPES}
+export type TrackEventCallbackArgs = {segments?: SegmentBasicInfo[], eventType?: TRACKS_EVENT_CALLBACK_TYPES}
+export type TrackEventAddedCallbackArgs = {segment?: Segment, track?: Track, eventType?: TRACKS_EVENT_CALLBACK_TYPES}
+export type callbacksArgs = TrackEventCallbackArgs & TrackEventAddedCallbackArgs
 export interface TracksEvent{
-  (e: TrackEventCallbackArgs): void
+  (e: callbacksArgs): any
 }
 export type  TracksEventCallback  = TracksEvent
 // 添加成功至轨道后标准的回复格式

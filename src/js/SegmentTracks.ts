@@ -155,7 +155,7 @@ export class SegmentTracks extends Tracks {
     const trackDom = findParentElementByClassName(segment, 'track');
     if(trackDom){
       // 从拖动原点开始算找出最近的左侧 segment 
-      const segmentLeftSide: HTMLElement | undefined = this.getLeftSideSegmentsInTrack(trackDom, segmentleftOrigin).reverse()[0];
+      const segmentLeftSide: HTMLElement | undefined = this.getLeftSideSegmentsInTrack(trackDom, x).reverse()[0];
       // 如果是首个 segment
       if(!segmentLeftSide){
         // 最小拖到 0
@@ -171,6 +171,7 @@ export class SegmentTracks extends Tracks {
         const framestart = getDatasetNumberByKey(segmentLeftSide, 'framestart');
         this.setSegmentPosition(segment, currentFrame, frameend);
         segment.dataset.framestart = `${currentFrame}`;
+        console.log(currentFrame, segmentLeftSide);
         this.setSegmentPosition(segmentLeftSide, framestart, currentFrame);
         segmentLeftSide.dataset.frameend = `${currentFrame}`;
         result.push(segmentLeftSide);
@@ -349,10 +350,10 @@ export class SegmentTracks extends Tracks {
     }
     const virtualTrack = this.getVirtualTrack(trackId)
     const virtualSegment = createSegmentToTrack(segmentName, segmentType, segmentInfo, this.timeline.frameWidth);
-    virtualTrack?.addSegment(virtualSegment);
     if(this.isStretchTrack(track)){
       const cursorCurrentFrame = this.timeline?.currentFrame;
-      this.dropToStretchTrack(track, virtualSegment.dom, cursorCurrentFrame)
+      this.dropToStretchTrack(track, virtualSegment.dom, cursorCurrentFrame);
+      virtualTrack && this.addSegment(virtualTrack, virtualSegment);
       return
     }
     this.setSegmentPosition(virtualSegment.dom, segmentInfo.startFrame, segmentInfo.endFrame);

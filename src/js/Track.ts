@@ -25,7 +25,7 @@ export class Track {
   }: TrackArgs) {
     this.trackClass = trackClass
     this.trackPlaceholderClass = trackPlaceholderClass
-    // dom  暂时写在 html 文件内
+    // todo: dom 抽取至此类中
     this.dom = dom;
     this.trackId = dom.dataset.trackId ?? ''
   }
