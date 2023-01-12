@@ -31,6 +31,7 @@ import {
   collisionCheckFrame,
   getFrameRange,
   createKeyFrame,
+  findEndestSegmentOnTrack,
 } from "./trackUtils";
 // 轨道
 export abstract class Tracks {
@@ -118,6 +119,7 @@ export abstract class Tracks {
   private async deleteSegment (trackId: string, segmentId: string) {
     let result = true;
     const virtualSegment = this.getVirtualSegment(trackId, segmentId);
+    if(!virtualSegment) return;
     if(this.deleteableCheck){
       result = await this.deleteableCheck(trackId, segmentId);
       if (!result) {
@@ -127,22 +129,14 @@ export abstract class Tracks {
       if(!virtualSegment){
         return result;
       }
-      const resultWraped = {
-        trackId,
-        segmentId,
-        startFrame: virtualSegment.framestart,
-        endFrame: virtualSegment.frameend,
-        track: virtualSegment.parentTrack?.dom,
-        segment: virtualSegment.dom,
-      };
-      this.segmentDeletedCallback?.forEach((cb) => {
-        cb({
-          segments: [resultWraped],
-          eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_DELETED,
-        });
-      });
     }
     virtualSegment?.parentTrack?.removeSegment(virtualSegment);
+    this.segmentDeletedCallback?.forEach((cb) => {
+      cb({
+        segment: virtualSegment,
+        eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_DELETED,
+      });
+    });
     return result
   }
   addEventListener(
@@ -288,7 +282,7 @@ export abstract class Tracks {
       }
     }
   }
-  private async copySegment(segmentTrackId: string, framestart: number, segmentType: SegmentType) {
+  protected async createSegment(segmentTrackId: string, framestart: number, segmentType: SegmentType) {
     let virtualSegment: Segment | null = null;
     if (this.dropableCheck) {
       const { dropable, segmentData, segmentName } = await this.dropableCheck(
@@ -305,6 +299,7 @@ export abstract class Tracks {
           name: segmentName,
           segmentType,
           frameWidth: this.timeline.frameWidth,
+          extra: segmentData,
         });
       }else{
         return null;
@@ -342,7 +337,7 @@ export abstract class Tracks {
     return segment.classList.contains("segment-stretch");
   }
   
-  private async getSegment(
+  protected async getSegment(
     copy: boolean,
     segment: HTMLElement,
     segmentTrackId: string,
@@ -350,7 +345,7 @@ export abstract class Tracks {
     segmentType: SegmentType,
   ): Promise<Segment | null> {
     if (copy) {
-      return await this.copySegment(segmentTrackId, framestart, segmentType);
+      return await this.createSegment(segmentTrackId, framestart, segmentType);
     } else {
       return this.getVirtualSegment(segment.dataset.trackId ?? '', segment.dataset.segmentId ?? '');
     }
@@ -456,7 +451,7 @@ export abstract class Tracks {
   }
   dropToStretchTrack(
     track: HTMLElement,
-    currentSegment: HTMLElement,
+    currentSegment: Segment,
     framestart: number
   ) {
     // todo 加入虚拟轨道
@@ -468,15 +463,14 @@ export abstract class Tracks {
     } else if (framestart > totalFrames) {
       // 如果是拖到了伸缩轨道最后，则往后加长
       framestart = totalFrames;
-      // todo: 伸缩轨道增长暂定为 150 帧
+      // todo: 伸缩轨道增长暂定为 300 帧
       frameend = framestart + 300;
       this.timeline?.setTotalFrames(frameend);
     }
-    currentSegment.dataset.framestart = String(framestart);
-    currentSegment.dataset.frameend = String(frameend);
-    currentSegment.dataset.trackId = track.dataset.trackId ?? "";
-    const segmentId = currentSegment.dataset.segmentId ?? "";
-    this.setSegmentPosition(currentSegment, framestart, frameend);
+    currentSegment.setSegmentRange(framestart, frameend);
+    const segmentId = currentSegment.segmentId;
+    currentSegment.resize();
+    // this.setSegmentPosition(currentSegment.dom, framestart, frameend);
     const [effectSegment, effectSegmentOriginFrameend] = this.sliceSegment(
       track,
       segmentId,
@@ -487,8 +481,9 @@ export abstract class Tracks {
       return
     }
     frameend = effectSegmentOriginFrameend;
-    currentSegment.dataset.frameend = String(frameend);
-    this.setSegmentPosition(currentSegment, framestart, frameend);
+    currentSegment.setSegmentRange(framestart, frameend);
+    // this.setSegmentPosition(currentSegment.dom, framestart, frameend);
+    currentSegment.resize();
     const [effectedFramestart, effectedFrameend] = getFrameRange(effectSegment)
     const result = {
       trackId: effectSegment.dataset.trackId ?? "",
@@ -716,32 +711,18 @@ export abstract class Tracks {
       })
     );
   }
-  private triggerDragEnd(segment: HTMLElement, track: HTMLElement) {
-    const segmentId = segment.dataset.segmentId ?? "";
-    const trackId = segment.dataset.trackId ?? "";
-    const [startFrame, endFrame] = getFrameRange(segment);
-    // console.log(this.originFramestart, this.originFrameend, startFrame, endFrame)
+  private triggerDragEnd(segment: Segment, track: Track) {
     // 如果拖动后与拖动前帧数未变，不需要触发拖动回调
-    if(this.originFramestart === startFrame  && this.originFrameend === endFrame){
+    if(this.originFramestart === segment.framestart  && this.originFrameend === segment.frameend){
       return;
     }
     // 拖动放回原处是异步，拖完也要延时
     setTimeout(() => {
-      
-      this.updateSliderHandler(track);
+      this.updateSliderHandler(track.dom);
       // 拖完后触发回调
       this.dragEndCallback?.forEach((cb) =>
         cb({
-          segments: [
-            {
-              segment,
-              track,
-              trackId,
-              segmentId,
-              startFrame,
-              endFrame,
-            },
-          ],
+          segment,
           eventType: TRACKS_EVENT_CALLBACK_TYPES.DRAG_END,
         })
       );
@@ -749,6 +730,11 @@ export abstract class Tracks {
   }
   protected addSegment(track?:Track|null, segment?: Segment|null){
     if(!track || !segment) return;
+    const isAdded = track.segments.get(segment.segmentId);
+    // 如果添加过了，则无需再添加
+    if(isAdded){
+      return
+    }
     track.addSegment(segment);
     if(this.segmentAddedCallback){
       this.segmentAddedCallback.forEach(cb => {
@@ -756,7 +742,7 @@ export abstract class Tracks {
       });
     }
   }
-  private async drop({
+  protected async drop({
     x,
     segment,
     track,
@@ -790,6 +776,7 @@ export abstract class Tracks {
       framestart,
       parseInt(segmentTypeStr),
     );
+    if(!virtualSegment) return;
     dom = virtualSegment?.dom ?? null;
     
     this.currentSegment = dom
@@ -803,8 +790,8 @@ export abstract class Tracks {
 
     // 如果是伸展轨道
     if (stretchTrack) {
-      isCopySegment && this.dropToStretchTrack(track, dom, framestart);
-      this.triggerDragEnd(dom, track);
+      isCopySegment && this.dropToStretchTrack(track, virtualSegment, framestart);
+      virtualTrack && this.triggerDragEnd(virtualSegment, virtualTrack);
       this.addSegment(virtualTrack, virtualSegment);
       return;
     }
@@ -817,7 +804,6 @@ export abstract class Tracks {
     }
     // 普通轨道
     if (!isCollistion || magnet) {
-      
       // 如果 x 轴磁吸，则需要根据磁吸的 segment 重新计算 framestart 与 segmentLeft 值
       if (magnet && magnetTo) {
         const magnetToRect: DOMRect = magnetTo.getBoundingClientRect();
@@ -830,8 +816,10 @@ export abstract class Tracks {
       this.setSegmentPosition(dom, framestart, frameend);
       dom.dataset.framestart = `${framestart}`;
       dom.dataset.frameend = `${frameend}`;
+      virtualSegment.framestart = framestart;
+      virtualSegment.frameend = frameend;
     }
-    this.triggerDragEnd(dom, track);
+    virtualTrack && this.triggerDragEnd(virtualSegment, virtualTrack);
   }
   dragStart(
     e: MouseEvent,
@@ -1082,6 +1070,32 @@ export abstract class Tracks {
     if (this.isStretchTrack(virtualTrack.dom)) {
       this.updateSliderHandler(virtualTrack.dom);
     }
+  }
+  getEndestSegmentFrameRange(trackId: string): [number, number]{
+    let track = this.getTrackById(trackId);
+    if(!track){
+      return [-1, -1];
+    }
+    const [ segment ] = findEndestSegmentOnTrack(track);
+    if(segment){
+      return getFrameRange(segment);
+    }
+    return [0, 0];
+  }
+  async addSegmentWithFramestart(trackId: string, segmentType: SegmentType, framestart: number){
+    if(framestart === undefined) return;
+    const track = this.getTrackById(trackId);
+    if(!track) return;
+    const virtualTrack = this.getVirtualTrack(trackId)
+    if(!virtualTrack) return;
+    const virtualSegment = await this.createSegment(trackId, framestart, segmentType);
+    if(!virtualSegment) return;
+    if(this.isStretchTrack(track)){
+      const cursorCurrentFrame = this.timeline?.currentFrame;
+      this.dropToStretchTrack(track, virtualSegment, cursorCurrentFrame);
+    }
+    virtualTrack && this.addSegment(virtualTrack, virtualSegment);
+    this.setSegmentPosition(virtualSegment.dom, virtualSegment.framestart, virtualSegment.frameend);
   }
   getSegmentBasicInfoByDom(segment: HTMLElement): SegmentBasicInfo{
     const trackId = segment.dataset.trackId ?? '';
