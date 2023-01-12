@@ -470,7 +470,7 @@ export abstract class Tracks {
     currentSegment.setSegmentRange(framestart, frameend);
     const segmentId = currentSegment.segmentId;
     currentSegment.resize();
-    // this.setSegmentPosition(currentSegment.dom, framestart, frameend);
+    // todo virtualSliceSegment
     const [effectSegment, effectSegmentOriginFrameend] = this.sliceSegment(
       track,
       segmentId,
@@ -482,12 +482,13 @@ export abstract class Tracks {
     }
     frameend = effectSegmentOriginFrameend;
     currentSegment.setSegmentRange(framestart, frameend);
-    // this.setSegmentPosition(currentSegment.dom, framestart, frameend);
     currentSegment.resize();
+    // todo
+    const effectVirtualSegment = this.getVirtualSegmentById(effectSegment.dataset.trackId ?? "");
     const [effectedFramestart, effectedFrameend] = getFrameRange(effectSegment)
     const result = {
       trackId: effectSegment.dataset.trackId ?? "",
-      segmentId: effectSegment.dataset.segmentId ?? "",
+      segmentId: effectSegment.dataset.segmentid ?? "",
       startFrame:effectedFramestart,
       endFrame: effectedFrameend,
       track,
@@ -503,21 +504,21 @@ export abstract class Tracks {
     this.frameend = frameend;
   }
   // 获取相对于 leftValue 右侧所有 segment
-  getRightSideSegments(segments: HTMLElement[], leftValue: number) {
+  getRightSideSegments(segments: Segment[], leftValue: number) {
     return segments
       .filter((segment) => {
-        const segmentX = getLeftValue(segment);
+        const segmentX = getLeftValue(segment.dom);
         return leftValue < segmentX;
       })
       .sort(sortByLeftValue);
   }
   // 获取相对于 leftValue 左侧所有 segment
-  getLeftSideSegments(segments: HTMLElement[], leftValue: number) {
+  getLeftSideSegments(segments: Segment[], leftValue: number) {
     return segments
       .filter((segment) => {
-        const segmentX = getLeftValue(segment);
+        const segmentX = getLeftValue(segment.dom);
         // ？？ 是否拖动手柄时也使用此判断 todo
-        const _leftValue = segmentX + segment.getBoundingClientRect().width * 0.5;
+        const _leftValue = segmentX + segment.dom.getBoundingClientRect().width * 0.5;
         return (
           leftValue > _leftValue
         );
@@ -539,7 +540,7 @@ export abstract class Tracks {
   // 伸缩轨道内拖动
   private collisionXstretch(
     isCopySegment: boolean,
-    currentSegment: HTMLElement,
+    currentSegment: Segment,
     placeholder: HTMLElement,
     collisionTrack: HTMLElement,
     isdrop?: boolean
@@ -547,51 +548,55 @@ export abstract class Tracks {
     if (isCopySegment) {
       return;
     }
+    const virtualTrack = this.virtualTracks.find( vt => vt.trackId === collisionTrack.dataset.trackId);
+    if(!virtualTrack){
+      return
+    }
+    const virtualSegments = virtualTrack.getSegments();
     let segments = Array.from(
       collisionTrack.querySelectorAll(".segment")
     ) as HTMLElement[];
     const placeholderLeft = getLeftValue(placeholder);
     const onRightSegments = this.getRightSideSegments(
-      segments,
+      virtualSegments,
       placeholderLeft
     );
-    const onLeftSegments = this.getLeftSideSegments(segments, placeholderLeft);
+    const onLeftSegments = this.getLeftSideSegments(virtualSegments, placeholderLeft);
     for (let segment of onLeftSegments) {
-      const segmentFramestart = getDatasetNumberByKey(segment, "framestart");
-      const segmentFrameend = getDatasetNumberByKey(segment, "frameend");
+      const segmentFramestart = segment.framestart;
+      const segmentFrameend = segment.frameend;
       // 如果左侧片断的左侧有空格(this.framestart 空格开始帧，this.frameend 空格结束帧)
       if (segmentFramestart > this.framestart) {
         // 向左移动一个片断
         const framestartMoved = segmentFramestart - this.frames;
         const frameendMoved = segmentFrameend - this.frames;
-        this.setSegmentPosition(segment, framestartMoved, frameendMoved);
-        segment.dataset.framestart = `${framestartMoved}`;
-        segment.dataset.frameend = `${frameendMoved}`;
+        segment.setSegmentRange(framestartMoved, frameendMoved);
+        segment.resize();
         this.framestart = frameendMoved;
         this.frameend = frameendMoved + this.frames;
       }
     }
     // 判断右侧片断时，需要先将片断反转从右边头上开始判断一步步向右移动
     for (let segment of onRightSegments.reverse()) {
-      const segmentFramestart = getDatasetNumberByKey(segment, "framestart");
-      const segmentFrameend = getDatasetNumberByKey(segment, "frameend");
+      const segmentFramestart = segment.framestart;
+      const segmentFrameend = segment.frameend;
       // 如果右侧片断的右侧有空格(this.framestart 空格开始帧，this.frameend 空格结束帧)
       if (segmentFramestart < this.framestart) {
         // 向右移动一个片断
         const framestartMoved = segmentFramestart + this.frames;
         const frameendMoved = segmentFrameend + this.frames;
-        this.setSegmentPosition(segment, framestartMoved, frameendMoved);
-        segment.dataset.framestart = `${framestartMoved}`;
-        segment.dataset.frameend = `${frameendMoved}`;
+        segment.setSegmentRange(framestartMoved, frameendMoved)
         this.framestart = segmentFramestart;
         this.frameend = segmentFramestart + this.frames;
       }
     }
 
     if (isdrop) {
-      this.setSegmentPosition(currentSegment, this.framestart, this.frameend);
-      currentSegment.dataset.framestart = `${this.framestart}`;
-      currentSegment.dataset.frameend = `${this.frameend}`;
+      currentSegment.setSegmentRange(this.framestart, this.frameend);
+      currentSegment.resize();
+      // this.setSegmentPosition(currentSegment, this.framestart, this.frameend);
+      // currentSegment.dataset.framestart = `${}`;
+      // currentSegment.dataset.frameend = `${}`;
     }
   }
   private draging({
@@ -625,9 +630,10 @@ export abstract class Tracks {
       placeHolder.style.left = `${x}px`;
       const isStretchTrack = this.isStretchTrack(collisionTrack);
       if (isStretchTrack) {
-        this.collisionXstretch(
+        const virtualSegment = this.getVirtualSegmentById(segment.dataset.segmentId ?? '')
+        virtualSegment && this.collisionXstretch(
           isCopySegment,
-          segment,
+          virtualSegment,
           placeHolder,
           collisionTrack
         );
@@ -813,11 +819,8 @@ export abstract class Tracks {
       }
       const [fs, fd] = getFrameRange(dom);
       const frameend = framestart + (fd - fs);
-      this.setSegmentPosition(dom, framestart, frameend);
-      dom.dataset.framestart = `${framestart}`;
-      dom.dataset.frameend = `${frameend}`;
-      virtualSegment.framestart = framestart;
-      virtualSegment.frameend = frameend;
+      virtualSegment.setSegmentRange(framestart, frameend);
+      virtualSegment.resize();
     }
     virtualTrack && this.triggerDragEnd(virtualSegment, virtualTrack);
   }
@@ -832,6 +835,7 @@ export abstract class Tracks {
     if (!scrollContainer) {
       return;
     }
+    const virtualSegment = this.getVirtualSegmentById(segment.dataset.segmentId ?? '');
     // 获取所有轨道
     const tracks: HTMLElement[] = this.virtualTracks.map( vt => vt.dom)
     // 全局拖动容器
@@ -858,6 +862,7 @@ export abstract class Tracks {
 
     if (!isCopySegment) {
       const [framestart, frameend] = getFrameRange(segment);
+      console.log(framestart, frameend, '-----', virtualSegment?.framestart, virtualSegment?.frameend);
       this.framestart = framestart;
       this.frameend = frameend;
       this.frames = this.frameend - this.framestart;
@@ -929,11 +934,10 @@ export abstract class Tracks {
         }
         const stretchTrack = this.isStretchTrack(track);
 
-        // 如果是伸展轨道
-        if (!isCopySegment && stretchTrack) {
-          this.setSegmentPosition(segment, this.framestart, this.frameend);
-          segment.dataset.framestart = `${this.framestart}`;
-          segment.dataset.frameend = `${this.frameend}`;
+        // 如果是伸展轨道拖动有可能导致的位置变换， 则需要设置当前开始帧与结束帧位置
+        if (!isCopySegment && stretchTrack && virtualSegment) {
+          virtualSegment.setSegmentRange(this.framestart, this.frameend);
+          virtualSegment.resize();
         }
       });
 

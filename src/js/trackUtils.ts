@@ -211,8 +211,8 @@ export const getFrameRange = (dom: HTMLElement):[number, number] => {
   return [framestart, frameend];
 }
 
-export const sortByLeftValue = (segmentA: HTMLElement, segmentB: HTMLElement) => {
-  const segmentAx = getLeftValue(segmentA);
-  const segmentBx = getLeftValue(segmentB);
+export const sortByLeftValue = (segmentA: Segment, segmentB: Segment) => {
+  const segmentAx = getLeftValue(segmentA.dom);
+  const segmentBx = getLeftValue(segmentB.dom);
   return segmentAx > segmentBx ? 1 : -1;
 }
