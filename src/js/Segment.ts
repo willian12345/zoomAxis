@@ -5,51 +5,56 @@
  *  <div class="segment-handle segment-handle-right"></div>
  * </div>
  */
-import { SegmentConstructInfo, SegmentType } from './TrackType'
-import { Track } from './Track';
-let segmentIdIndex = 0
+import { SegmentConstructInfo, SegmentType } from "./TrackType";
+import { Track } from "./Track";
+let segmentIdIndex = 0;
 export class Segment {
-  framestart = 0
-  frameend = 0
-  frames = 0
-  width:string|number = '80px'
-  height:string|number = '24px'
-  left:string|number = '0'
-  segmentId = ''
-  segmentClass = 'segment segment-action'
-  dom = {} as HTMLElement
-  trackId = ''
-  segmentType = SegmentType.BODY_ANIMATION
-  name = ''
-  parentTrack:Track|null = null
-  actived = false
-  frameWidth = 0
-  constructor(args: SegmentConstructInfo){
+  framestart = 0;
+  frameend = 0;
+  frames = 0;
+  width: string | number = "80px";
+  height: string | number = "24px";
+  left: string | number = "0";
+  segmentId = "";
+  segmentClass = "segment segment-action";
+  dom = {} as HTMLElement;
+  trackId = "";
+  segmentType = SegmentType.BODY_ANIMATION;
+  name = "";
+  parentTrack: Track | null = null;
+  actived = false;
+  frameWidth = 0;
+  extra = {};
+  constructor(args: SegmentConstructInfo) {
     this.trackId = args.trackId;
     this.segmentId = args.segmentId ?? this.createSegmentId();
-    this.framestart = args.framestart
-    this.frameend = args.frameend
-    this.frameWidth = args.frameWidth
-    if(args.width !== undefined){
-      this.width = args.width
+    this.framestart = args.framestart;
+    this.frameend = args.frameend;
+    this.frameWidth = args.frameWidth;
+    if (args.width !== undefined) {
+      this.width = args.width;
     }
-    if(args.height !== undefined){
-      this.height = args.height
+    if (args.height !== undefined) {
+      this.height = args.height;
     }
-    if(args.left !== undefined){
-      this.left = args.left
+    if (args.left !== undefined) {
+      this.left = args.left;
     }
-    this.framestart = args.framestart
-    this.framestart = args.framestart
-    this.segmentType = args.segmentType
-    this.name = args.name ?? '';
+    this.framestart = args.framestart;
+    this.framestart = args.framestart;
+    this.segmentType = args.segmentType;
+    this.name = args.name ?? "";
     this.dom = this.createDom();
+    // 额外其它信息
+    if (args.extra) {
+      this.extra = args.extra;
+    }
   }
   private createSegmentId() {
     return String(segmentIdIndex++);
   }
-  private createDom () {
-    const div = document.createElement('div');
+  private createDom() {
+    const div = document.createElement("div");
     div.innerHTML = `
         <div 
           class="${this.segmentClass}" 
@@ -66,30 +71,37 @@ export class Segment {
       `;
     return div.firstElementChild as HTMLElement;
   }
-  setTrackId(trackId: string){
-    this.trackId = trackId
-    this.dom.dataset.trackId = trackId
+  setSegmentRange(framestart: number, frameend: number) {
+    this.framestart = framestart;
+    this.frameend = frameend;
+    this.dom.dataset.framestart = String(framestart);
+    this.dom.dataset.frameend = String(frameend);
   }
-  setTrack(track: Track){
-    this.parentTrack = track
-    this.setTrackId(track.trackId)
+  setTrackId(trackId: string) {
+    this.trackId = trackId;
+    this.dom.dataset.trackId = trackId;
   }
-  setActived(bool: boolean){
-    if(bool){
-      this.actived = true
-      this.dom.classList.add("actived"); 
-    }else{
-      this.actived = false
+  setTrack(track: Track) {
+    this.parentTrack = track;
+    this.setTrackId(track.trackId);
+  }
+  setActived(bool: boolean) {
+    if (bool) {
+      this.actived = true;
+      this.dom.classList.add("actived");
+    } else {
+      this.actived = false;
       this.dom.classList.remove("actived");
     }
   }
-  setPosition(){
-    
-    // const segmentLeft = this.getSegmentLeft(framestart);
-    // segment.style.left = `${segmentLeft}px`;
-    // const frames = frameend - framestart;
-    // if (this.timeline) {
-    //   segment.style.width = `${this.timeline?.frameWidth * frames}px`;
-    // }
+  private getSegmentLeft(framestart: number): number {
+    return framestart * this.frameWidth;
+  }
+  resize(
+  ) {
+    const segmentLeft = this.getSegmentLeft(this.framestart);
+    const frames = this.frameend - this.framestart;
+    this.dom.style.left = `${segmentLeft}px`;
+    this.dom.style.width = `${this.frameWidth * frames}px`;
   }
 }

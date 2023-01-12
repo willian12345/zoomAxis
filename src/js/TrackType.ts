@@ -108,5 +108,5 @@ export type SegmentConstructInfo = {
   frameWidth: number,
   height?: number|string,
   left?: number|string,
-
+  extra?:any,
 }

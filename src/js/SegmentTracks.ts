@@ -332,32 +332,6 @@ export class SegmentTracks extends Tracks {
       }
     })
   }
-  getEndestSegmentFrameRange(trackId: string): [number, number]{
-    let track = this.getTrackById(trackId);
-    if(!track){
-      return [-1, -1];
-    }
-    const [ segment ] = findEndestSegmentOnTrack(track);
-    if(segment){
-      return getFrameRange(segment);
-    }
-    return [0, 0];
-  }
-  addNewSegmentByTrackId(trackId: string, segmentType: SegmentType, segmentName: string, segmentInfo: SegmentBasicInfo){
-    const track = this.getTrackById(trackId);
-    if(!track){
-      return
-    }
-    const virtualTrack = this.getVirtualTrack(trackId)
-    const virtualSegment = createSegmentToTrack(segmentName, segmentType, segmentInfo, this.timeline.frameWidth);
-    if(this.isStretchTrack(track)){
-      const cursorCurrentFrame = this.timeline?.currentFrame;
-      this.dropToStretchTrack(track, virtualSegment.dom, cursorCurrentFrame);
-      virtualTrack && this.addSegment(virtualTrack, virtualSegment);
-      return
-    }
-    this.setSegmentPosition(virtualSegment.dom, segmentInfo.startFrame, segmentInfo.endFrame);
-  }
   override destroy(): void {
     this?.scrollContainer?.removeEventListener("mousedown", this.mouseDownHandle);
     this.segmentDelegate.removeEventListener("mousedown", this.mousedownDelegateHandle);
