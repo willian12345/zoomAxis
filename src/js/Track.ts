@@ -54,4 +54,10 @@ export class Track {
     }
     return result;
   }
+  getLastSegment(){
+    const segments = this.getSegments().sort((a, b)=> {
+      return a.frameend > b.frameend
+    });
+    return segments[segments.length - 1];
+  }
 }

@@ -33,8 +33,11 @@ import {
   createKeyFrame,
   findEndestSegmentOnTrack,
 } from "./trackUtils";
+
+const DEFAULT_SEGMENT_FRAMES = 150
 // 轨道
 export abstract class Tracks {
+  static DEFAULT_SEGMENT_FRAMES = DEFAULT_SEGMENT_FRAMES
   abstract destroy(): void;
   private dragEndCallback: Set<TracksEventCallback> | null = null;
   private segmentsChangedCallback: Set<TracksEventCallback> | null = null;
@@ -205,58 +208,48 @@ export abstract class Tracks {
     const virtualSegments = this.getVirtualSegmentAll();
     virtualSegments.forEach( vs => vs.setActived(false))
   }
+  // 删除当前选中的 
   async deleteActivedSegment() {
-    const activedSegment: HTMLElement = this.scrollContainer?.querySelector(
+    const activedSegmentDom: HTMLElement = this.scrollContainer?.querySelector(
       ".segment.actived"
     ) as HTMLElement;
-    if (!activedSegment) {
+    if (!activedSegmentDom) {
       return;
     }
-    const [deletedFramestart, deletedFrameend] = getFrameRange(activedSegment);
-    const trackDom = findParentElementByClassName(activedSegment, "track");
-    
-    
+    const activedSegment = this.getVirtualSegmentById(activedSegmentDom.dataset.segmentId ?? '');
+    if(!activedSegment) return;
+    const deletedFramestart = activedSegment.framestart;
+    const deletedFrameend = activedSegment.frameend;
+    const virtualTrack = activedSegment.parentTrack as Track;
+    const trackDom = virtualTrack.dom;
     // 如果是可伸缩轨道删除，则需要重新伸缩其它segment填满轨道
     if (trackDom) {
       const frames = deletedFrameend - deletedFramestart;
-      if (this.isStretchTrack(trackDom)) {
-        const segments: HTMLElement[] = Array.from(
-          trackDom.querySelectorAll(".segment")
-        );
-        const segmentRightSide: HTMLElement | undefined =
-          this.getRightSideSegments(segments, getLeftValue(activedSegment))[0];
+      if (virtualTrack.isStretchTrack) {
+        const segments = virtualTrack.getSegments()
+        const segmentRightSide = this.getRightSideSegments(segments, getLeftValue(activedSegment.dom))[0];
         // 如果右侧有 segment 则将右侧segment 起始帧移到被删除segment的起始帧
         if (segmentRightSide) {
-          let framestart = getDatasetNumberByKey(
-            segmentRightSide,
-            "framestart"
-          );
-          const frameend = getDatasetNumberByKey(segmentRightSide, "frameend");
-          framestart = framestart - frames;
-          this.setSegmentPosition(segmentRightSide, framestart, frameend);
-          segmentRightSide.dataset.framestart = `${framestart}`;
+          const framestart = segmentRightSide.framestart  - frames;
+          const frameend = segmentRightSide.frameend;
+          segmentRightSide.setSegmentRange(framestart, frameend);
+          segmentRightSide.resize();
         } else {
           // 右侧没有且左侧有，则将左侧 segment 结束帧移到被删除 segment 结束帧
-          const segmentLeftSide: HTMLElement | undefined =
+          const segmentLeftSide =
             this.getLeftSideSegments(
               segments,
-              getLeftValue(activedSegment)
+              getLeftValue(activedSegment.dom)
             ).reverse()[0];
           if (segmentLeftSide) {
-            const framestart = getDatasetNumberByKey(
-              segmentLeftSide,
-              "framestart"
-            );
-            let frameend = getDatasetNumberByKey(segmentLeftSide, "frameend");
-            frameend = frameend + frames;
-            this.setSegmentPosition(segmentLeftSide, framestart, frameend);
-            segmentLeftSide.dataset.frameend = `${frameend}`;
+            const framestart = segmentLeftSide.framestart;
+            const frameend =  segmentLeftSide.frameend + frames;
+            segmentLeftSide.setSegmentRange(framestart, frameend);
+            segmentLeftSide.resize();
           }
         }
       }
-      const trackId = activedSegment?.dataset.trackId ?? '';
-      const segmentId = activedSegment.dataset.segmentId ?? '';
-      this.deleteSegment(trackId, segmentId);
+      this.deleteSegment(activedSegment.trackId, activedSegment.segmentId);
     }
   }
   unMounted() {
@@ -378,9 +371,11 @@ export abstract class Tracks {
     }
     return virtualTrack.segments.get(segmentId) ?? null
   }
-  getCollisionByFrameInSegments(frame: number, segments: HTMLElement[]){
-    return segments.find((segment: HTMLElement) => {
-      const [segmentFramestart, segmentFrameend] = getFrameRange(segment);
+  // deprecated
+  getCollisionByFrameInSegments(frame: number, segments: Segment[]){
+    return segments.find((segment: Segment) => {
+      const segmentFramestart = segment.framestart;
+      const segmentFrameend = segment.frameend;
       // 碰撞检测（通过计算开始帧与结束帧）且不是自身
       if (frame >= segmentFramestart && frame < segmentFrameend) {
         return true;
@@ -388,39 +383,39 @@ export abstract class Tracks {
       return false;
     }) ?? null;
   }
-  getCollisionByCurrentframe(frame: number, trackId: string){
-    const track = this.getTrackById(trackId);
+  getCollisionByFrame(frame: number, trackId: string){
+    const track = this.getVirtualTrack(trackId);
     if(!track){
       return null
     }
-    const segments = this.getSegmentsByTrack(track);
+    const segments = track.getSegments();
     return this.getCollisionByFrameInSegments(frame, segments);
   }
   private sliceSegment(
-    track: HTMLElement,
-    currentSegmentId: string,
+    track: Track,
     framestart: number,
-    frameend: number
-  ): [HTMLElement|null, number] {
-    let result: HTMLElement|null = null;
+  ):[Segment|null, number]{
     let collisionSegmentFrameend = -1;
     // 过滤出重叠的 segment (在可伸展轨道)
-    let segments = Array.from<HTMLElement>(track.querySelectorAll(".segment"));
+    let segments = track.getSegments();
     // 如果只有刚拖入的 segment 则不需要额外处理
     if (segments.length === 0) {
-      return [result, collisionSegmentFrameend];
+      return [null, collisionSegmentFrameend];
     }
     const collisionSegment = this.getCollisionByFrameInSegments(framestart, segments);
     if(collisionSegment){
-      let [ sFramestart, sFrameend ] = getFrameRange(collisionSegment);
+      let sFramestart = collisionSegment.framestart;
+      let sFrameend = collisionSegment.frameend;
       collisionSegmentFrameend = sFrameend;
       if (sFrameend > framestart && sFramestart < framestart) {
         sFrameend = framestart;
-        collisionSegment.dataset.frameend = `${framestart}`;
-        this.setSegmentPosition(collisionSegment, sFramestart, sFrameend);
+        collisionSegment.setSegmentRange(sFramestart, framestart);
+        collisionSegment.resize();
+        // collisionSegment.dataset.frameend = `${framestart}`;
+        // this.setSegmentPosition(collisionSegment, sFramestart, sFrameend);
       } else if (sFramestart >= framestart) {
         // 如果是完全覆盖则需要删除覆盖下的segment
-        this.removeSegment(collisionSegment);
+        this.removeSegment(collisionSegment.dom);
       }
     }
     return [collisionSegment, collisionSegmentFrameend];
@@ -450,32 +445,33 @@ export abstract class Tracks {
     }
   }
   dropToStretchTrack(
-    track: HTMLElement,
+    trackDom: HTMLElement,
     currentSegment: Segment,
     framestart: number
   ) {
     // todo 加入虚拟轨道
     const totalFrames = this.timeline?.totalFrames ?? 0;
+    const track = this.getVirtualTrack(currentSegment.trackId);;
+    if(!track){
+      return;
+    }
+    const segments = track?.getSegments() ?? [];
     let frameend = totalFrames;
     // 如果轨道内只有一个 segment 则铺满整个轨道
-    if (track.querySelectorAll(".segment").length === 0) {
+    if (segments.length === 0) {
       framestart = 0;
     } else if (framestart > totalFrames) {
       // 如果是拖到了伸缩轨道最后，则往后加长
       framestart = totalFrames;
-      // todo: 伸缩轨道增长暂定为 300 帧
-      frameend = framestart + 300;
+      frameend = framestart + DEFAULT_SEGMENT_FRAMES;
       this.timeline?.setTotalFrames(frameend);
     }
     currentSegment.setSegmentRange(framestart, frameend);
-    const segmentId = currentSegment.segmentId;
     currentSegment.resize();
-    // todo virtualSliceSegment
+
     const [effectSegment, effectSegmentOriginFrameend] = this.sliceSegment(
       track,
-      segmentId,
       framestart,
-      frameend
     );
     if(!effectSegment){
       return
@@ -483,23 +479,13 @@ export abstract class Tracks {
     frameend = effectSegmentOriginFrameend;
     currentSegment.setSegmentRange(framestart, frameend);
     currentSegment.resize();
-    // todo
-    const effectVirtualSegment = this.getVirtualSegmentById(effectSegment.dataset.trackId ?? "");
-    const [effectedFramestart, effectedFrameend] = getFrameRange(effectSegment)
-    const result = {
-      trackId: effectSegment.dataset.trackId ?? "",
-      segmentId: effectSegment.dataset.segmentid ?? "",
-      startFrame:effectedFramestart,
-      endFrame: effectedFrameend,
-      track,
-      segment: effectSegment,
-    };
     this.segmentDropEffectCallback?.forEach((cb) => {
       cb({
-        segments: [result],
+        segment: effectSegment,
         eventType: TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT,
       });
     });
+    console.log(track, 7777)
     this.framestart = framestart;
     this.frameend = frameend;
   }
@@ -553,9 +539,6 @@ export abstract class Tracks {
       return
     }
     const virtualSegments = virtualTrack.getSegments();
-    let segments = Array.from(
-      collisionTrack.querySelectorAll(".segment")
-    ) as HTMLElement[];
     const placeholderLeft = getLeftValue(placeholder);
     const onRightSegments = this.getRightSideSegments(
       virtualSegments,
@@ -586,11 +569,12 @@ export abstract class Tracks {
         const framestartMoved = segmentFramestart + this.frames;
         const frameendMoved = segmentFrameend + this.frames;
         segment.setSegmentRange(framestartMoved, frameendMoved)
+        segment.resize();
         this.framestart = segmentFramestart;
         this.frameend = segmentFramestart + this.frames;
       }
     }
-
+    console.log(virtualSegments)
     if (isdrop) {
       currentSegment.setSegmentRange(this.framestart, this.frameend);
       currentSegment.resize();
@@ -694,30 +678,16 @@ export abstract class Tracks {
       }
     }
   }
-  protected triggerSelected(){
-    const selectedActived =  Array.from(this.scrollContainer?.querySelectorAll('.segment.actived')) as HTMLElement[];
-    const segments = selectedActived.map( (segment):SegmentBasicInfo => {
-      const track = findParentElementByClassName(segment, 'track') ?? undefined;
-      const trackId = track?.dataset.trackId ?? '';
-      const segmentId = segment.dataset.segmentId ?? '';
-      const [startFrame, endFrame] = getFrameRange(segment);
-      return {
-        segment,
-        track,
-        trackId,
-        segmentId,
-        startFrame,
-        endFrame,
-      }
-    })
+  protected triggerSelected(segment: Segment){
     this.segmentSelectedCallback?.forEach((cb) =>
       cb({
-        segments,
+        segment,
         eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_SELECTED,
       })
     );
   }
   private triggerDragEnd(segment: Segment, track: Track) {
+    console.log(this.originFramestart , segment.framestart , this.originFrameend , segment.frameend);
     // 如果拖动后与拖动前帧数未变，不需要触发拖动回调
     if(this.originFramestart === segment.framestart  && this.originFrameend === segment.frameend){
       return;
@@ -936,6 +906,7 @@ export abstract class Tracks {
 
         // 如果是伸展轨道拖动有可能导致的位置变换， 则需要设置当前开始帧与结束帧位置
         if (!isCopySegment && stretchTrack && virtualSegment) {
+          console.log(this.framestart, this.frameend, 88888);
           virtualSegment.setSegmentRange(this.framestart, this.frameend);
           virtualSegment.resize();
         }
@@ -1051,7 +1022,7 @@ export abstract class Tracks {
     }
     this.removeSegmentActivedStatus()
     virtualSegment.setActived(true);
-    this.triggerSelected();
+    this.triggerSelected(virtualSegment);
   }
   addSegmentByTrackId(
     segmentConstructInfo: {
