@@ -30,9 +30,9 @@ export interface SegmentBasicInfo {
   track?:HTMLElement | null,
   sectionId?: string,
 }
-export type TrackEventCallbackArgs = {segments?: SegmentBasicInfo[], eventType?: TRACKS_EVENT_CALLBACK_TYPES}
-export type TrackEventAddedCallbackArgs = {segment?: Segment, track?: Track, eventType?: TRACKS_EVENT_CALLBACK_TYPES}
-export type callbacksArgs = TrackEventCallbackArgs & TrackEventAddedCallbackArgs
+export type TrackEventCallbackArgs = {segments: Segment[], eventType?: TRACKS_EVENT_CALLBACK_TYPES}
+export type TrackEventAddedCallbackArgs = {segment: Segment, track?: Track, eventType?: TRACKS_EVENT_CALLBACK_TYPES}
+export type callbacksArgs = TrackEventCallbackArgs | TrackEventAddedCallbackArgs
 export interface TracksEvent{
   (e: callbacksArgs): any
 }
