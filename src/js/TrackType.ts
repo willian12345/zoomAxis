@@ -30,11 +30,9 @@ export interface SegmentBasicInfo {
   track?:HTMLElement | null,
   sectionId?: string,
 }
-export type TrackEventCallbackArgs = {segments?: Segment[], eventType?: TRACKS_EVENT_CALLBACK_TYPES}
-export type TrackEventAddedCallbackArgs = {segment?: Segment, track?: Track, eventType?: TRACKS_EVENT_CALLBACK_TYPES}
-export type callbacksArgs = TrackEventCallbackArgs & TrackEventAddedCallbackArgs
+export type CallbackArgs = {segment?: Segment, segments?: Segment[],  track?: Track, eventType?: TRACKS_EVENT_CALLBACK_TYPES}
 export interface TracksEvent{
-  (e: callbacksArgs): any
+  (e: CallbackArgs): any
 }
 export type  TracksEventCallback  = TracksEvent
 // 添加成功至轨道后标准的回复格式

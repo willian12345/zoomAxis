@@ -7,6 +7,7 @@
  */
 import { SegmentConstructInfo, SegmentType } from "./TrackType";
 import { Track } from "./Track";
+
 let segmentIdIndex = 0;
 export class Segment {
   framestart = 0;
@@ -25,6 +26,8 @@ export class Segment {
   actived = false;
   frameWidth = 0;
   extra = {};
+  leftHandler = {} as HTMLElement
+  rightHandler = {} as HTMLElement
   constructor(args: SegmentConstructInfo) {
     this.trackId = args.trackId;
     this.segmentId = args.segmentId ?? this.createSegmentId();
@@ -45,6 +48,8 @@ export class Segment {
     this.segmentType = args.segmentType;
     this.name = args.name ?? "";
     this.dom = this.createDom();
+    this.leftHandler = this.dom.querySelector('.segment-handle-left') as HTMLElement;
+    this.rightHandler = this.dom.querySelector('.segment-handle-right') as HTMLElement;
     // 额外其它信息
     if (args.extra) {
       this.extra = args.extra;
@@ -71,20 +76,30 @@ export class Segment {
       `;
     return div.firstElementChild as HTMLElement;
   }
-  setSegmentRange(framestart: number, frameend: number) {
+  private getSegmentLeft(framestart: number): number {
+    return framestart * this.frameWidth;
+  }
+  private setHandleEnableStatus(dom: HTMLElement, enable: boolean){
+    dom.style.pointerEvents = enable ? 'initial' : 'none';
+  }
+  // 设置帧范围
+  setRange(framestart: number, frameend: number) {
     this.framestart = framestart;
     this.frameend = frameend;
     this.dom.dataset.framestart = String(framestart);
     this.dom.dataset.frameend = String(frameend);
+    this.resize();
   }
   setTrackId(trackId: string) {
     this.trackId = trackId;
     this.dom.dataset.trackId = trackId;
   }
+  // 设置父级
   setTrack(track: Track) {
     this.parentTrack = track;
     this.setTrackId(track.trackId);
   }
+  // 是否是当前选中状态
   setActived(bool: boolean) {
     if (bool) {
       this.actived = true;
@@ -94,14 +109,17 @@ export class Segment {
       this.dom.classList.remove("actived");
     }
   }
-  private getSegmentLeft(framestart: number): number {
-    return framestart * this.frameWidth;
-  }
+  // 调整宽度值
   resize(
   ) {
     const segmentLeft = this.getSegmentLeft(this.framestart);
     const frames = this.frameend - this.framestart;
     this.dom.style.left = `${segmentLeft}px`;
     this.dom.style.width = `${this.frameWidth * frames}px`;
+  }
+  // 拖动手柄状态更新：是否响应拖动
+  setHandleEnable(leftEnable: boolean, rightEnable: boolean){
+    this.setHandleEnableStatus(this.leftHandler, leftEnable);
+    this.setHandleEnableStatus(this.rightHandler, rightEnable);
   }
 }

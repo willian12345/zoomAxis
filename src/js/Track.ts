@@ -6,6 +6,7 @@
  * </div>
  */
 import { Segment } from './Segment';
+import { sortByLeftValue } from './trackUtils';
 interface TrackArgs {
   trackClass?: string
   trackPlaceholderClass?: string
@@ -55,9 +56,38 @@ export class Track {
     return result;
   }
   getLastSegment(){
+    // 根据 frameend 值排序后获取最后一个 Segment
     const segments = this.getSegments().sort((a, b)=> {
-      return a.frameend > b.frameend
+      // b 排在 a 后
+      if(a.frameend > b.frameend){
+        return -1
+      }
+      // b 排在 a 前
+      if(a.frameend < b.frameend){
+        return 1;
+      }
+      return  0;
     });
     return segments[segments.length - 1];
+  }
+  updateSegmentHandler(){
+    if(!this.isStretchTrack) return;
+    const segments = this.getSegments().sort(sortByLeftValue);
+    // 如果只有一个 segment 则不允许左右手柄拖动
+    if (segments.length === 1) {
+      return segments[0].setHandleEnable(false, false);
+    }
+    const l = segments.length - 1
+    segments.forEach( (segment, index) => {
+      if(index === 0){
+        // 最左侧不允许拖动
+        return segment.setHandleEnable(false, true);
+      }
+      if(l === index){
+        // 最右侧手柄不允许拖动
+        return segment.setHandleEnable(true, false);
+      }
+      segment.setHandleEnable(true, true)
+    });
   }
 }

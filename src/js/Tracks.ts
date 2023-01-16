@@ -14,6 +14,7 @@ import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
 import { Track } from "./Track";
 import { Segment } from "./Segment";
+import { EventHelper } from './EventHelper';
 
 import {
   createSegment,
@@ -25,7 +26,6 @@ import {
   isCloseEnouphToY,
   getSegmentPlaceholder,
   isContainSplitFromComma,
-  getDatasetNumberByKey,
   sortByLeftValue,
   findParentElementByClassName,
   collisionCheckFrame,
@@ -36,11 +36,9 @@ import {
 
 const DEFAULT_SEGMENT_FRAMES = 150
 // 轨道
-export abstract class Tracks {
+export abstract class Tracks  extends EventHelper{
   static DEFAULT_SEGMENT_FRAMES = DEFAULT_SEGMENT_FRAMES
   abstract destroy(): void;
-  private dragEndCallback: Set<TracksEventCallback> | null = null;
-  private segmentsChangedCallback: Set<TracksEventCallback> | null = null;
   protected segmentsSlidedCallback: Set<TracksEventCallback> | null = null;
   protected segmentsSlideEndCallback: Set<TracksEventCallback> | null = null;
   protected segmentDropEffectCallback: Set<TracksEventCallback> | null = null;
@@ -72,6 +70,7 @@ export abstract class Tracks {
     ondragover,
     ondrop,
   }: TracksArgs) {
+    super();
     if (!timeline || !scrollContainer || !trackCursor) {
       return;
     }
@@ -142,61 +141,6 @@ export abstract class Tracks {
     });
     return result
   }
-  addEventListener(
-    eventType: TRACKS_EVENT_CALLBACK_TYPES,
-    callback: TracksEventCallback
-  ) {
-    if (eventType === TRACKS_EVENT_CALLBACK_TYPES.DRAG_END) {
-      if (!this.dragEndCallback) {
-        this.dragEndCallback = new Set();
-      }
-      this.dragEndCallback.add(callback);
-      return;
-    }
-    if (eventType === TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_CHANGED) {
-      if (!this.segmentsChangedCallback) {
-        this.segmentsChangedCallback = new Set();
-      }
-      this.segmentsChangedCallback.add(callback);
-    }
-    if (eventType === TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT) {
-      if (!this.segmentDropEffectCallback) {
-        this.segmentDropEffectCallback = new Set();
-      }
-      this.segmentDropEffectCallback.add(callback);
-    }
-    if (eventType === TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED) {
-      if (!this.segmentsSlidedCallback) {
-        this.segmentsSlidedCallback = new Set();
-      }
-      this.segmentsSlidedCallback.add(callback);
-    }
-    if (eventType === TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDE_END) {
-      if (!this.segmentsSlideEndCallback) {
-        this.segmentsSlideEndCallback = new Set();
-      }
-      this.segmentsSlideEndCallback.add(callback);
-    }
-    if (eventType === TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_SELECTED) {
-      if (!this.segmentSelectedCallback) {
-        this.segmentSelectedCallback = new Set();
-      }
-      this.segmentSelectedCallback.add(callback);
-    }
-    if (eventType === TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_DELETED) {
-      if (!this.segmentDeletedCallback) {
-        this.segmentDeletedCallback = new Set();
-      }
-      this.segmentDeletedCallback.add(callback);
-    }
-    if (eventType === TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_ADDED) {
-      if (!this.segmentAddedCallback) {
-        this.segmentAddedCallback = new Set();
-      }
-      this.segmentAddedCallback.add(callback);
-    }
-
-  }
   removeActivedSegment(event: KeyboardEvent) {
     if (event.key !== "Delete") {
       return;
@@ -232,8 +176,7 @@ export abstract class Tracks {
         if (segmentRightSide) {
           const framestart = segmentRightSide.framestart  - frames;
           const frameend = segmentRightSide.frameend;
-          segmentRightSide.setSegmentRange(framestart, frameend);
-          segmentRightSide.resize();
+          segmentRightSide.setRange(framestart, frameend);
         } else {
           // 右侧没有且左侧有，则将左侧 segment 结束帧移到被删除 segment 结束帧
           const segmentLeftSide =
@@ -244,8 +187,7 @@ export abstract class Tracks {
           if (segmentLeftSide) {
             const framestart = segmentLeftSide.framestart;
             const frameend =  segmentLeftSide.frameend + frames;
-            segmentLeftSide.setSegmentRange(framestart, frameend);
-            segmentLeftSide.resize();
+            segmentLeftSide.setRange(framestart, frameend);
           }
         }
       }
@@ -409,8 +351,7 @@ export abstract class Tracks {
       collisionSegmentFrameend = sFrameend;
       if (sFrameend > framestart && sFramestart < framestart) {
         sFrameend = framestart;
-        collisionSegment.setSegmentRange(sFramestart, framestart);
-        collisionSegment.resize();
+        collisionSegment.setRange(sFramestart, framestart);
         // collisionSegment.dataset.frameend = `${framestart}`;
         // this.setSegmentPosition(collisionSegment, sFramestart, sFrameend);
       } else if (sFramestart >= framestart) {
@@ -466,8 +407,7 @@ export abstract class Tracks {
       frameend = framestart + DEFAULT_SEGMENT_FRAMES;
       this.timeline?.setTotalFrames(frameend);
     }
-    currentSegment.setSegmentRange(framestart, frameend);
-    currentSegment.resize();
+    currentSegment.setRange(framestart, frameend);
 
     const [effectSegment, effectSegmentOriginFrameend] = this.sliceSegment(
       track,
@@ -477,15 +417,10 @@ export abstract class Tracks {
       return
     }
     frameend = effectSegmentOriginFrameend;
-    currentSegment.setSegmentRange(framestart, frameend);
-    currentSegment.resize();
-    this.segmentDropEffectCallback?.forEach((cb) => {
-      cb({
-        segment: effectSegment,
-        eventType: TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT,
-      });
-    });
-    console.log(track, 7777)
+    currentSegment.setRange(framestart, frameend);
+    this.dispatchEvent({ eventType: TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT }, {
+      segment: effectSegment,
+    })
     this.framestart = framestart;
     this.frameend = frameend;
   }
@@ -511,16 +446,12 @@ export abstract class Tracks {
       })
       .sort(sortByLeftValue);
   }
-  getLeftSideSegmentsInTrack(track: HTMLElement, leftValue: number) {
-    const segments = Array.from(
-      track.querySelectorAll(".segment")
-    ) as HTMLElement[];
+  getLeftSideSegmentsInTrack(track: Track, leftValue: number) {
+    const segments = track.getSegments();
     return this.getLeftSideSegments(segments, leftValue);
   }
-  getRightSideSegmentsInTrack(track: HTMLElement, leftValue: number) {
-    const segments = Array.from(
-      track.querySelectorAll(".segment")
-    ) as HTMLElement[];
+  getRightSideSegmentsInTrack(track: Track, leftValue: number) {
+    const segments = track.getSegments();
     return this.getRightSideSegments(segments, leftValue);
   }
   // 伸缩轨道内拖动
@@ -553,8 +484,7 @@ export abstract class Tracks {
         // 向左移动一个片断
         const framestartMoved = segmentFramestart - this.frames;
         const frameendMoved = segmentFrameend - this.frames;
-        segment.setSegmentRange(framestartMoved, frameendMoved);
-        segment.resize();
+        segment.setRange(framestartMoved, frameendMoved);
         this.framestart = frameendMoved;
         this.frameend = frameendMoved + this.frames;
       }
@@ -568,19 +498,13 @@ export abstract class Tracks {
         // 向右移动一个片断
         const framestartMoved = segmentFramestart + this.frames;
         const frameendMoved = segmentFrameend + this.frames;
-        segment.setSegmentRange(framestartMoved, frameendMoved)
-        segment.resize();
+        segment.setRange(framestartMoved, frameendMoved);
         this.framestart = segmentFramestart;
         this.frameend = segmentFramestart + this.frames;
       }
     }
-    console.log(virtualSegments)
     if (isdrop) {
-      currentSegment.setSegmentRange(this.framestart, this.frameend);
-      currentSegment.resize();
-      // this.setSegmentPosition(currentSegment, this.framestart, this.frameend);
-      // currentSegment.dataset.framestart = `${}`;
-      // currentSegment.dataset.frameend = `${}`;
+      currentSegment.setRange(this.framestart, this.frameend);
     }
   }
   private draging({
@@ -645,63 +569,24 @@ export abstract class Tracks {
 
     return collisionY;
   }
-  // todo: 暂时先用这种方式实现首尾不让用户拖动
-  private updateSliderHandler(track: HTMLElement) {
-    if (this.isStretchTrack(track)) {
-      const segments = this.getSegmentsByTrack(track).sort(sortByLeftValue);
-      const handles = Array.from<HTMLElement>(
-        track.querySelectorAll(".segment-handle-left, .segment-handle-right")
-      );
-      // 如果只有一个 segment 则不允许左右手柄拖动
-      if (segments.length === 1) {
-        handles.forEach((handle) => {
-          handle.style.pointerEvents = "none";
-        });
-      } else {
-        handles.forEach((handle) => {
-          handle.style.pointerEvents = "initial";
-        });
-        const first = segments[0];
-        if (first) {
-          const handle = first.querySelector(
-            ".segment-handle-left"
-          ) as HTMLElement;
-          handle.style.pointerEvents = "none";
-        }
-        const last = segments[segments.length - 1];
-        if (last) {
-          const handle = last.querySelector(
-            ".segment-handle-right"
-          ) as HTMLElement;
-          handle.style.pointerEvents = "none";
-        }
-      }
-    }
+  private updateSliderHandler(track: Track) {
+    
   }
   protected triggerSelected(segment: Segment){
-    this.segmentSelectedCallback?.forEach((cb) =>
-      cb({
-        segment,
-        eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_SELECTED,
-      })
-    );
+    this.dispatchEvent({eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_SELECTED}, {
+      segment,
+    })
   }
   private triggerDragEnd(segment: Segment, track: Track) {
-    console.log(this.originFramestart , segment.framestart , this.originFrameend , segment.frameend);
     // 如果拖动后与拖动前帧数未变，不需要触发拖动回调
     if(this.originFramestart === segment.framestart  && this.originFrameend === segment.frameend){
       return;
     }
     // 拖动放回原处是异步，拖完也要延时
     setTimeout(() => {
-      this.updateSliderHandler(track.dom);
+      track.updateSegmentHandler()
       // 拖完后触发回调
-      this.dragEndCallback?.forEach((cb) =>
-        cb({
-          segment,
-          eventType: TRACKS_EVENT_CALLBACK_TYPES.DRAG_END,
-        })
-      );
+      this.dispatchEvent({ eventType: TRACKS_EVENT_CALLBACK_TYPES.DRAG_END }, { segment })
     }, 2);
   }
   protected addSegment(track?:Track|null, segment?: Segment|null){
@@ -712,11 +597,8 @@ export abstract class Tracks {
       return
     }
     track.addSegment(segment);
-    if(this.segmentAddedCallback){
-      this.segmentAddedCallback.forEach(cb => {
-        cb({track, segment})
-      });
-    }
+    track.updateSegmentHandler();
+    this.dispatchEvent({ eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_ADDED }, {track, segment})
   }
   protected async drop({
     x,
@@ -767,14 +649,13 @@ export abstract class Tracks {
     // 如果是伸展轨道
     if (stretchTrack) {
       isCopySegment && this.dropToStretchTrack(track, virtualSegment, framestart);
-      virtualTrack && this.triggerDragEnd(virtualSegment, virtualTrack);
       this.addSegment(virtualTrack, virtualSegment);
+      virtualTrack && this.triggerDragEnd(virtualSegment, virtualTrack);
       return;
     }
     this.addSegment(virtualTrack, virtualSegment);
     // 拖动复制入轨时，需要再次判断放入轨道成功后帧数范围是不是产生碰撞
     if (isCopySegment && collisionCheckFrame(dom, track)) {
-      console.log("frame collision");
       this.deleteSegment(trackId, dom.dataset.segmentId ?? "")
       return;
     }
@@ -789,8 +670,7 @@ export abstract class Tracks {
       }
       const [fs, fd] = getFrameRange(dom);
       const frameend = framestart + (fd - fs);
-      virtualSegment.setSegmentRange(framestart, frameend);
-      virtualSegment.resize();
+      virtualSegment.setRange(framestart, frameend);
     }
     virtualTrack && this.triggerDragEnd(virtualSegment, virtualTrack);
   }
@@ -832,7 +712,6 @@ export abstract class Tracks {
 
     if (!isCopySegment) {
       const [framestart, frameend] = getFrameRange(segment);
-      console.log(framestart, frameend, '-----', virtualSegment?.framestart, virtualSegment?.frameend);
       this.framestart = framestart;
       this.frameend = frameend;
       this.frames = this.frameend - this.framestart;
@@ -893,7 +772,6 @@ export abstract class Tracks {
       dragTrackContainer.style.transition = "none";
       // x = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
       const x = left - scrollContainerRect.left + scrollContainerScrollLeft;
-
       // 判断所有轨道与鼠标当前Y轴距离
       tracks.forEach(async (track) => {
         track.classList.remove(this.dragoverClass);
@@ -903,12 +781,9 @@ export abstract class Tracks {
           this.drop({ e, x, segment, track, tracks, isCopySegment });
         }
         const stretchTrack = this.isStretchTrack(track);
-
         // 如果是伸展轨道拖动有可能导致的位置变换， 则需要设置当前开始帧与结束帧位置
         if (!isCopySegment && stretchTrack && virtualSegment) {
-          console.log(this.framestart, this.frameend, 88888);
-          virtualSegment.setSegmentRange(this.framestart, this.frameend);
-          virtualSegment.resize();
+          virtualSegment.setRange(this.framestart, this.frameend);
         }
       });
 
@@ -973,7 +848,7 @@ export abstract class Tracks {
   getKeyframes(segment: HTMLElement){
     return Array.from(segment.querySelectorAll('.segment-keyframe')) as HTMLElement[]
   }
-  // 添加关键帧
+  // 添加关键帧 todo: 关键帧放至 Segment 类内处理
   addKeyFrame(segmentId: string, trackId: string, frame: number){
     if(!this.timeline){
       return
@@ -1039,12 +914,8 @@ export abstract class Tracks {
       return;
     }
     const segment = createSegment({...segmentConstructInfo, frameWidth: this.timeline.frameWidth});
-    this.setSegmentPosition(segment.dom, segment.framestart, segment.frameend);
+    segment.setRange(segment.framestart, segment.frameend);
     this.addSegment(virtualTrack, segment);
-    // 更新是否可拖动手柄
-    if (this.isStretchTrack(virtualTrack.dom)) {
-      this.updateSliderHandler(virtualTrack.dom);
-    }
   }
   getEndestSegmentFrameRange(trackId: string): [number, number]{
     let track = this.getTrackById(trackId);
@@ -1069,22 +940,7 @@ export abstract class Tracks {
       const cursorCurrentFrame = this.timeline?.currentFrame;
       this.dropToStretchTrack(track, virtualSegment, cursorCurrentFrame);
     }
-    virtualTrack && this.addSegment(virtualTrack, virtualSegment);
-    this.setSegmentPosition(virtualSegment.dom, virtualSegment.framestart, virtualSegment.frameend);
-  }
-  getSegmentBasicInfoByDom(segment: HTMLElement): SegmentBasicInfo{
-    const trackId = segment.dataset.trackId ?? '';
-    const segmentId = segment.dataset.segmentId ?? '';
-    const [startFrame, endFrame] = getFrameRange(segment);
-    const sectionId = segmentId;
-    const track = findParentElementByClassName(segment, 'track');
-    return {
-      segmentId,
-      trackId,
-      startFrame,
-      endFrame,
-      sectionId,
-      track,
-    }
+    virtualSegment.setRange(virtualSegment.framestart, virtualSegment.frameend);
+    this.addSegment(virtualTrack, virtualSegment);
   }
 }
