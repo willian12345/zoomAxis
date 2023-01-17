@@ -59,11 +59,11 @@ export class Track {
     // 根据 frameend 值排序后获取最后一个 Segment
     const segments = this.getSegments().sort((a, b)=> {
       // b 排在 a 后
-      if(a.frameend > b.frameend){
+      if(a.frameend < b.frameend){
         return -1
       }
       // b 排在 a 前
-      if(a.frameend < b.frameend){
+      if(a.frameend > b.frameend){
         return 1;
       }
       return  0;
