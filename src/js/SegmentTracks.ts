@@ -108,37 +108,7 @@ export class SegmentTracks extends Tracks {
     }, 300);
     // this.triggerSelected();
   }
-  // 帧位置更新
-  // todo virtual 
-  private syncScaleKeyframes(segment: HTMLElement, frameWidth: number, framestart: number){
-    const keyframes = this.getKeyframes(segment);
-    keyframes.forEach((keyframeDom: HTMLElement)=> {
-      const frame = getDatasetNumberByKey(keyframeDom, 'frame');
-      keyframeDom.style.left = `${frameWidth * (frame - framestart)}px`;
-    })
-  }
-  // 缩放
-  // todo virtual
-  syncScale() {
-    if (!this.scrollContainer || !this.timeline) {
-      return;
-    }
-    const segments: HTMLElement[] = Array.from(
-      this.scrollContainer.querySelectorAll(".segment")
-    );
-    const frameWidth = this.timeline?.frameWidth;
-    segments.forEach((dom: HTMLElement) => {
-      if (!dom.dataset.framestart || !dom.dataset.frameend || !this.timeline) {
-        return;
-      }
-      const framestart = parseFloat(dom.dataset.framestart);
-      const frameend = parseFloat(dom.dataset.frameend);
-      const left = framestart * frameWidth;
-      dom.style.left = `${left}px`;
-      dom.style.width = `${frameWidth * (frameend - framestart)}px`;
-      this.syncScaleKeyframes(dom, frameWidth, framestart);
-    });
-  }
+  
   // segment 左侧手柄拖动
   private leftHandleMove = ({
     frameWidth,

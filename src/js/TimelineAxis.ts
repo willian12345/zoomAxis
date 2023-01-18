@@ -10,18 +10,11 @@ export enum TIMELINE_AXIS_EVENT_TYPE {
   PLAY_END,
   STOP,
 }
-interface EventCallback {
-  (eventType: TIMELINE_AXIS_EVENT_TYPE, currentFrame: number): any
-}
-const FRAME_RATE = 30
-let a:number;
+export type TimelineAxisCallbackArgs = {currentFrame: number}
+const FRAME_RATE = 30;
 export class TimelineAxis extends ZoomAxis{
   private fps = 0;
   private preTimestamp = 0;
-  private enterframeCallbackSet: Set<EventCallback>|null = null;
-  private playStartCallbackSet: Set<EventCallback>|null = null;
-  private playEndCallbackSet: Set<EventCallback>|null = null;
-  private stopCallbackSet: Set<EventCallback>|null = null;
   private paused = true; 
   private stoped = false;
   playing = false;
@@ -53,14 +46,14 @@ export class TimelineAxis extends ZoomAxis{
     }
     if (this.currentFrame > this.totalFrames) {
       this.playing = false;
-      this.playEndCallbackSet?.forEach( (cb: EventCallback) => cb(TIMELINE_AXIS_EVENT_TYPE.PLAY_END, this.currentFrame))
+      this.dispatchEvent({eventType: TIMELINE_AXIS_EVENT_TYPE.PLAY_END}, {currentFrame: this.currentFrame});
       return;
     }
     const now = + new Date()
     const interval = now - this.preTimestamp
     if(interval >= this.fps){
       this.preTimestamp = now - (interval % this.fps);
-      this.enterframeCallbackSet?.forEach( (cb: EventCallback) => cb(TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME, this.currentFrame))
+      this.dispatchEvent({eventType: TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME}, {currentFrame: this.currentFrame});
       this.currentFrame++;
     }
     window.requestAnimationFrame(this.enterFrame.bind(this));
@@ -83,37 +76,7 @@ export class TimelineAxis extends ZoomAxis{
     this.stoped = true;
     this.paused = false;
     this.playing = false;
-    this.stopCallbackSet?.forEach( (cb: EventCallback) => cb.call(this, TIMELINE_AXIS_EVENT_TYPE.STOP, this.currentFrame));
-  }
-  addEventListener(eventType: TIMELINE_AXIS_EVENT_TYPE, callback: EventCallback){
-    if(eventType === TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME){
-      if(!this.enterframeCallbackSet){
-        this.enterframeCallbackSet  = new Set()
-      }
-      this.enterframeCallbackSet.add(callback)
-      return this
-    }
-    if(eventType === TIMELINE_AXIS_EVENT_TYPE.PLAY_START){
-      if(!this.playStartCallbackSet){
-        this.playStartCallbackSet  = new Set()
-      }
-      this.playStartCallbackSet.add(callback)
-      return this
-    }
-    if(eventType === TIMELINE_AXIS_EVENT_TYPE.PLAY_END){
-      if(!this.playEndCallbackSet){
-        this.playEndCallbackSet  = new Set()
-      }
-      this.playEndCallbackSet.add(callback)
-      return this
-    }
-    if(eventType === TIMELINE_AXIS_EVENT_TYPE.STOP){
-      if(!this.stopCallbackSet){
-        this.stopCallbackSet  = new Set()
-      }
-      this.stopCallbackSet.add(callback)
-      return this
-    }
+    this.dispatchEvent({eventType: TIMELINE_AXIS_EVENT_TYPE.STOP}, {currentFrame: this.currentFrame});
   }
   setCurrentFrame(currentFrame: number){
     this.currentFrame = currentFrame

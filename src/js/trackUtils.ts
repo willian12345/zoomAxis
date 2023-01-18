@@ -3,26 +3,14 @@ import { SegmentBasicInfo, SegmentType, SegmentConstructInfo } from './TrackType
 import { Segment } from './Segment';
 const CLOSE_ENOUPH_DISTANCE_Y = 10; // 距离 y 是否够近
 const CLOSE_ENOUPH_SEGMENT_X = 60; // 距离 segment x是否够
-export const createSegmentName = (text: string) => {
-  const dom = document.createElement("div");
-  dom.className = "segment-name";
-  dom.innerText = text;
-  return dom;
-}
-export const createDivDom = (className: string) => {
-  const dom = document.createElement('div');
-  dom.className = className;
-  return dom;
-}
 
-// todo: 抽象成单独 Segment 类用于构造 segment
 export const createSegment = (segmentInfo: SegmentConstructInfo ) => {
   const segment = new Segment(segmentInfo);
   return segment;
 };
-export const createKeyFrame = () => {
+export const createNodeWidthClass = (className: string) => {
   const dom = document.createElement("div");
-  dom.className = "segment-keyframe";
+  dom.className = className;
   return dom;
 }
 export const createSegmentFake = (rect: DOMRect) => {

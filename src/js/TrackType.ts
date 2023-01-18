@@ -108,3 +108,10 @@ export type SegmentConstructInfo = {
   left?: number|string,
   extra?:any,
 }
+// Keyframe 构造参数
+export type KeyframeConstructInfo = {
+  frame: number,
+  segmentId: string,
+  frameWidth: number,
+  className?: string,
+}

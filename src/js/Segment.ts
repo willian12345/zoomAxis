@@ -6,7 +6,9 @@
  * </div>
  */
 import { SegmentConstructInfo, SegmentType } from "./TrackType";
+import { createNodeWidthClass } from './trackUtils'
 import { Track } from "./Track";
+import { Keyframe } from "./Keyframe";
 
 let segmentIdIndex = 0;
 export class Segment {
@@ -28,6 +30,7 @@ export class Segment {
   extra = {};
   leftHandler = {} as HTMLElement
   rightHandler = {} as HTMLElement
+  keyframes = [] as Keyframe[]
   constructor(args: SegmentConstructInfo) {
     this.trackId = args.trackId;
     this.segmentId = args.segmentId ?? this.createSegmentId();
@@ -121,5 +124,46 @@ export class Segment {
   setHandleEnable(leftEnable: boolean, rightEnable: boolean){
     this.setHandleEnableStatus(this.leftHandler, leftEnable);
     this.setHandleEnableStatus(this.rightHandler, rightEnable);
+  }
+  setFrameWidth(width: number){
+    this.frameWidth = width;
+    this.resize();
+    this.keyframes.forEach(keyframe => {
+      keyframe.setFrameWidth(width);
+    });
+  }
+  addKeyframe(frame: number){
+    const keyframe = new Keyframe({
+      segmentId: this.segmentId,
+      frame,
+      frameWidth: this.frameWidth,
+    })
+    this.keyframes.push(keyframe);
+    this.dom.appendChild(keyframe.dom);
+    keyframe.setParent(this);
+  }
+  deleteKeyframe(frame: number){
+    const keyframe = this.keyframes.find( Keyframe => Keyframe.frame === frame);
+    keyframe?.dom.parentElement?.removeChild(keyframe.dom);
+    keyframe?.destroy();
+    this.keyframes = this.keyframes.filter( keyframe => keyframe.frame !== frame);
+  }
+  deleteKeyframeAll(){
+    this.keyframes.forEach( keyframe => {
+      keyframe?.dom.parentElement?.removeChild(keyframe.dom);
+      keyframe?.destroy();
+    });
+    this.keyframes = [];
+  }
+  // 删除不在可视范围内的关键帧
+  deleteKeyframeOutOfRange(){
+    const deletedArr = this.keyframes.filter(keyframe => {
+      // 不在可视范围内
+      return keyframe.frame < this.framestart || keyframe.frame > this.frameend
+    })
+    deletedArr.forEach( keyframe => {
+      this.deleteKeyframe(keyframe.frame);
+    });
+    return deletedArr;
   }
 }

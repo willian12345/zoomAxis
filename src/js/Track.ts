@@ -55,6 +55,9 @@ export class Track {
     }
     return result;
   }
+  getSegmentById(segmentId: string){
+    return this.getSegments().find( segment => segment.segmentId === segmentId);
+  }
   getLastSegment(){
     // 根据 frameend 值排序后获取最后一个 Segment
     const segments = this.getSegments().sort((a, b)=> {

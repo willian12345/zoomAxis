@@ -1,3 +1,4 @@
+import { EventHelper } from './EventHelper';
 const SPACE_FRAME_WIDTH = 80; // 刻度间距
 
 // 默认
@@ -37,7 +38,7 @@ export function millisecondToSecond(interval: number) {//格式化时间
 export function roundFun(value: number, n: number) {
   return Math.round(value * Math.pow(10, n)) / Math.pow(10, n);
 }
-export class ZoomAxis {
+export class ZoomAxis extends EventHelper{
   private canvas?: HTMLCanvasElement = {} as HTMLCanvasElement
   private ctx?: CanvasRenderingContext2D = {} as CanvasRenderingContext2D
   vertical = false
@@ -66,6 +67,7 @@ export class ZoomAxis {
   width = 600; // 标尺总宽度
 
   constructor({ el, totalMarks, ratio, ratioMap, stageWidth, vertical = false }: ZoomAxisArgs) {
+    super();
     if (!el) {
       console.warn("挂载对象 id 必传");
       return;

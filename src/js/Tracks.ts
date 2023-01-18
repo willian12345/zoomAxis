@@ -30,8 +30,8 @@ import {
   findParentElementByClassName,
   collisionCheckFrame,
   getFrameRange,
-  createKeyFrame,
   findEndestSegmentOnTrack,
+  getDatasetNumberByKey,
 } from "./trackUtils";
 
 const DEFAULT_SEGMENT_FRAMES = 150
@@ -598,7 +598,7 @@ export abstract class Tracks  extends EventHelper{
     }
     track.addSegment(segment);
     track.updateSegmentHandler();
-    this.dispatchEvent({ eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_ADDED }, {track, segment})
+    this.dispatchEvent({ eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_ADDED }, {track, segment});
   }
   protected async drop({
     x,
@@ -819,6 +819,7 @@ export abstract class Tracks  extends EventHelper{
     }
     return null
   }
+  // deprecated
   getSegmentById(segmentId: string){
     const tracks = this.getTracks()
     for(let track of tracks){
@@ -830,6 +831,7 @@ export abstract class Tracks  extends EventHelper{
     }
     return null
   }
+  // deprecated
   // 通过 segmentId 和 trackId 获取
   getSegmentOnTrack(segmentId: string, trackId?: string){
     if(!trackId){
@@ -845,47 +847,17 @@ export abstract class Tracks  extends EventHelper{
     }
     return segment
   }
-  getKeyframes(segment: HTMLElement){
-    return Array.from(segment.querySelectorAll('.segment-keyframe')) as HTMLElement[]
+  addKeyframe(segmentId: string, frame: number){
+    this.getVirtualSegmentById(segmentId)?.addKeyframe(frame);
   }
-  // 添加关键帧 todo: 关键帧放至 Segment 类内处理
-  addKeyFrame(segmentId: string, trackId: string, frame: number){
-    if(!this.timeline){
-      return
-    }
-    const segment = this.getSegmentOnTrack(segmentId, trackId);
-    if(!segment){
-      return
-    }
-    const frameWidth = this.timeline?.frameWidth ?? 0;
-    // const [framestart] = getFrameRange(segment);
-    const keyframeDom = createKeyFrame();
-    keyframeDom.dataset.frame = String(frame);
-    keyframeDom.style.left = `${frameWidth * (frame)}px`;
-    segment.appendChild(keyframeDom);
+  deleteKeyframe(segmentId: string, frame: number){
+    this.getVirtualSegmentById(segmentId)?.deleteKeyframe(frame);
   }
-  deleteKeyframe(segmentId: string, trackId: string, frame: number){
-    const segment = this.getSegmentOnTrack(segmentId, trackId);
-    if(!segment){
-      return
-    }
-    const keyframes = this.getKeyframes(segment);
-    const keyframeDom = keyframes.find((keyframe: HTMLElement)=>{
-      return keyframe.dataset.frame === String(frame);
-    })
-    if(keyframeDom){
-      keyframeDom.parentElement?.removeChild(keyframeDom);
-    }
+  deleteAllKeyframe(segmentId: string){
+    this.getVirtualSegmentById(segmentId)?.deleteKeyframeAll()
   }
-  deleteAllKeyframe(segmentId: string, trackId: string){
-    const segment = this.getSegmentOnTrack(segmentId, trackId);
-    if(!segment){
-      return
-    }
-    const keyframes = this.getKeyframes(segment);
-    keyframes.forEach((keyframe: HTMLElement)=>{
-      keyframe.parentElement?.removeChild(keyframe)
-    })
+  deleteKeyframeOutOfRange(segmentId: string){
+    return this.getVirtualSegmentById(segmentId)?.deleteKeyframeOutOfRange()
   }
   select(segmentId: string){
     const virtualSegment = this.getVirtualSegmentById(segmentId);
@@ -942,5 +914,43 @@ export abstract class Tracks  extends EventHelper{
     }
     virtualSegment.setRange(virtualSegment.framestart, virtualSegment.frameend);
     this.addSegment(virtualTrack, virtualSegment);
+  }
+  // 帧位置更新
+  // todo virtual 
+  private syncScaleKeyframes(segment: HTMLElement, frameWidth: number, framestart: number){
+    const keyframes = this.getKeyframes(segment);
+    keyframes.forEach((keyframeDom: HTMLElement)=> {
+      const frame = getDatasetNumberByKey(keyframeDom, 'frame');
+      keyframeDom.style.left = `${frameWidth * (frame - framestart)}px`;
+    })
+  }
+  zoom(){
+    if (!this.scrollContainer || !this.timeline) {
+      return;
+    }
+    const segments = this.getVirtualSegmentAll();
+    segments.forEach( segment => segment.setFrameWidth(this.timeline.frameWidth));
+  }
+  width(){
+    return this.timeline.totalFrames * this.timeline.frameWidth
+  }
+  // 缩放
+  syncScale() {
+    
+    // const segments: HTMLElement[] = Array.from(
+    //   this.scrollContainer.querySelectorAll(".segment")
+    // );
+    // const frameWidth = this.timeline?.frameWidth;
+    // segments.forEach((dom: HTMLElement) => {
+    //   if (!dom.dataset.framestart || !dom.dataset.frameend || !this.timeline) {
+    //     return;
+    //   }
+    //   const framestart = parseFloat(dom.dataset.framestart);
+    //   const frameend = parseFloat(dom.dataset.frameend);
+    //   const left = framestart * frameWidth;
+    //   dom.style.left = `${left}px`;
+    //   dom.style.width = `${frameWidth * (frameend - framestart)}px`;
+    //   this.syncScaleKeyframes(dom, frameWidth, framestart);
+    // });
   }
 }
