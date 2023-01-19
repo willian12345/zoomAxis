@@ -6,7 +6,6 @@ import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/cursor
 import { TRACKS_EVENT_CALLBACK_TYPES, DropableArgs } from "../../../src/js/trackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
 import { SegmentTracks } from "../../../src/js/SegmentTracks";
-import { SegmentTracksOut } from "../../../src/js/SegmentTracksOut";
 
 let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;
@@ -14,6 +13,7 @@ let segmentTracks: SegmentTracks;
 let segmentTracksOut: SegmentTracksOut;
 let stageWidth = ref(920);
 const scrollContentWidth = ref(920);
+let trackWidth = ref(920);
 const scrollContainerRef = ref<HTMLElement | null>(null);
 const cursorRef = ref<InstanceType<typeof Cursor> | null>(null);
 const scrollContentRef = ref<HTMLElement | null>(null);
@@ -36,11 +36,16 @@ const zoomIn = () => {
 const zoomOut = () => {
   zoomRatio -= 0.1;
 };
+const syncTrackWidth = () => {
+  const trackItemWidth = segmentTracks.width() 
+  trackWidth.value = trackItemWidth < stageWidth.value ? stageWidth.value : trackItemWidth;
+}
 const syncByZoom = (zoom: number) => {
   // 根据缩放比较，减小滚动宽度
   if (zoom) {
     timeline?.zoom(zoom);
-    segmentTracks?.syncScale();
+    segmentTracks?.zoom();
+    syncTrackWidth();
     // 根据帧数变更游标位置
     if (trackCursor) {
       trackCursor.sync();
@@ -99,6 +104,7 @@ const initApp = () => {
   const scrollContent: HTMLElement = scrollContentRef.value;
   stageWidth.value = scrollContainer.getBoundingClientRect().width;
   scrollContentWidth.value = stageWidth.value;
+  trackWidth.value = stageWidth.value;
 
   // 初始化时间轴
   timeline = new TimelineAxis({
@@ -122,26 +128,16 @@ const initApp = () => {
   );
 
   // 初始化轨道
-  segmentTracks = new SegmentTracks({ trackCursor, scrollContainer, timeline });
-  segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
-    addTrackWidth(trackCursor);
-  });
-
-  // 初始化轨道外可拖 segment 片断
-  segmentTracksOut = new SegmentTracksOut({
+  segmentTracks = new SegmentTracks({
     trackCursor,
     scrollContainer,
-    segmentDelegete: segmentItemList,
     timeline,
+    segmentDelegate: segmentItemList,
   });
-  segmentTracksOut.addEventListener(
-    TRACKS_EVENT_CALLBACK_TYPES.DRAG_END,
-    (a,b,c) => {
-      setTimeout(() => {
-        addTrackWidth(trackCursor);
-      }, 0);
-    }
-  );
+  segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
+    // addTrackWidth(trackCursor);
+  });
+
 };
 
 onMounted(() => {
@@ -155,11 +151,11 @@ onUnmounted(()=> {
 <template>
   <div class="wrapper">
     <div class="segment-list" ref="segmentItemListRef">
-      <div class="segment-item">拖我</div>
-      <div class="segment-item">拖我</div>
-      <div class="segment-item">拖我</div>
-      <div class="segment-item">拖我</div>
-      <div class="segment-item segment-item-stretch">
+      <div class="segment-item" data-segment-type="0">拖我</div>
+      <div class="segment-item" data-segment-type="0">拖我</div>
+      <div class="segment-item" data-segment-type="0">拖我</div>
+      <div class="segment-item" data-segment-type="0">拖我</div>
+      <div class="segment-item segment-item-stretch" data-segment-type="1" data-track-id="c">
         拖我
         <em>(伸缩轨道)</em>
       </div>
@@ -183,39 +179,18 @@ onUnmounted(()=> {
           ref="scrollContentRef"
           :style="{ width: `${scrollContentWidth}px` }"
         >
-          <!-- :style="{ width: `${stageWidth}px` }" -->
           <div
             class="track-list"
             ref="trackListRef"
-            :style="{ width: `${scrollContentWidth}px` }"
+            :style="{ width: `${trackWidth}px` }"
           >
-            <div class="track">
-              <div class="track-placeholder">
-                <!-- <div class="segment-placeholder"></div> -->
-              </div>
-              <!-- <div
-                class="segment segment-action"
-                data-width="164"
-                data-left="0"
-                :style="{ width: `164px`, left: '0px' }"
-              ></div>
-              <div
-                class="segment segment-action"
-                data-width="100"
-                data-left="300"
-                :style="{ width: `100px`, left: '300px' }"
-              ></div>
-              <div
-                class="segment segment-action"
-                data-width="60"
-                data-left="400"
-                :style="{ width: `60px`, left: '400px' }"
-              ></div> -->
-            </div>
-            <div class="track">
+            <div class="track" data-track-id="a" data-track-type="0">
               <div class="track-placeholder"></div>
             </div>
-            <div class="track track-stretch">
+            <div class="track" data-track-id="b" data-track-type="0">
+              <div class="track-placeholder"></div>
+            </div>
+            <div class="track track-stretch" data-track-id="c" data-track-type="1">
               <div class="track-placeholder"></div>
             </div>
           </div>

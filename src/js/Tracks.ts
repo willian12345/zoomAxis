@@ -39,12 +39,6 @@ const DEFAULT_SEGMENT_FRAMES = 150
 export abstract class Tracks  extends EventHelper{
   static DEFAULT_SEGMENT_FRAMES = DEFAULT_SEGMENT_FRAMES
   abstract destroy(): void;
-  protected segmentsSlidedCallback: Set<TracksEventCallback> | null = null;
-  protected segmentsSlideEndCallback: Set<TracksEventCallback> | null = null;
-  protected segmentDropEffectCallback: Set<TracksEventCallback> | null = null;
-  protected segmentSelectedCallback: Set<TracksEventCallback> | null = null;
-  protected segmentDeletedCallback: Set<TracksEventCallback> | null = null;
-  protected segmentAddedCallback: Set<TracksEventCallback> | null = null;
   protected scrollContainer: HTMLElement = {} as HTMLElement;
   protected dragoverClass = "dragover";
   protected dragoverErrorClass = "dragover-error";
@@ -133,12 +127,9 @@ export abstract class Tracks  extends EventHelper{
       }
     }
     virtualSegment?.parentTrack?.removeSegment(virtualSegment);
-    this.segmentDeletedCallback?.forEach((cb) => {
-      cb({
-        segment: virtualSegment,
-        eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_DELETED,
-      });
-    });
+    this.dispatchEvent({eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_DELETED}, {
+      segment: virtualSegment,
+    })
     return result
   }
   removeActivedSegment(event: KeyboardEvent) {
@@ -645,7 +636,6 @@ export abstract class Tracks  extends EventHelper{
     const virtualTrack = this.getVirtualTrack(track.dataset.trackId ?? '');
     
     const stretchTrack = this.isStretchTrack(track);
-
     // 如果是伸展轨道
     if (stretchTrack) {
       isCopySegment && this.dropToStretchTrack(track, virtualSegment, framestart);
@@ -916,14 +906,6 @@ export abstract class Tracks  extends EventHelper{
     this.addSegment(virtualTrack, virtualSegment);
   }
   // 帧位置更新
-  // todo virtual 
-  private syncScaleKeyframes(segment: HTMLElement, frameWidth: number, framestart: number){
-    const keyframes = this.getKeyframes(segment);
-    keyframes.forEach((keyframeDom: HTMLElement)=> {
-      const frame = getDatasetNumberByKey(keyframeDom, 'frame');
-      keyframeDom.style.left = `${frameWidth * (frame - framestart)}px`;
-    })
-  }
   zoom(){
     if (!this.scrollContainer || !this.timeline) {
       return;
@@ -933,24 +915,5 @@ export abstract class Tracks  extends EventHelper{
   }
   width(){
     return this.timeline.totalFrames * this.timeline.frameWidth
-  }
-  // 缩放
-  syncScale() {
-    
-    // const segments: HTMLElement[] = Array.from(
-    //   this.scrollContainer.querySelectorAll(".segment")
-    // );
-    // const frameWidth = this.timeline?.frameWidth;
-    // segments.forEach((dom: HTMLElement) => {
-    //   if (!dom.dataset.framestart || !dom.dataset.frameend || !this.timeline) {
-    //     return;
-    //   }
-    //   const framestart = parseFloat(dom.dataset.framestart);
-    //   const frameend = parseFloat(dom.dataset.frameend);
-    //   const left = framestart * frameWidth;
-    //   dom.style.left = `${left}px`;
-    //   dom.style.width = `${frameWidth * (frameend - framestart)}px`;
-    //   this.syncScaleKeyframes(dom, frameWidth, framestart);
-    // });
   }
 }
