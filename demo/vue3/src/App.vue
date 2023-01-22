@@ -31,9 +31,17 @@ const handleScroll = (e: UIEvent) => {
 let zoomRatio = 1;
 
 const zoomIn = () => {
+  if (zoomRatio >= 1.4) {
+    zoomRatio = 1.4;
+    return;
+  }
   zoomRatio += 0.1;
 };
 const zoomOut = () => {
+  if (zoomRatio <= 0.1) {
+    zoomRatio = 0.1
+    return
+  }
   zoomRatio -= 0.1;
 };
 const syncTrackWidth = () => {
@@ -56,9 +64,6 @@ const syncByZoom = (zoom: number) => {
 const handleWheel = (e: WheelEvent) => {
   e.preventDefault();
   e.deltaY > 0 ? zoomOut() : zoomIn();
-  if (zoomRatio <= 0.1 || zoomRatio >= 1.4) {
-    return;
-  }
   syncByZoom(zoomRatio)
 };
 

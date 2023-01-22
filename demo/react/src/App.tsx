@@ -26,26 +26,24 @@ const handleKeyDown = (e: KeyboardEvent) => {
   }
   window.addEventListener('keyup', handleKeyUp);
 }
-
+let zoomRatio = 1;
 function App() {
   const cursorRef = useRef(null);
   const segmentItemListRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const scrollContentRef = useRef(null);
-  let zoomRatio = 1;
   const [stageWidth, setStageWidth] = useState(920);
   const [trackScrollWidth, setTrackScrollWidth] = useState(920);
   const [scrollContentWidth, setScrollContentWidth] = useState(920);
   const syncTrackWidth = () => {
     const trackItemWidth = segmentTracks.width()
     const w = (trackItemWidth < stageWidth) ? stageWidth : trackItemWidth;
-    console.log(zoomRatio, trackItemWidth, w)
     setTrackScrollWidth(w);
   }
   const syncByZoom = (zoom: number) => {
     // 根据缩放比较，减小滚动宽度
     if (zoom) {
-      // timeline?.zoom(zoom);
+      timeline?.zoom(zoom);
       segmentTracks?.zoom();
       syncTrackWidth();
       // 根据帧数变更游标位置
@@ -62,10 +60,19 @@ function App() {
     const dom = e.target as HTMLElement;
     timeline?.scrollLeft(-dom.scrollLeft);
   };
+  // 标尺放大(镜头拉近)
   const zoomIn = () => {
+    if (zoomRatio >= 1.4) {
+      zoomRatio = 1.4;
+      return;
+    }
     zoomRatio += 0.1;
   };
   const zoomOut = () => {
+    if (zoomRatio <= 0.1) {
+      zoomRatio = 0.1
+      return
+    }
     zoomRatio -= 0.1;
   };
   // 增加轨道内容宽度
@@ -82,12 +89,8 @@ function App() {
   
   // 滚轮缩放
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    // console.log(isCtrlDown);
     // e.preventDefault();
     e.deltaY > 0 ? zoomOut() : zoomIn();
-    if (zoomRatio <= 0.1 || zoomRatio >= 1.4) {
-      return;
-    }
     syncByZoom(zoomRatio);
   };
 
@@ -195,9 +198,10 @@ function App() {
               className="scroll-content"
               ref={scrollContentRef}
               style={{ width: `${scrollContentWidth}px` }}
-            >
+              >
               <div
                 className="track-list"
+                style={{ width: `${trackScrollWidth}px` }}
               >
                 <div className="track" data-track-id="a" data-track-type="0">
                   <div className="track-placeholder"></div>
