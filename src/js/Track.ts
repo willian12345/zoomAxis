@@ -39,7 +39,7 @@ export class Track {
   }
   removeSegment(segment: Segment){
     this.segments.delete(segment.segmentId);
-    this.dom.removeChild(segment.dom);
+    segment.dom.parentElement?.removeChild(segment.dom);
   }
   // 获取非 segmentId 之外的所有 segment
   getOtherSegments(segmentId: string){

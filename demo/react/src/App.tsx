@@ -145,14 +145,16 @@ function App() {
       timeline,
       segmentDelegate: segmentItemList,
     });
-    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, (segmentInfo) => {
-      // console.log(segmentInfo);
-      // addTrackWidth(trackCursor);
+    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, (event) => {
+      console.log(event, 'dragend');
+    })
+    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_ADDED, (event) => {
+      console.log(event, 'added');
+    })
+    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT, (event) => {
+      console.log('DROP_EFFECT', event);
     });
-    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT, (segments) => {
-      console.log('DROP_EFFECT', segments);
-    });
-    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED, (segments) => {
+    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED, (event) => {
       // console.log(segments);
     });
   };

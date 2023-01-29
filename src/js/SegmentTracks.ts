@@ -1,7 +1,7 @@
 import { Tracks } from "./Tracks";
 import { Segment } from "./Segment";
-import { findParentElementByClassName, getLeftValue, getDatasetNumberByKey, findEndestSegmentOnTrack, getFrameRange, createSegmentToTrack, isContainSplitFromComma} from "./trackUtils";
-import { SegmentTracksArgs, MouseHandle, TRACKS_EVENT_CALLBACK_TYPES, SegmentBasicInfo, SegmentType } from "./TrackType";
+import { findParentElementByClassName, getLeftValue } from "./trackUtils";
+import { SegmentTracksArgs, MouseHandle, TRACKS_EVENT_CALLBACK_TYPES } from "./TrackType";
 import { CursorPointer } from "./CursorPointer";
 interface MoveFunctionArgs {
   frameWidth: number;
@@ -184,7 +184,6 @@ export class SegmentTracks extends Tracks {
 
     const segments: Segment[] = [virtualSegment];
     // 伸缩轨道，右侧 segment framestart 设为当前调整的 segment 的 frameend
-    const trackDom = findParentElementByClassName(segment, 'track');
     const track = virtualSegment.parentTrack;
     if(track){
       const segmentRightSide = this.getRightSideSegmentsInTrack(track, segmentleftOrigin)[0];

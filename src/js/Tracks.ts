@@ -1,13 +1,12 @@
 import {
   TRACKS_EVENT_CALLBACK_TYPES,
-  TracksEventCallback,
   DeleteableCheck,
   SegmentType,
   DropableCheck,
   TracksArgs,
   DragingArgs,
   DropArgs,
-  SegmentBasicInfo,
+  TracksEvent,
 } from "./TrackType";
 
 import { CursorPointer } from "./CursorPointer";
@@ -31,10 +30,15 @@ import {
   collisionCheckFrame,
   getFrameRange,
   findEndestSegmentOnTrack,
-  getDatasetNumberByKey,
 } from "./trackUtils";
 
 const DEFAULT_SEGMENT_FRAMES = 150
+export interface Tracks {
+  addEventListener<EventType extends TRACKS_EVENT_CALLBACK_TYPES>(
+    eventType: EventType,
+    callback: TracksEvent,
+  ):void
+}
 // 轨道
 export abstract class Tracks  extends EventHelper{
   static DEFAULT_SEGMENT_FRAMES = DEFAULT_SEGMENT_FRAMES
@@ -560,9 +564,6 @@ export abstract class Tracks  extends EventHelper{
 
     return collisionY;
   }
-  private updateSliderHandler(track: Track) {
-    
-  }
   protected triggerSelected(segment: Segment){
     this.dispatchEvent({eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_SELECTED}, {
       segment,
@@ -582,6 +583,10 @@ export abstract class Tracks  extends EventHelper{
   }
   protected addSegment(track?:Track|null, segment?: Segment|null){
     if(!track || !segment) return;
+    // 如果是从别的轨道拖过来的，需要从原先轨道内删除
+    if(segment.parentTrack?.trackId !== undefined && segment.parentTrack?.trackId !== track.trackId){
+      segment.parentTrack?.removeSegment(segment)
+    }
     const isAdded = track.segments.get(segment.segmentId);
     // 如果添加过了，则无需再添加
     if(isAdded){
@@ -640,10 +645,8 @@ export abstract class Tracks  extends EventHelper{
     if (stretchTrack) {
       isCopySegment && this.dropToStretchTrack(track, virtualSegment, framestart);
       this.addSegment(virtualTrack, virtualSegment);
-      virtualTrack && this.triggerDragEnd(virtualSegment, virtualTrack);
       return;
     }
-    this.addSegment(virtualTrack, virtualSegment);
     // 拖动复制入轨时，需要再次判断放入轨道成功后帧数范围是不是产生碰撞
     if (isCopySegment && collisionCheckFrame(dom, track)) {
       this.deleteSegment(trackId, dom.dataset.segmentId ?? "")
@@ -661,8 +664,11 @@ export abstract class Tracks  extends EventHelper{
       const [fs, fd] = getFrameRange(dom);
       const frameend = framestart + (fd - fs);
       virtualSegment.setRange(framestart, frameend);
+      if(!isCopySegment && virtualTrack){
+        this.triggerDragEnd(virtualSegment, virtualTrack);
+      }
+      this.addSegment(virtualTrack, virtualSegment);
     }
-    virtualTrack && this.triggerDragEnd(virtualSegment, virtualTrack);
   }
   dragStart(
     e: MouseEvent,
