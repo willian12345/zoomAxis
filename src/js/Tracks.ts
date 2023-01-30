@@ -455,7 +455,6 @@ export abstract class Tracks  extends EventHelper{
     currentSegment: Segment,
     placeholder: HTMLElement,
     collisionTrack: HTMLElement,
-    isdrop?: boolean
   ) {
     if (isCopySegment) {
       return;
@@ -498,9 +497,7 @@ export abstract class Tracks  extends EventHelper{
         this.frameend = segmentFramestart + this.frames;
       }
     }
-    if (isdrop) {
-      currentSegment.setRange(this.framestart, this.frameend);
-    }
+    currentSegment.setRange(this.framestart, this.frameend);
   }
   private draging({
     e,
@@ -534,6 +531,7 @@ export abstract class Tracks  extends EventHelper{
       const isStretchTrack = this.isStretchTrack(collisionTrack);
       if (isStretchTrack) {
         const virtualSegment = this.getVirtualSegmentById(segment.dataset.segmentId ?? '')
+        // 轨道内拖动实时变更 segment 信息
         virtualSegment && this.collisionXstretch(
           isCopySegment,
           virtualSegment,
@@ -590,6 +588,7 @@ export abstract class Tracks  extends EventHelper{
     const isAdded = track.segments.get(segment.segmentId);
     // 如果添加过了，则无需再添加
     if(isAdded){
+      this.triggerDragEnd(segment, track);
       return
     }
     track.addSegment(segment);
@@ -664,9 +663,6 @@ export abstract class Tracks  extends EventHelper{
       const [fs, fd] = getFrameRange(dom);
       const frameend = framestart + (fd - fs);
       virtualSegment.setRange(framestart, frameend);
-      if(!isCopySegment && virtualTrack){
-        this.triggerDragEnd(virtualSegment, virtualTrack);
-      }
       this.addSegment(virtualTrack, virtualSegment);
     }
   }
