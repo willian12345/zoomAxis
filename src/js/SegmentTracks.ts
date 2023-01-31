@@ -269,6 +269,7 @@ export class SegmentTracks extends Tracks {
     if(!endFrame){
       return
     }
+    this.lastEffectSegments = []
     this.virtualTracks.forEach( track => {
       if(track.isStretchTrack){
         const segment  = track.getLastSegment();
@@ -278,11 +279,15 @@ export class SegmentTracks extends Tracks {
           if(frameend < endFrame){
             segment.setRange(framestart, endFrame);
             segment.resize();
-            this.triggerSlideEvent([segment]);
+            this.lastEffectSegments.push(segment)
           }
         }
       }
     })
+    // 如果有影响到的 segment 需要触发回调
+    if(this.lastEffectSegments.length){
+      this.triggerSlideEndEvent()
+    }
   }
   override destroy(): void {
     this?.scrollContainer?.removeEventListener("mousedown", this.mouseDownHandle);

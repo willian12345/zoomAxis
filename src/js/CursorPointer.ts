@@ -99,7 +99,7 @@ export class CursorPointer extends EventHelper{
       clientX -
       scrollContentDom.getBoundingClientRect().left +
       scrollContentDom.scrollLeft;
-    const rightBoundary = scrollContentDom.offsetWidth;
+    const rightBoundary = scrollContentDom.scrollLeft + scrollContentDom.scrollWidth;
     const leftBoundary = 0;
     if (x < leftBoundary) {
       x = leftBoundary;
@@ -113,6 +113,7 @@ export class CursorPointer extends EventHelper{
       return;
     }
     let frame = Math.round(x / timelineAxis.frameWidth);
+    console.log(frame, timelineAxis.totalFrames, 'cursor')
     if(frame > timelineAxis.totalFrames){
       frame = timelineAxis.totalFrames;
     }
