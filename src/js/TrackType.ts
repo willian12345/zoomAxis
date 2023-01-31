@@ -107,6 +107,7 @@ export type SegmentConstructInfo = {
   height?: number|string,
   left?: number|string,
   extra?:any,
+  contentRender?: string | HTMLElement
 }
 // Keyframe 构造参数
 export type KeyframeConstructInfo = {

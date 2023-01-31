@@ -6,7 +6,6 @@
  * </div>
  */
 import { SegmentConstructInfo, SegmentType } from "./TrackType";
-import { createNodeWidthClass } from './trackUtils'
 import { Track } from "./Track";
 import { Keyframe } from "./Keyframe";
 
@@ -31,12 +30,15 @@ export class Segment {
   leftHandler = {} as HTMLElement
   rightHandler = {} as HTMLElement
   keyframes = [] as Keyframe[]
+  // 内容渲染器，可传自定义的渲染内容，用于个性化
+  contentRender: string|HTMLElement|null = null
   constructor(args: SegmentConstructInfo) {
     this.trackId = args.trackId;
     this.segmentId = args.segmentId ?? this.createSegmentId();
     this.framestart = args.framestart;
     this.frameend = args.frameend;
     this.frameWidth = args.frameWidth;
+    
     if (args.width !== undefined) {
       this.width = args.width;
     }
@@ -45,6 +47,10 @@ export class Segment {
     }
     if (args.left !== undefined) {
       this.left = args.left;
+    }
+    // 内容渲染器
+    if(args.contentRender){
+      this.contentRender = args.contentRender;
     }
     this.framestart = args.framestart;
     this.framestart = args.framestart;
@@ -61,8 +67,11 @@ export class Segment {
   private createSegmentId() {
     return String(segmentIdIndex++);
   }
+
   private createDom() {
     const div = document.createElement("div");
+    const defaultContentRender = `<div class="segment-name">${this.name}</div>`
+    const contentRender = this.contentRender ? this.contentRender : defaultContentRender
     div.innerHTML = `
         <div 
           class="${this.segmentClass}" 
@@ -74,7 +83,7 @@ export class Segment {
           style="width: ${this.width}; height: ${this.height}; left: ${this.left};">
           <div class="segment-handle segment-handle-left"></div>
           <div class="segment-handle segment-handle-right"></div>
-          <div class="segment-name">${this.name}</div>
+          ${contentRender}
         </div>
       `;
     return div.firstElementChild as HTMLElement;
