@@ -1,5 +1,4 @@
 import { ZoomAxis, ZoomAxisArgs } from "./ZoomAxis";
-
 export interface TimelineAxisArgs extends ZoomAxisArgs{
   totalFrames: number;
   frameRate?: number;
@@ -10,9 +9,19 @@ export enum TIMELINE_AXIS_EVENT_TYPE {
   PLAY_END,
   STOP,
 }
-export type TimelineAxisCallbackArgs = {currentFrame: number}
+
+export interface TimelineAxisCallback{
+  (e: {currentFrame: number}): any
+}
+export interface TimelineAxis {
+  addEventListener<EventType extends TIMELINE_AXIS_EVENT_TYPE>(
+    eventType: EventType,
+    callback: TimelineAxisCallback
+  ):void
+}
+
 const FRAME_RATE = 30;
-export class TimelineAxis extends ZoomAxis{
+export class TimelineAxis extends ZoomAxis {
   private fps = 0;
   private preTimestamp = 0;
   private paused = true; 

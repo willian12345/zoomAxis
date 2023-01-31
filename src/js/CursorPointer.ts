@@ -1,4 +1,5 @@
 import { TimelineAxis } from "./TimelineAxis";
+import { EventHelper } from './EventHelper';
 
 export function getTranslateXY(element: HTMLElement) {
   const style = window.getComputedStyle(element);
@@ -12,10 +13,17 @@ export enum CURSOR_POINTER_EVENT_TYPE {
   UPDATE,
   DRAG_END,
 }
-interface EventCallbackCursorPointer {
-  (currentFrame: number, cursorX: number): any;
+export interface CursorEvent{
+  (e: {frame:number, left: number}): any
 }
-export class CursorPointer {
+export interface CursorPointer {
+  addEventListener<EventType extends CURSOR_POINTER_EVENT_TYPE>(
+    eventType: EventType,
+    callback: CursorEvent
+  ):void
+}
+// todo: 剥离掉 timeline 
+export class CursorPointer extends EventHelper{
   private _enable = true;
   cursorEl: HTMLElement | null = null;
   scrollContentDom: HTMLElement | null = null;
@@ -28,15 +36,12 @@ export class CursorPointer {
   set enable(bool) {
     this._enable = bool;
   }
-  private cursorUpdateCallbackSet: Set<EventCallbackCursorPointer> | null =
-    null;
-  private cursorDragEndCallbackSet: Set<EventCallbackCursorPointer> | null =
-    null;
   constructor(
     scrollContentDom: HTMLElement,
     cursorEl: HTMLElement,
     timeline: TimelineAxis
   ) {
+    super();
     if (!scrollContentDom) {
       return;
     }
@@ -85,13 +90,9 @@ export class CursorPointer {
     });
   }
   private triggerDragEnd(timelineAxis: TimelineAxis, x){
-    const currentFrame = Math.round(x / timelineAxis.frameWidth);
-    const left = timelineAxis.frameWidth * currentFrame;
-    if(this.cursorDragEndCallbackSet?.size){
-      this.cursorDragEndCallbackSet.forEach((cb) => {
-        cb(currentFrame, left);
-      });
-    }
+    const frame = Math.round(x / timelineAxis.frameWidth);
+    const left = timelineAxis.frameWidth * frame;
+    this.dispatchEvent({ eventType: CURSOR_POINTER_EVENT_TYPE.DRAG_END }, {frame, left});
   }
   private getX(clientX: number, scrollContentDom: HTMLElement) {
     let x =
@@ -111,41 +112,14 @@ export class CursorPointer {
     if (!this.cursorEl) {
       return;
     }
-    let currentFrame = Math.round(x / timelineAxis.frameWidth);
-    if(currentFrame > timelineAxis.totalFrames){
-      currentFrame = timelineAxis.totalFrames;
+    let frame = Math.round(x / timelineAxis.frameWidth);
+    if(frame > timelineAxis.totalFrames){
+      frame = timelineAxis.totalFrames;
     }
-    const left = timelineAxis.frameWidth * currentFrame;
+    const left = timelineAxis.frameWidth * frame;
     // 游标拖动的 left 值根据当前帧与每帧所占宽度计算
     this.cursorEl.style.transform = `translateX(${left}px)`;
-    if (this.cursorUpdateCallbackSet?.size) {
-      this.cursorUpdateCallbackSet.forEach((cb) => {
-        if (!timelineAxis) {
-          return;
-        }
-
-        cb(currentFrame, left);
-      });
-    }
-  }
-  addEventListener(
-    eventType: CURSOR_POINTER_EVENT_TYPE,
-    cb: EventCallbackCursorPointer
-  ) {
-    if(eventType === CURSOR_POINTER_EVENT_TYPE.UPDATE){
-      if (!this.cursorUpdateCallbackSet) {
-        this.cursorUpdateCallbackSet = new Set();
-      }
-      this.cursorUpdateCallbackSet.add(cb);
-    }
-    if(eventType === CURSOR_POINTER_EVENT_TYPE.DRAG_END){
-      if (!this.cursorDragEndCallbackSet) {
-        this.cursorDragEndCallbackSet = new Set();
-      }
-      this.cursorDragEndCallbackSet.add(cb);
-    }
-    
-    return this;
+    this.dispatchEvent({ eventType: CURSOR_POINTER_EVENT_TYPE.UPDATE }, {frame, left});
   }
   sync() {
     if (!this.timeline || !this.cursorEl) {

@@ -12,7 +12,7 @@ interface MoveFunctionArgs {
 }
 
 // 轨道内 segment 拖拽
-// todo 抽取至 Track 类内部
+// todo 抽取 Track 类
 export class SegmentTracks extends Tracks {
   scrollContainer: HTMLElement = {} as HTMLElement;
   scrollContainerRect: DOMRect = {} as DOMRect;
