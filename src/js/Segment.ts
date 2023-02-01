@@ -94,6 +94,9 @@ export class Segment {
   private setHandleEnableStatus(dom: HTMLElement, enable: boolean){
     dom.style.pointerEvents = enable ? 'initial' : 'none';
   }
+  getBoundingClientRect(){
+    return this.dom.getBoundingClientRect();
+  }
   // 设置帧范围
   setRange(framestart: number, frameend: number) {
     this.framestart = framestart;

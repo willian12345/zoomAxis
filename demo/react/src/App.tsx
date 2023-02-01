@@ -158,6 +158,9 @@ function App() {
       // console.log(segments);
     });
   };
+  const add = (trackId: string) => {
+    segmentTracks?.addSegmentWithFramestart(trackId, 1, timeline?.currentFrame ?? 0);
+  }
   window.addEventListener('keydown', handleKeyDown);
   useEffect(() => {
     initApp();
@@ -167,7 +170,6 @@ function App() {
   }, []);
   return (
     <div className="App">
-      <input type="text" />
       <div className="wrapper">
         <div className="segment-list" ref={segmentItemListRef}>
           <div className="segment-item" data-segment-type="0">拖我</div>
@@ -177,6 +179,7 @@ function App() {
           <div className="segment-item segment-item-stretch" data-segment-type="1" data-track-id="c">
             拖我
             <em>(伸缩轨道)</em>
+            <button onClick={()=> add('c')}> add </button>
           </div>
         </div>
         <div className="timeline-container" onWheel={(e) => handleWheel(e)}>
@@ -211,7 +214,7 @@ function App() {
                 <div className="track" data-track-id="b" data-track-type="0">
                   <div className="track-placeholder"></div>
                 </div>
-                <div className="track track-stretch" data-track-id="c" data-track-type="1">
+                <div className="track track-stretch track-flexible" data-track-id="c" data-track-type="1">
                   <div className="track-placeholder"></div>
                 </div>
               </div>

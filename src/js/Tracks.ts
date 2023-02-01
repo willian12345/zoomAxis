@@ -12,6 +12,7 @@ import {
 import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
 import { Track } from "./Track";
+// import { TrackFlex } from "./TrackFlex";
 import { Segment } from "./Segment";
 import { EventHelper } from './EventHelper';
 
@@ -93,6 +94,12 @@ export abstract class Tracks  extends EventHelper{
   private initTracks() {
     const arr = Array.from(this.scrollContainer.querySelectorAll('.track')) as HTMLElement[];
     this.virtualTracks = arr.map( trackDom => {
+      // const isFlexible = trackDom.classList.contains('track-flexible')
+      // if(isFlexible){
+      //   return new TrackFlex({
+      //     dom: trackDom
+      //   })
+      // }
       return new Track({
         dom: trackDom
       })

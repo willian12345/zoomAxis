@@ -10,7 +10,6 @@ import { SegmentTracks } from "../../../src/js/SegmentTracks";
 let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;
 let segmentTracks: SegmentTracks;
-let segmentTracksOut: SegmentTracksOut;
 let stageWidth = ref(920);
 const scrollContentWidth = ref(920);
 let trackWidth = ref(920);
@@ -125,10 +124,10 @@ const initApp = () => {
   // 初始化游标
   trackCursor = new CursorPointer(scrollContent, cursor, timeline);
   trackCursor.addEventListener(
-    CURSOR_POINTER_EVENT_TYPE.CURSOR_UPDATE,
-    (currentFrame) => {
-      console.log(currentFrame);
-      timeline?.setCurrentFrame(currentFrame);
+    CURSOR_POINTER_EVENT_TYPE.UPDATE,
+    ({frame}) => {
+      console.log(frame);
+      timeline?.setCurrentFrame(frame);
     }
   );
 
