@@ -56,7 +56,7 @@ export class SegmentTracks extends Tracks {
     if (this?.timeline?.playing) {
       return;
     }
-    const target = e.target as HTMLElement;
+    let target = e.target as HTMLElement | null;
     if (!target) {
       return;
     }
@@ -71,8 +71,11 @@ export class SegmentTracks extends Tracks {
       this.dragHandleStart(e, target, this.rightHandleMove);
       return
     }
-
-    if (target.classList.contains("segment") && this.trackCursor && this.scrollContainer) {
+    // 找到事件对应的 segment 元素，如果当前不是，则冒泡往上找
+    if(!target.classList.contains("segment")){
+      target = findParentElementByClassName(target, 'segment');
+    }
+    if (target && this.trackCursor && this.scrollContainer) {
       this.segmentDragStart(e, this.trackCursor, this.scrollContainer, target);
     }
   };

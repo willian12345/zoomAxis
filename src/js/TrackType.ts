@@ -10,6 +10,7 @@ export enum SegmentType {
   SCENE,
   CAMERA,
   EFFECT,
+  BGM,
 }
 export enum TRACKS_EVENT_CALLBACK_TYPES {
   DRAG_END, // 拖动结束事件

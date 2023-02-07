@@ -1,10 +1,13 @@
 // 创建 segment
 import { SegmentBasicInfo, SegmentType, SegmentConstructInfo } from './TrackType'
 import { Segment } from './Segment';
+import { getRendererBySegmentType } from './SegmentRenderers'
 const CLOSE_ENOUPH_DISTANCE_Y = 10; // 距离 y 是否够近
 const CLOSE_ENOUPH_SEGMENT_X = 60; // 距离 segment x是否够
 
+
 export const createSegment = (segmentInfo: SegmentConstructInfo ) => {
+  segmentInfo.contentRender = getRendererBySegmentType(segmentInfo);
   const segment = new Segment(segmentInfo);
   return segment;
 };
