@@ -78,6 +78,7 @@ export class CursorPointer extends EventHelper{
 
     // 滚动区域 mouseup 移动游标
     scrollContentDom.addEventListener("click", (e: MouseEvent) => {
+      
       if (!this._enable || this.timeline?.playing) {
         return;
       }
@@ -127,6 +128,7 @@ export class CursorPointer extends EventHelper{
     }
     const left = this.timeline.frameWidth * this.timeline.currentFrame;
     this.cursorEl.style.transform = `translateX(${left}px)`;
+    this.dispatchEvent({ eventType: CURSOR_POINTER_EVENT_TYPE.UPDATE }, {frame:this.timeline.currentFrame, left});
   }
   freeze() {
     this._enable = false;

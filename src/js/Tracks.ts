@@ -102,7 +102,7 @@ export abstract class Tracks  extends EventHelper{
     // 点击轨道外部时清除选中过的 segment 状态
     // Delete 键删除当前选中的 segment
     document.addEventListener("keydown", this.removeActivedSegment.bind(this));
-    this.scrollContainer.addEventListener('mousedown', this.keyframeMousedownHandle);
+    this.scrollContainer.addEventListener('click', this.keyframeMousedownHandle.bind(this));
   }
   keyframeMousedownHandle(e: MouseEvent){
     const target = e.target as HTMLElement;
@@ -114,6 +114,10 @@ export abstract class Tracks  extends EventHelper{
     }
     if(target.classList.contains("segment-keyframe")){
       target.classList.add('actived');
+      e.stopPropagation();
+      this.dispatchEvent({eventType: TRACKS_EVENT_CALLBACK_TYPES.KEYFRAME_CLICK}, {
+        keyframe: target.dataset.frame
+      })
     }
   }
   private async deleteSegment (trackId: string, segmentId: string) {
@@ -881,6 +885,20 @@ export abstract class Tracks  extends EventHelper{
     const segment = createSegment({...segmentConstructInfo, frameWidth: this.timeline.frameWidth});
     segment.setRange(segment.framestart, segment.frameend);
     this.addSegment(virtualTrack, segment);
+  }
+  // 获取轨道结束帧最靠右边的 segment
+  // 注意：有可能最右边的有多个
+  getMaxFrameendSegment(){
+    const segments = this.getVirtualSegmentAll();
+    const result:Segment[] = [];
+    let maxFrameend = 0
+    segments.forEach(segment => {
+      if(segment.frameend >= maxFrameend){
+        result.push(segment);
+        maxFrameend = segment.frameend;
+      }
+    })
+    return result
   }
   getEndestSegmentFrameRange(trackId: string): [number, number]{
     let track = this.getTrackById(trackId);

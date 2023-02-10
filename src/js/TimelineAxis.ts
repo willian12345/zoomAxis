@@ -1,5 +1,5 @@
 import { ZoomAxis, ZoomAxisArgs } from "./ZoomAxis";
-export interface TimelineAxisArgs extends ZoomAxisArgs{
+export interface TimelineAxisArgs extends ZoomAxisArgs {
   totalFrames: number;
   frameRate?: number;
 }
@@ -10,33 +10,43 @@ export enum TIMELINE_AXIS_EVENT_TYPE {
   STOP,
 }
 
-export interface TimelineAxisCallback{
-  (e: {currentFrame: number}): any
+export interface TimelineAxisCallback {
+  (e: { currentFrame: number }): any;
 }
 export interface TimelineAxis {
   addEventListener<EventType extends TIMELINE_AXIS_EVENT_TYPE>(
     eventType: EventType,
     callback: TimelineAxisCallback
-  ):void
+  ): void;
 }
 
 const FRAME_RATE = 30;
 export class TimelineAxis extends ZoomAxis {
   private fps = 0;
   private preTimestamp = 0;
-  private paused = true; 
+  private paused = true;
   private stoped = false;
   playing = false;
   currentFrame = 0; // 当前帧
   totalFrames = 0; // 全部帧数
   frameRate = FRAME_RATE; // 帧频
   // 每一帧所占宽度
-  get frameWidth(){
+  get frameWidth() {
     // 每个标尺宽度/ (帧频 / (标尺周期值/标尺周期值代表的时间秒数))
-    return this.markWidth / (this.frameRate / (this.spacecycle / this.spaceTimeSecond))
+    return (
+      this.markWidth /
+      (this.frameRate / (this.spacecycle / this.spaceTimeSecond))
+    );
   }
-  constructor({ el, totalFrames = 0, totalMarks, frameRate, ratio, ratioMap }: TimelineAxisArgs){
-    super({ el, totalMarks, ratio,  ratioMap });
+  constructor({
+    el,
+    totalFrames = 0,
+    totalMarks,
+    frameRate,
+    ratio,
+    ratioMap,
+  }: TimelineAxisArgs) {
+    super({ el, totalMarks, ratio, ratioMap });
     this.totalFrames = totalFrames;
     this.frameRate = frameRate ?? FRAME_RATE;
     this.setFrameIntervalTime();
@@ -47,7 +57,7 @@ export class TimelineAxis extends ZoomAxis {
     this.fps = 1000 / this.frameRate;
   }
   private enterFrame() {
-    if(this.currentFrame === 0){
+    if (this.currentFrame === 0) {
       // todo: 开始播放回调
     }
     if (this.paused || this.stoped) {
@@ -55,14 +65,20 @@ export class TimelineAxis extends ZoomAxis {
     }
     if (this.currentFrame > this.totalFrames) {
       this.playing = false;
-      this.dispatchEvent({eventType: TIMELINE_AXIS_EVENT_TYPE.PLAY_END}, {currentFrame: this.currentFrame});
+      this.dispatchEvent(
+        { eventType: TIMELINE_AXIS_EVENT_TYPE.PLAY_END },
+        { currentFrame: this.currentFrame }
+      );
       return;
     }
-    const now = + new Date()
-    const interval = now - this.preTimestamp
-    if(interval >= this.fps){
+    const now = +new Date();
+    const interval = now - this.preTimestamp;
+    if (interval >= this.fps) {
       this.preTimestamp = now - (interval % this.fps);
-      this.dispatchEvent({eventType: TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME}, {currentFrame: this.currentFrame});
+      this.dispatchEvent(
+        { eventType: TIMELINE_AXIS_EVENT_TYPE.ENTER_FRAME },
+        { currentFrame: this.currentFrame }
+      );
       this.currentFrame++;
     }
     window.requestAnimationFrame(this.enterFrame.bind(this));
@@ -72,25 +88,32 @@ export class TimelineAxis extends ZoomAxis {
     this.playing = false;
   }
   play(currentFrame?: number) {
-    if(currentFrame != undefined && currentFrame >= 0 && currentFrame <= this.totalFrames){
-      this.currentFrame = currentFrame
+    if (
+      currentFrame != undefined &&
+      currentFrame >= 0 &&
+      currentFrame <= this.totalFrames
+    ) {
+      this.currentFrame = currentFrame;
     }
     this.paused = false;
     this.stoped = false;
     this.enterFrame();
     this.playing = true;
   }
-  stop(){
+  stop() {
     this.currentFrame = 0;
     this.stoped = true;
     this.paused = false;
     this.playing = false;
-    this.dispatchEvent({eventType: TIMELINE_AXIS_EVENT_TYPE.STOP}, {currentFrame: this.currentFrame});
+    this.dispatchEvent(
+      { eventType: TIMELINE_AXIS_EVENT_TYPE.STOP },
+      { currentFrame: this.currentFrame }
+    );
   }
-  setCurrentFrame(currentFrame: number){
-    this.currentFrame = currentFrame
+  setCurrentFrame(currentFrame: number) {
+    this.currentFrame = currentFrame;
   }
-  setTotalFrames(frames: number){
-    this.totalFrames = frames
+  setTotalFrames(frames: number) {
+    this.totalFrames = frames;
   }
 }

@@ -21,6 +21,7 @@ export enum TRACKS_EVENT_CALLBACK_TYPES {
   SEGMENT_SELECTED, // 选中
   SEGMENT_DELETED, // 删除
   SEGMENT_ADDED, // 添加
+  KEYFRAME_CLICK,
 }
 export interface SegmentBasicInfo {
   trackId: string, 

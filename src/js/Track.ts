@@ -20,6 +20,7 @@ export class Track {
   trackClass = ''
   trackPlaceholderClass = ''
   isStretchTrack = false // 是否是伸缩轨道
+  visibility = true
   segments: Map<string, Segment> = new Map() // 轨道内的 segment 
   subTracks: Map<string, Track> = new Map() // 子轨道
   constructor({
@@ -33,33 +34,6 @@ export class Track {
     this.dom = dom;
     this.trackId = dom.dataset.trackId ?? ''
     this.isStretchTrack = dom.classList.contains("track-stretch");
-    this.initEvents();
-  }
-  initEvents(){
-    // 代理 segment 鼠标事件
-    this.dom.addEventListener("mousedown", this.mousedown);
-    this.dom.addEventListener("mouseup", this.mouseup);
-  }
-  mousedown(e: MouseEvent){
-    const target = e.target as HTMLElement;
-    // 右健点击忽略
-    if(e.button === 2){
-      return;
-    }
-    if (!target) {
-      return;
-    }
-    if (!target.classList.contains("segment")) {
-      return;
-    }
-    const segment = target;
-    //: todo
-  }
-  mouseup(e: MouseEvent){
-    //: todo
-  }
-  mousemove(){
-
   }
   addSegment(segment: Segment){
     this.segments.set(segment.segmentId, segment);
@@ -121,5 +95,9 @@ export class Track {
       }
       segment.setHandleEnable(true, true)
     });
+  }
+  setVisibility(visibility: boolean){
+    this.visibility = visibility;
+    this.dom.style.visibility =  this.visibility ?  'visible': 'hidden';
   }
 }
