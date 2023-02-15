@@ -14,7 +14,7 @@ export enum CURSOR_POINTER_EVENT_TYPE {
   DRAG_END,
 }
 export interface CursorEvent{
-  (e: {frame:number, left: number}): any
+  (e: {frame:number, left: number, x: number}): any
 }
 export interface CursorPointer {
   addEventListener<EventType extends CURSOR_POINTER_EVENT_TYPE>(
@@ -120,7 +120,7 @@ export class CursorPointer extends EventHelper{
     const left = timelineAxis.frameWidth * frame;
     // 游标拖动的 left 值根据当前帧与每帧所占宽度计算
     this.cursorEl.style.transform = `translateX(${left}px)`;
-    this.dispatchEvent({ eventType: CURSOR_POINTER_EVENT_TYPE.UPDATE }, {frame, left});
+    this.dispatchEvent({ eventType: CURSOR_POINTER_EVENT_TYPE.UPDATE }, {frame, left, x});
   }
   sync() {
     if (!this.timeline || !this.cursorEl) {
@@ -137,4 +137,7 @@ export class CursorPointer extends EventHelper{
     this._enable = true;
   }
   refresh() {}
+  destroy(){
+    
+  }
 }

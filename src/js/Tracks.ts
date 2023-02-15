@@ -743,6 +743,9 @@ export abstract class Tracks  extends EventHelper{
         dragTrackContainerRect,
         tracks,
       });
+      if(e.clientY > scrollContainerRect.top && e.clientY <= scrollContainerRect.bottom){
+        this.dispatchEvent({eventType: TRACKS_EVENT_CALLBACK_TYPES.DRAGING_OVER}, {pointerEvent: e});
+      }
       // 拖动容器形变
       if (isCopySegment) {
         // 如果是复制，则需要形变成标准轨道内 segment 形状
@@ -888,7 +891,7 @@ export abstract class Tracks  extends EventHelper{
   }
   // 获取轨道结束帧最靠右边的 segment
   // 注意：有可能最右边的有多个
-  getMaxFrameendSegment(){
+  getMaxFrameendSegments(){
     const segments = this.getVirtualSegmentAll();
     const result:Segment[] = [];
     let maxFrameend = 0

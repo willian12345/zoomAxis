@@ -30,6 +30,7 @@ export class TimelineAxis extends ZoomAxis {
   currentFrame = 0; // 当前帧
   totalFrames = 0; // 全部帧数
   frameRate = FRAME_RATE; // 帧频
+  raf = 0
   // 每一帧所占宽度
   get frameWidth() {
     // 每个标尺宽度/ (帧频 / (标尺周期值/标尺周期值代表的时间秒数))
@@ -81,7 +82,8 @@ export class TimelineAxis extends ZoomAxis {
       );
       this.currentFrame++;
     }
-    window.requestAnimationFrame(this.enterFrame.bind(this));
+    this.raf = window.requestAnimationFrame(this.enterFrame.bind(this));
+
   }
   pause() {
     this.paused = true;
@@ -115,5 +117,9 @@ export class TimelineAxis extends ZoomAxis {
   }
   setTotalFrames(frames: number) {
     this.totalFrames = frames;
+  }
+  destroy(){
+    this.stoped = true;
+    window.cancelAnimationFrame(this.raf);
   }
 }

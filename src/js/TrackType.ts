@@ -21,7 +21,8 @@ export enum TRACKS_EVENT_CALLBACK_TYPES {
   SEGMENT_SELECTED, // 选中
   SEGMENT_DELETED, // 删除
   SEGMENT_ADDED, // 添加
-  KEYFRAME_CLICK,
+  KEYFRAME_CLICK, // 关键帧被点击
+  DRAGING_OVER, // 在容器上方拖动事件
 }
 export interface SegmentBasicInfo {
   trackId: string, 
@@ -32,7 +33,7 @@ export interface SegmentBasicInfo {
   track?:HTMLElement | null,
   sectionId?: string,
 }
-export type CallbackArgs = {segment?: Segment, segments?: Segment[],  track?: Track, eventType?: TRACKS_EVENT_CALLBACK_TYPES}
+export type CallbackArgs = {segment?: Segment, segments?: Segment[],  track?: Track, eventType?: TRACKS_EVENT_CALLBACK_TYPES, pointerEvent?: MouseEvent}
 export interface TracksEvent{
   (e: CallbackArgs): any
 }
