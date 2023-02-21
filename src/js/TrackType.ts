@@ -12,7 +12,7 @@ export enum SegmentType {
   EFFECT,
   BGM,
 }
-export enum TRACKS_EVENT_CALLBACK_TYPES {
+export enum TRACKS_EVENT_TYPES {
   DRAG_END, // 拖动结束事件
   DROP_EFFECT, // 伸缩轨道覆盖切割事件
   SEGMENTS_CHANGED, 
@@ -24,6 +24,9 @@ export enum TRACKS_EVENT_CALLBACK_TYPES {
   KEYFRAME_CLICK, // 关键帧被点击
   DRAGING_OVER, // 在容器上方拖动事件
 }
+export type ERROR_DATA = {
+  eventType: TRACKS_EVENT_TYPES
+}
 export interface SegmentBasicInfo {
   trackId: string, 
   segmentId: string, 
@@ -33,7 +36,7 @@ export interface SegmentBasicInfo {
   track?:HTMLElement | null,
   sectionId?: string,
 }
-export type CallbackArgs = {segment?: Segment, segments?: Segment[],  track?: Track, eventType?: TRACKS_EVENT_CALLBACK_TYPES, pointerEvent?: MouseEvent}
+export type CallbackArgs = {error?: ERROR_DATA, segment?: Segment, segments?: Segment[],  track?: Track, eventType?: TRACKS_EVENT_TYPES, pointerEvent?: MouseEvent}
 export interface TracksEvent{
   (e: CallbackArgs): any
 }

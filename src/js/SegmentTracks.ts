@@ -1,7 +1,7 @@
 import { Tracks } from "./Tracks";
 import { Segment } from "./Segment";
 import { findParentElementByClassName, getLeftValue } from "./trackUtils";
-import { SegmentTracksArgs, MouseHandle, TRACKS_EVENT_CALLBACK_TYPES } from "./TrackType";
+import { SegmentTracksArgs, MouseHandle, TRACKS_EVENT_TYPES } from "./TrackType";
 import { CursorPointer } from "./CursorPointer";
 interface MoveFunctionArgs {
   frameWidth: number;
@@ -215,13 +215,13 @@ export class SegmentTracks extends Tracks {
     }
   }
   private triggerSlideEvent(segments: Segment[]){
-    this.dispatchEvent({ eventType:TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED }, {
+    this.dispatchEvent({ eventType:TRACKS_EVENT_TYPES.SEGMENTS_SLIDED }, {
       segments
     })
     return segments;
   }
   private triggerSlideEndEvent(){
-    this.dispatchEvent({ eventType:TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDE_END }, {
+    this.dispatchEvent({ eventType:TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END }, {
       segments: this.lastEffectSegments
     })
   }

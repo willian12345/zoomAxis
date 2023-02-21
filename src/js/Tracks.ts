@@ -1,5 +1,5 @@
 import {
-  TRACKS_EVENT_CALLBACK_TYPES,
+  TRACKS_EVENT_TYPES,
   DeleteableCheck,
   SegmentType,
   DropableCheck,
@@ -34,11 +34,12 @@ import {
 
 const DEFAULT_SEGMENT_FRAMES = 150
 export interface Tracks {
-  addEventListener<EventType extends TRACKS_EVENT_CALLBACK_TYPES>(
+  addEventListener<EventType extends TRACKS_EVENT_TYPES>(
     eventType: EventType,
     callback: TracksEvent,
   ):void
 }
+
 // 轨道
 export abstract class Tracks  extends EventHelper{
   static DEFAULT_SEGMENT_FRAMES = DEFAULT_SEGMENT_FRAMES
@@ -115,7 +116,7 @@ export abstract class Tracks  extends EventHelper{
     if(target.classList.contains("segment-keyframe")){
       target.classList.add('actived');
       e.stopPropagation();
-      this.dispatchEvent({eventType: TRACKS_EVENT_CALLBACK_TYPES.KEYFRAME_CLICK}, {
+      this.dispatchEvent({eventType: TRACKS_EVENT_TYPES.KEYFRAME_CLICK}, {
         keyframe: target.dataset.frame
       })
     }
@@ -124,6 +125,7 @@ export abstract class Tracks  extends EventHelper{
     let result = true;
     const virtualSegment = this.getVirtualSegment(trackId, segmentId);
     if(!virtualSegment) return;
+    debugger
     if(this.deleteableCheck){
       result = await this.deleteableCheck(trackId, segmentId);
       if (!result) {
@@ -135,7 +137,7 @@ export abstract class Tracks  extends EventHelper{
       }
     }
     virtualSegment?.parentTrack?.removeSegment(virtualSegment);
-    this.dispatchEvent({eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_DELETED}, {
+    this.dispatchEvent({eventType: TRACKS_EVENT_TYPES.SEGMENT_DELETED}, {
       segment: virtualSegment,
     })
     return result
@@ -236,6 +238,7 @@ export abstract class Tracks  extends EventHelper{
           extra: segmentData,
         });
       }else{
+        this.dispatchEvent({eventType: TRACKS_EVENT_TYPES.SEGMENT_ADDED}, {error: {eventType: TRACKS_EVENT_TYPES.SEGMENT_ADDED}})
         return null;
       }
     } else {
@@ -417,7 +420,7 @@ export abstract class Tracks  extends EventHelper{
     }
     frameend = effectSegmentOriginFrameend;
     currentSegment.setRange(framestart, frameend);
-    this.dispatchEvent({ eventType: TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT }, {
+    this.dispatchEvent({ eventType: TRACKS_EVENT_TYPES.DROP_EFFECT }, {
       segment: effectSegment,
     })
     this.framestart = framestart;
@@ -567,7 +570,7 @@ export abstract class Tracks  extends EventHelper{
     return collisionY;
   }
   protected triggerSelected(segment: Segment){
-    this.dispatchEvent({eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_SELECTED}, {
+    this.dispatchEvent({eventType: TRACKS_EVENT_TYPES.SEGMENT_SELECTED}, {
       segment,
     })
   }
@@ -580,7 +583,7 @@ export abstract class Tracks  extends EventHelper{
     setTimeout(() => {
       track.updateSegmentHandler()
       // 拖完后触发回调
-      this.dispatchEvent({ eventType: TRACKS_EVENT_CALLBACK_TYPES.DRAG_END }, { segment })
+      this.dispatchEvent({ eventType: TRACKS_EVENT_TYPES.DRAG_END }, { segment })
     }, 2);
   }
   protected addSegment(track?:Track|null, segment?: Segment|null){
@@ -597,7 +600,7 @@ export abstract class Tracks  extends EventHelper{
     }
     track.addSegment(segment);
     track.updateSegmentHandler();
-    this.dispatchEvent({ eventType: TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_ADDED }, {track, segment});
+    this.dispatchEvent({ eventType: TRACKS_EVENT_TYPES.SEGMENT_ADDED }, {track, segment});
   }
   protected async drop({
     x,
@@ -744,7 +747,7 @@ export abstract class Tracks  extends EventHelper{
         tracks,
       });
       if(e.clientY > scrollContainerRect.top && e.clientY <= scrollContainerRect.bottom){
-        this.dispatchEvent({eventType: TRACKS_EVENT_CALLBACK_TYPES.DRAGING_OVER}, {pointerEvent: e});
+        this.dispatchEvent({eventType: TRACKS_EVENT_TYPES.DRAGING_OVER}, {pointerEvent: e});
       }
       // 拖动容器形变
       if (isCopySegment) {
@@ -922,10 +925,10 @@ export abstract class Tracks  extends EventHelper{
     if(!virtualTrack) return;
     const virtualSegment = await this.createSegment(trackId, framestart, segmentType);
     if(!virtualSegment) return;
-    if(this.isStretchTrack(track)){
-      const cursorCurrentFrame = this.timeline?.currentFrame;
-      this.dropToStretchTrack(track, virtualSegment, cursorCurrentFrame);
-    }
+    // if(this.isStretchTrack(track)){
+    //   const cursorCurrentFrame = this.timeline?.currentFrame;
+    //   this.dropToStretchTrack(track, virtualSegment, cursorCurrentFrame);
+    // }
     virtualSegment.setRange(virtualSegment.framestart, virtualSegment.frameend);
     this.addSegment(virtualTrack, virtualSegment);
   }
