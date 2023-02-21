@@ -3,7 +3,7 @@ import { onMounted, onUnmounted, ref, Ref } from "vue";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "../../../src/js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
 import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/cursorPointer";
-import { TRACKS_EVENT_CALLBACK_TYPES, DropableArgs } from "../../../src/js/trackType";
+import { TRACKS_EVENT_TYPES, DropableArgs } from "../../../src/js/trackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
 import { SegmentTracks } from "../../../src/js/SegmentTracks";
 
@@ -138,7 +138,7 @@ const initApp = () => {
     timeline,
     segmentDelegate: segmentItemList,
   });
-  segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, () => {
+  segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DRAG_END, () => {
     // addTrackWidth(trackCursor);
   });
 

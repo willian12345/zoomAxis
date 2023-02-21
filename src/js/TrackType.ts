@@ -94,7 +94,7 @@ export interface DragingArgs {
 export interface DropArgs {
   e: MouseEvent, 
   x: number, 
-  segment: HTMLElement, 
+  segmentDom: HTMLElement, 
   track: HTMLElement, 
   tracks: HTMLElement[], 
   isCopySegment: boolean, 
@@ -121,4 +121,11 @@ export type KeyframeConstructInfo = {
   segmentId: string,
   frameWidth: number,
   className?: string,
+}
+
+export interface TrackArgs {
+  dom: HTMLElement;
+  frameWidth: number;
+  trackClass?: string;
+  trackPlaceholderClass?: string;
 }

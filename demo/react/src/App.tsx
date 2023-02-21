@@ -7,7 +7,7 @@ import "./App.css";
 import Cursor from "./components/Cursor";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "../../../src/js/TimelineAxis";
 import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/CursorPointer";
-import { TRACKS_EVENT_CALLBACK_TYPES } from "../../../src/js/TrackType";
+import { TRACKS_EVENT_TYPES } from "../../../src/js/TrackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
 import { SegmentTracks } from "../../../src/js/SegmentTracks";
 
@@ -145,16 +145,16 @@ function App() {
       timeline,
       segmentDelegate: segmentItemList,
     });
-    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DRAG_END, (event) => {
+    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DRAG_END, (event) => {
       console.log(event, 'dragend');
     })
-    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.SEGMENT_ADDED, (event) => {
+    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_ADDED, (event) => {
       console.log(event, 'added');
     })
-    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.DROP_EFFECT, (event) => {
+    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DROP_EFFECT, (event) => {
       console.log('DROP_EFFECT', event);
     });
-    segmentTracks.addEventListener(TRACKS_EVENT_CALLBACK_TYPES.SEGMENTS_SLIDED, (event) => {
+    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENTS_SLIDED, (event) => {
       // console.log(segments);
     });
   };
@@ -176,7 +176,7 @@ function App() {
           <div className="segment-item" data-segment-type="0">拖我</div>
           <div className="segment-item" data-segment-type="0">拖我</div>
           <div className="segment-item" data-segment-type="0">拖我</div>
-          <div className="segment-item segment-item-stretch" data-segment-type="1" data-track-id="c">
+          <div className="segment-item segment-item-flex" data-segment-type="1">
             拖我
             <em>(伸缩轨道)</em>
             <button onClick={()=> add('c')}> add </button>

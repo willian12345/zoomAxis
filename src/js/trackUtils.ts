@@ -2,6 +2,7 @@
 import { SegmentBasicInfo, SegmentType, SegmentConstructInfo } from './TrackType'
 import { Segment } from './Segment';
 import { getRendererBySegmentType } from './SegmentRenderers'
+import { Track } from './Track';
 const CLOSE_ENOUPH_DISTANCE_Y = 10; // 距离 y 是否够近
 const CLOSE_ENOUPH_SEGMENT_X = 60; // 距离 segment x是否够
 
@@ -206,4 +207,8 @@ export const sortByLeftValue = (segmentA: Segment, segmentB: Segment) => {
   const segmentAx = getLeftValue(segmentA.dom);
   const segmentBx = getLeftValue(segmentB.dom);
   return segmentAx > segmentBx ? 1 : -1;
+}
+
+export const isFlexTrack = (track: HTMLElement) => {
+  return track.classList.contains('track-flexible');
 }
