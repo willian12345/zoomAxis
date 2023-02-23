@@ -3,6 +3,7 @@ import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
 import { Track } from './Track';
 import { Segment } from "./Segment";
+import { TrackFlex } from "./TrackFlex";
 export enum SegmentType {
   BODY_ANIMATION,
   FACE_ANIMATION,
@@ -83,9 +84,8 @@ export interface SegmentTracksOutArgs extends TracksArgs {
 export interface MouseHandle {
   (e: MouseEvent):void
 }
-export interface DragingArgs {
-  e: MouseEvent, 
-  isCopySegment: boolean,
+export interface DragingArgs { 
+  isCopy: boolean,
   scrollContainerX: number, 
   segment: HTMLElement, 
   dragTrackContainerRect: DOMRect, 

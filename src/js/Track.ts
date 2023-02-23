@@ -13,8 +13,9 @@ import {
   getLeftValue,
   getSegmentPlaceholder,
   collisionCheckFrame,
+  isContainSplitFromComma,
 } from "./trackUtils";
-import { TrackArgs } from './TrackType'
+import { TrackArgs, DragingArgs } from './TrackType'
 import { EventHelper } from "./EventHelper";
 
 export class Track  extends EventHelper{
@@ -22,6 +23,8 @@ export class Track  extends EventHelper{
   trackId = "";
   trackClass = "";
   trackPlaceholderClass = "";
+  dragoverClass = "dragover";
+  dragoverErrorClass = "dragover-error";
   isStretchTrack = false; // 是否是伸缩轨道
   visibility = true;
   segments: Map<string, Segment> = new Map(); // 轨道内的 segment
@@ -60,7 +63,50 @@ export class Track  extends EventHelper{
     }
     return false;
   }
-  drop({
+  // 删除 class 状态
+  removeStatusClass(){
+    const cl = this.dom.classList
+    cl.remove(this.dragoverClass);
+    cl.remove(this.dragoverErrorClass);
+    const placeHolder = getSegmentPlaceholder(this.dom);
+    if (!placeHolder) {
+      return;
+    }
+    placeHolder.style.opacity = "0";
+  }
+  pointerdown(segment: Segment){
+
+  }
+  pointermove({
+    scrollContainerX,
+    segment,
+    dragTrackContainerRect,
+  }: DragingArgs){
+    const placeHolder = getSegmentPlaceholder(this.dom);
+    if (!placeHolder) {
+      return;
+    }
+    this.dom.classList.add(this.dragoverClass);
+    const trackType = this.dom.dataset.trackType ?? "";
+    const segmentType = segment.dataset.segmentType ?? "";
+    // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
+    if (!isContainSplitFromComma(trackType, segmentType)) {
+      this.dom.classList.add(this.dragoverErrorClass);
+    }
+    const x = dragTrackContainerRect.left + scrollContainerX;
+    // 拖动时轨道内占位元素
+    placeHolder.style.width = `${dragTrackContainerRect.width}px`;
+    placeHolder.style.left = `${x}px`;
+    // 利用各轨道内的 placeholder 与 轨道内所有现有存 segment进行x轴碰撞检测
+    const [isCollistion] = collisionCheckX(placeHolder, this.dom);
+    // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
+    if (isCollistion) {
+      placeHolder.style.opacity = "0";
+    } else {
+      placeHolder.style.opacity = "1";
+    }
+  }
+  pointerup({
     copy,
     framestart,
     segment,

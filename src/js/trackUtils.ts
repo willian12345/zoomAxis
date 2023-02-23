@@ -3,6 +3,7 @@ import { SegmentBasicInfo, SegmentType, SegmentConstructInfo } from './TrackType
 import { Segment } from './Segment';
 import { getRendererBySegmentType } from './SegmentRenderers'
 import { Track } from './Track';
+import { TrackFlex } from './TrackFlex';
 const CLOSE_ENOUPH_DISTANCE_Y = 10; // 距离 y 是否够近
 const CLOSE_ENOUPH_SEGMENT_X = 60; // 距离 segment x是否够
 
@@ -157,19 +158,16 @@ export const isContainSplitFromComma = (trackIds: string, trackId: string) => {
 }
 
 // 轨道 y 轴 碰撞检测
-export const trackCollisionCheckY = (
-  tracks: HTMLElement[],
+export const trackCollisionCheckY = <T extends Track>(
+  tracks: T[],
   mouseY: number,
-): [boolean, HTMLElement|null] => {
-  let collisionTrack: HTMLElement|null = null;
-  let collisionY = false;
-  tracks.forEach((track) => {
-    if (isCloseEnouphToY(track, mouseY)) {
-      collisionTrack = track;
-      collisionY = true;
+): T|undefined => {
+  for(let track of tracks){
+    if (isCloseEnouphToY(track.dom, mouseY)) {
+      return track
     }
-  });
-  return [collisionY, collisionTrack];
+  }
+  return undefined
 };
 
 // 最右侧 segment 片断
@@ -211,4 +209,26 @@ export const sortByLeftValue = (segmentA: Segment, segmentB: Segment) => {
 
 export const isFlexTrack = (track: HTMLElement) => {
   return track.classList.contains('track-flexible');
+}
+
+// 获取 leftValue 轨道右侧的所有 segments
+export const  getRightSideSegments = (segments: Segment[], leftValue: number) => {
+  return segments
+    .filter((segment) => {
+      const segmentX = getLeftValue(segment.dom);
+      return leftValue < segmentX;
+    })
+    .sort(sortByLeftValue);
+}
+// 获取 leftValue 轨道左侧的所有 segments
+export const getLeftSideSegments = (segments: Segment[], leftValue: number) => {
+  return segments
+    .filter((segment) => {
+      const segmentX = getLeftValue(segment.dom);
+      // ？？ 是否拖动手柄时也使用此判断 todo
+      const _leftValue =
+        segmentX + segment.dom.getBoundingClientRect().width * 0.5;
+      return leftValue > _leftValue;
+    })
+    .sort(sortByLeftValue);
 }
