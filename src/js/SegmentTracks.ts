@@ -3,6 +3,7 @@ import { Segment } from "./Segment";
 import { findParentElementByClassName, getLeftValue } from "./trackUtils";
 import { SegmentTracksArgs, MouseHandle, TRACKS_EVENT_TYPES } from "./TrackType";
 import { CursorPointer } from "./CursorPointer";
+import { TrackFlex } from "./TrackFlex";
 interface MoveFunctionArgs {
   frameWidth: number;
   moveX: number;
@@ -133,7 +134,6 @@ export class SegmentTracks extends Tracks {
     
     const result: Segment[] = [virtualSegment];
     // 伸缩轨道，左侧 segment frameend 设为当前调整的 segment 的 framestart
-    const trackDom = findParentElementByClassName(segment, 'track');
     const track = virtualSegment.parentTrack;
     if(track){
       // 从拖动原点开始算找出最近的左侧 segment 
@@ -145,7 +145,7 @@ export class SegmentTracks extends Tracks {
           currentFrame = 0;
         }
         virtualSegment.setRange(currentFrame, frameend);
-      }else if(track.isStretchTrack){
+      }else if((track as TrackFlex)?.isFlex){
         // 根据left 
         const segmentLeftSide = this.getLeftSideSegmentsInTrack(track, getLeftValue(segment)).reverse()[0];
         // 伸缩轨道
@@ -192,7 +192,7 @@ export class SegmentTracks extends Tracks {
       const segmentRightSide = this.getRightSideSegmentsInTrack(track, segmentleftOrigin)[0];
       if(!segmentRightSide){
         virtualSegment.setRange(framestart, frameend)
-      }else if(track.isStretchTrack){
+      }else if((track as TrackFlex)?.isFlex){
         const segmentRightSide = this.getRightSideSegmentsInTrack(track, getLeftValue(segment))[0];
         if(segmentRightSide){
           const segmentRightSideFrameend = segmentRightSide.frameend;
@@ -273,8 +273,8 @@ export class SegmentTracks extends Tracks {
       return
     }
     this.lastEffectSegments = []
-    this.virtualTracks.forEach( track => {
-      if(track.isStretchTrack){
+    this.virtualTracks.forEach( (track) => {
+      if((track as TrackFlex)?.isFlex){
         const segment  = track.getLastSegment();
         if(segment){
           const framestart = segment.framestart;

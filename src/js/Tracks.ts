@@ -55,7 +55,7 @@ export abstract class Tracks extends EventHelper {
   originFramestart = 0;
   originFrameend = 0;
   currentSegment: HTMLElement | null = null;
-  virtualTracks: (Track | TrackFlex)[] = [];
+  virtualTracks: (Track)[] = [];
   constructor({
     trackCursor,
     scrollContainer,
@@ -183,12 +183,12 @@ export abstract class Tracks extends EventHelper {
     if (!activedSegment) return;
     const deletedFramestart = activedSegment.framestart;
     const deletedFrameend = activedSegment.frameend;
-    const virtualTrack = activedSegment.parentTrack as Track;
+    const virtualTrack = activedSegment.parentTrack as TrackFlex;
     const trackDom = virtualTrack.dom;
     // 如果是可伸缩轨道删除，则需要重新伸缩其它segment填满轨道
     if (trackDom) {
       const frames = deletedFrameend - deletedFramestart;
-      if (virtualTrack.isStretchTrack) {
+      if (virtualTrack?.isFlex) {
         const segments = virtualTrack.getSegments();
         const segmentRightSide = this.getRightSideSegments(
           segments,
@@ -705,7 +705,7 @@ export abstract class Tracks extends EventHelper {
     if (!virtualSegment) return;
     if (isFlexTrack(virtualTrack.dom)) {
       const cursorCurrentFrame = this.timeline?.currentFrame;
-      virtualTrack.drop({
+      virtualTrack.pointerup({
         copy: true,
         framestart: cursorCurrentFrame,
         segment: virtualSegment,

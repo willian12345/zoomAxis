@@ -159,7 +159,7 @@ onUnmounted(()=> {
       <div class="segment-item" data-segment-type="0">拖我</div>
       <div class="segment-item" data-segment-type="0">拖我</div>
       <div class="segment-item" data-segment-type="0">拖我</div>
-      <div class="segment-item segment-item-stretch" data-segment-type="1" data-track-id="c">
+      <div class="segment-item segment-item-flex" data-segment-type="1" data-track-id="c">
         拖我
         <em>(伸缩轨道)</em>
       </div>
@@ -194,7 +194,7 @@ onUnmounted(()=> {
             <div class="track" data-track-id="b" data-track-type="0">
               <div class="track-placeholder"></div>
             </div>
-            <div class="track track-stretch" data-track-id="c" data-track-type="1">
+            <div class="track track-flexible" data-track-id="c" data-track-type="1">
               <div class="track-placeholder"></div>
             </div>
           </div>
@@ -323,7 +323,13 @@ onUnmounted(()=> {
     pointer-events: all;
     border: 1px solid transparent;
   }
-
+  svg{
+      width: 1em;
+      height: 1em;
+      fill: currentColor;
+      overflow: hidden;
+      font-size: inherit;
+    }
   .segment-action {
     background-color: #c66136;
   }

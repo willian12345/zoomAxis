@@ -10,6 +10,7 @@ import {
   isContainSplitFromComma,
   getSegmentPlaceholder,
   getLeftValue,
+  sortByLeftValue,
   getRightSideSegments,
   getLeftSideSegments,
 } from "./trackUtils";
@@ -93,9 +94,10 @@ export class TrackFlex extends Track {
     const virtualSegment = this.getSegmentById(segment.dataset.segmentId ?? "");
     // 轨道内拖动实时变更 segment 信息
     virtualSegment &&
-      this.collisionXstretch(isCopy, virtualSegment, placeHolder);
+      this.collisionHorizontal(isCopy, virtualSegment, placeHolder);
   }
-  collisionXstretch(
+  // 轨道内横向碰撞检测
+  collisionHorizontal(
     isCopy: boolean,
     currentSegment: Segment,
     placeholder: HTMLElement,
@@ -113,6 +115,7 @@ export class TrackFlex extends Track {
       virtualSegments,
       placeholderLeft
     );
+    // 从左往右拖时，把原右边的往左边挤
     for (let segment of onLeftSegments) {
       const segmentFramestart = segment.framestart;
       const segmentFrameend = segment.frameend;
@@ -127,6 +130,7 @@ export class TrackFlex extends Track {
         this.frameend = frameendMoved + this.frames;
       }
     }
+    // 从右往左拖时，把原左边的往右边挤
     // 判断右侧片断时，需要先将片断反转从右边头上开始判断一步步向右移动
     for (let segment of onRightSegments.reverse()) {
       const segmentFramestart = segment.framestart;
@@ -191,5 +195,26 @@ export class TrackFlex extends Track {
     this.framestart = framestart;
     this.frameend = frameend;
     return [framestart, frameend];
+  }
+  // 更新可拖动手柄
+  updateSegmentHandler(){
+    const segments = this.getSegments().sort(sortByLeftValue);
+    console.log(segments);
+    // 如果只有一个 segment 则不允许左右手柄拖动
+    if (segments.length === 1) {
+      return segments[0].setHandleEnable(false, false);
+    }
+    const l = segments.length - 1;
+    segments.forEach((segment, index) => {
+      if (index === 0) {
+        // 最左侧不允许拖动
+        return segment.setHandleEnable(false, true);
+      }
+      if (l === index) {
+        // 最右侧手柄不允许拖动
+        return segment.setHandleEnable(true, false);
+      }
+      segment.setHandleEnable(true, true);
+    });
   }
 }

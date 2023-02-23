@@ -91,6 +91,7 @@ export const collisionCheckX = (
   target: HTMLElement,
   track: HTMLElement
 ): collisionCheckXResult => {
+  // target 即轨道内的 placeholder 替身
   const targetRect = target.getBoundingClientRect();
   const segments: HTMLElement[] = Array.from(
     track.querySelectorAll(".segment")
@@ -103,7 +104,9 @@ export const collisionCheckX = (
     const segmentRect = segment.getBoundingClientRect();
     // placeholder与 segment 都属于轨道内，left 值取 style内的值 即相对坐标
     const segmentLeft = getLeftValue(segment);
-    const targetLeft = getLeftValue(target);
+    let targetLeft = getLeftValue(target);
+    // 如果值是负数说明拖到超出轨道左侧需要修正为 0
+    targetLeft = targetLeft < 0 ? 0 : targetLeft;
     const closeDistance = targetLeft - (segmentLeft + segmentRect.width);
     if(closeDistance <= 0 && closeDistance >= -CLOSE_ENOUPH_SEGMENT_X){
       return [true, true, segment]

@@ -28,17 +28,22 @@ const handleKeyDown = (e: KeyboardEvent) => {
 }
 let zoomRatio = 1;
 function App() {
+  console.log('render')
   const cursorRef = useRef(null);
   const segmentItemListRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const scrollContentRef = useRef(null);
   const [stageWidth, setStageWidth] = useState(920);
+  const trackScrollWidthRef = useRef(920);
   const [trackScrollWidth, setTrackScrollWidth] = useState(920);
   const [scrollContentWidth, setScrollContentWidth] = useState(920);
+  
   const syncTrackWidth = () => {
-    const trackItemWidth = segmentTracks.width()
-    const w = (trackItemWidth < stageWidth) ? stageWidth : trackItemWidth;
-    setTrackScrollWidth(w);
+    const trackItemWidth = segmentTracks.width();
+    // 需要用 useRef 获取最新值
+    trackScrollWidthRef.current = (trackItemWidth < stageWidth) ? stageWidth : trackItemWidth;
+    // 会导致重新渲染
+    setTrackScrollWidth(trackScrollWidthRef.current);
   }
   const syncByZoom = (zoom: number) => {
     // 根据缩放比较，减小滚动宽度
@@ -93,6 +98,31 @@ function App() {
     e.deltaY > 0 ? zoomOut() : zoomIn();
     syncByZoom(zoomRatio);
   };
+  // 滚动 timeline  x 轴
+  const scrollTimelineX =(pointerX: number) => {
+    console.log(trackScrollWidth,44444444);
+    if (!scrollContainerRef.current){
+      return;
+    }
+    if (trackScrollWidthRef.current <= stageWidth) {
+      return;
+    }
+    if(pointerX < stageWidth - 150 && pointerX > 150){
+      return ;
+    }
+    let direct = 0;
+    if(pointerX >= stageWidth - 150){
+      direct = 1
+    }else if(pointerX <= 150){
+      direct = -1
+    }
+    const dom = scrollContainerRef.current as HTMLElement
+    // 根据当前帧滚动滚动条
+    if(dom){
+      console.log(dom.scrollLeft)
+      dom.scrollLeft += (40 * direct);
+    }
+  };
 
   const initApp = () => {
     if (
@@ -116,7 +146,6 @@ function App() {
     const scrollContent: HTMLElement = scrollContentRef.current;
     const width = scrollContainer.getBoundingClientRect().width;
     setStageWidth(width);
-    
     // 初始化时间轴
     timeline = new TimelineAxis({
       el: "canvasStage",
@@ -133,7 +162,7 @@ function App() {
     trackCursor.addEventListener(
       CURSOR_POINTER_EVENT_TYPE.UPDATE,
       (e) => {
-        console.log(e);
+        // console.log(e);
         timeline?.setCurrentFrame(e.frame);
       }
     );
@@ -157,6 +186,11 @@ function App() {
     segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENTS_SLIDED, (event) => {
       // console.log(segments);
     });
+    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DRAGING_OVER, (e) => {
+      if(e.pointerEvent){
+        scrollTimelineX(e.pointerEvent?.clientX);
+      }
+    })
   };
   const add = (trackId: string) => {
     segmentTracks?.addSegmentWithFramestart(trackId, 1, timeline?.currentFrame ?? 0);
@@ -167,7 +201,7 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     }
-  }, []);
+  }, [trackScrollWidth]);
   return (
     <div className="App">
       <div className="wrapper">
@@ -182,6 +216,8 @@ function App() {
             <button onClick={()=> add('c')}> add </button>
           </div>
         </div>
+        {trackScrollWidth}
+        {stageWidth}
         <div className="timeline-container" onWheel={(e) => handleWheel(e)}>
           <div className="track-operation">
             <div className="track-operation-item">普通轨道</div>
@@ -214,7 +250,7 @@ function App() {
                 <div className="track" data-track-id="b" data-track-type="0">
                   <div className="track-placeholder"></div>
                 </div>
-                <div className="track track-stretch track-flexible" data-track-id="c" data-track-type="1">
+                <div className="track track-flexible" data-track-id="c" data-track-type="1">
                   <div className="track-placeholder"></div>
                 </div>
               </div>

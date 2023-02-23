@@ -7,7 +7,6 @@
  */
 import { Segment } from "./Segment";
 import {
-  sortByLeftValue,
   collisionCheckX,
   getFrameRange,
   getLeftValue,
@@ -25,7 +24,6 @@ export class Track  extends EventHelper{
   trackPlaceholderClass = "";
   dragoverClass = "dragover";
   dragoverErrorClass = "dragover-error";
-  isStretchTrack = false; // 是否是伸缩轨道
   visibility = true;
   segments: Map<string, Segment> = new Map(); // 轨道内的 segment
   subTracks: Map<string, Track> = new Map(); // 子轨道
@@ -42,7 +40,6 @@ export class Track  extends EventHelper{
     this.frameWidth = frameWidth;
     this.dom = dom;
     this.trackId = dom.dataset.trackId ?? "";
-    this.isStretchTrack = dom.classList.contains("track-stretch");
   }
   setFrameWidth(w: number){
     this.frameWidth = w;
@@ -149,6 +146,7 @@ export class Track  extends EventHelper{
     this.segments.set(segment.segmentId, segment);
     this.dom.appendChild(segment.dom);
     segment.setTrack(this);
+    this.updateSegmentHandler();
   }
   removeSegment(segment: Segment) {
     this.segments.delete(segment.segmentId);
@@ -189,24 +187,7 @@ export class Track  extends EventHelper{
     return segments[segments.length - 1];
   }
   updateSegmentHandler() {
-    if (!this.isStretchTrack) return;
-    const segments = this.getSegments().sort(sortByLeftValue);
-    // 如果只有一个 segment 则不允许左右手柄拖动
-    if (segments.length === 1) {
-      return segments[0].setHandleEnable(false, false);
-    }
-    const l = segments.length - 1;
-    segments.forEach((segment, index) => {
-      if (index === 0) {
-        // 最左侧不允许拖动
-        return segment.setHandleEnable(false, true);
-      }
-      if (l === index) {
-        // 最右侧手柄不允许拖动
-        return segment.setHandleEnable(true, false);
-      }
-      segment.setHandleEnable(true, true);
-    });
+    
   }
   setVisibility(visibility: boolean) {
     this.visibility = visibility;

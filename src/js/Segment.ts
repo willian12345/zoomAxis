@@ -8,7 +8,6 @@
 import { SegmentConstructInfo, SegmentType } from "./TrackType";
 import { Track } from "./Track";
 import { Keyframe } from "./Keyframe";
-import { TrackFlex } from "./TrackFlex";
 
 let segmentIdIndex = 0;
 export class Segment {
@@ -24,7 +23,7 @@ export class Segment {
   trackId = "";
   segmentType = SegmentType.BODY_ANIMATION;
   name = "";
-  parentTrack: (TrackFlex & Track) | null = null;
+  parentTrack: Track | null = null;
   actived = false;
   frameWidth = 0;
   extra = {};
@@ -108,7 +107,7 @@ export class Segment {
     this.dom.dataset.trackId = trackId;
   }
   // 设置父级
-  setTrack(track: Track | TrackFlex) {
+  setTrack(track: Track) {
     this.parentTrack = track;
     this.setTrackId(track.trackId);
   }
