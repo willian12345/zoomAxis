@@ -3,7 +3,6 @@
  */
 
 import { Segment } from "./Segment";
-import { TimelineAxis } from "./TimelineAxis";
 import { Track } from "./Track";
 import { TRACKS_EVENT_TYPES, TrackArgs, DragingArgs } from "./TrackType";
 import {

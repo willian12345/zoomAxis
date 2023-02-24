@@ -78,7 +78,7 @@ export class CursorPointer extends EventHelper{
 
     // 滚动区域 mouseup 移动游标
     scrollContentDom.addEventListener("click", (e: MouseEvent) => {
-      
+      console.log('click')
       if (!this._enable || this.timeline?.playing) {
         return;
       }

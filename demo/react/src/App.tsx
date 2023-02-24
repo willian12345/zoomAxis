@@ -178,8 +178,8 @@ function App() {
     segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_ADDED, (event) => {
       console.log(event, 'added');
     })
-    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DROP_EFFECT, (event) => {
-      console.log('DROP_EFFECT', event);
+    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END, (event) => {
+      console.log('SEGMENTS_SLIDE_END', event);
     });
     segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_DELETED, (event) => {
       console.log(event);

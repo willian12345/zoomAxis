@@ -103,6 +103,8 @@ export abstract class Tracks extends EventHelper {
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_ADDED);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_SELECTED);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_DELETED);
+      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDED);
+      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END);
     })
   }
   private initTracks() {
@@ -668,6 +670,7 @@ export abstract class Tracks extends EventHelper {
     return this.timeline.totalFrames * this.timeline.frameWidth;
   }
   unMounted() {
+    this.virtualTracks.forEach( vt => vt.destroy());
     document.removeEventListener("mousedown", this.removeSegmentActivedStatus);
     document.removeEventListener("keydown", this.removeActivedSegment);
     this.destroy();
