@@ -14,7 +14,7 @@ import {
   collisionCheckFrame,
   isContainSplitFromComma,
 } from "./trackUtils";
-import { TrackArgs, DragingArgs } from './TrackType'
+import { TrackArgs, DragingArgs, TRACKS_EVENT_TYPES } from './TrackType'
 import { EventHelper } from "./EventHelper";
 
 export class Track  extends EventHelper{
@@ -28,6 +28,8 @@ export class Track  extends EventHelper{
   segments: Map<string, Segment> = new Map(); // 轨道内的 segment
   subTracks: Map<string, Track> = new Map(); // 子轨道
   frameWidth: number = 0;
+  originFramestart = 0 // 拖动前 framestart
+  originFrameend = 0 // 拖动前 frameend
   constructor({
     trackClass = "track",
     trackPlaceholderClass = "track-placeholder",
@@ -72,7 +74,8 @@ export class Track  extends EventHelper{
     placeHolder.style.opacity = "0";
   }
   pointerdown(segment: Segment){
-
+    this.originFramestart = segment.framestart;
+    this.originFrameend = segment.frameend;
   }
   pointermove({
     scrollContainerX,
@@ -111,17 +114,17 @@ export class Track  extends EventHelper{
     copy: boolean;
     framestart: number;
     segment: Segment;
-  }) {
+  }): Segment | null {
     const placeHolder = getSegmentPlaceholder(this.dom);
     if (!placeHolder) {
-      return;
+      return null;
     }
     placeHolder.style.opacity = "0";
     // 如果不合法，则需要删除
     const checkResult = this.check(copy, segment);
     if(checkResult){
       this.removeSegment(segment);
-      return
+      return null
     }
     const [isCollistion, magnet, magnetTo] = collisionCheckX(
       placeHolder,
@@ -140,17 +143,50 @@ export class Track  extends EventHelper{
       const frameend = framestart + (fd - fs);
       segment.setRange(framestart, frameend);
       this.addSegment(segment);
+      return segment
     }
+    return null;
   }
   addSegment(segment: Segment) {
+    const isAdded = this.segments.get(segment.segmentId);
+    // 如果添加过了，则无需再添加
+    if (isAdded) {
+      // 如果拖动前与拖动后位置没有发生变化，则什么都不做
+      if (
+        this.originFramestart === segment.framestart &&
+        this.originFrameend === segment.frameend
+      ) {
+        return;
+      }
+      // 拖动放回原处是异步，拖完也要延时
+      setTimeout(() => {
+        this.updateSegmentHandler();
+        // 拖完后触发回调
+        this.dispatchEvent(
+          { eventType: TRACKS_EVENT_TYPES.DRAG_END },
+          { segment }
+        );
+      }, 2);
+      return;
+    }
     this.segments.set(segment.segmentId, segment);
     this.dom.appendChild(segment.dom);
     segment.setTrack(this);
     this.updateSegmentHandler();
+    this.dispatchEvent(
+      { eventType: TRACKS_EVENT_TYPES.SEGMENT_ADDED },
+      { segment }
+    )
   }
   removeSegment(segment: Segment) {
     this.segments.delete(segment.segmentId);
     segment.dom.parentElement?.removeChild(segment.dom);
+    this.dispatchEvent(
+      { eventType: TRACKS_EVENT_TYPES.SEGMENT_DELETED },
+      {
+        segment,
+      }
+    );
   }
   // 获取非 segmentId 之外的所有 segment
   getOtherSegments(segmentId: string) {

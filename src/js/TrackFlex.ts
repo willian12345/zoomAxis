@@ -15,19 +15,18 @@ import {
   getLeftSideSegments,
 } from "./trackUtils";
 interface TrackFlexArgs {
-  timeline: TimelineAxis;
+  totalFrames: number
 }
 const DEFAULT_SEGMENT_FRAMES = 150;
 export class TrackFlex extends Track {
-  timeline: TimelineAxis | null = null;
+  totalFrames = 0
   isFlex = true;
   framestart = 0; // 当前轨道拖动的 segment  framestart
   frameend = 0; // 当前轨道拖动的 segment frameend
   frames = 0; // 当前轨道拖动的 segment frames 
   constructor(args: TrackArgs & TrackFlexArgs) {
     super(args);
-    // todo: timeline抽离
-    this.timeline = args.timeline;
+    this.totalFrames = args.totalFrames;
   }
   getCollisionByFrame(frame: number) {
     return (
@@ -151,32 +150,29 @@ export class TrackFlex extends Track {
     copy,
     framestart,
     segment,
-    totalFrames,
   }: {
     copy: boolean;
     framestart: number;
     segment: Segment;
-    totalFrames: number;
-  }) {
+  }): Segment|null{
     // 如果是轨道内的拖动，则不需要裁剪功能
     if (!copy) {
-      return;
+      this.addSegment(segment);
+      return null;
     }
     // 裁剪轨道内的相关 segments 功能
     const segments = this.getSegments() ?? [];
-    let frameend = totalFrames;
+    let frameend = this.totalFrames;
     // 如果轨道内只有一个 segment 则铺满整个轨道
     if (segments.length === 0) {
       framestart = 0;
-    } else if (framestart > totalFrames) {
+    } else if (framestart > this.totalFrames) {
       // 如果是拖到了伸缩轨道最后，则往后加长
-      framestart = totalFrames;
+      framestart = this.totalFrames;
       frameend = framestart + DEFAULT_SEGMENT_FRAMES;
-      // 抽出至 tracks 设置
-      this.timeline?.setTotalFrames(frameend);
     }
     segment.setRange(framestart, frameend);
-
+    // 切割碰上的 segment
     const [effectSegment, effectSegmentOriginFrameend] = this.sliceSegment(
       this,
       framestart
@@ -194,7 +190,35 @@ export class TrackFlex extends Track {
     }
     this.framestart = framestart;
     this.frameend = frameend;
-    return [framestart, frameend];
+    return segment;
+  }
+  removeSegment(segment: Segment): void {
+    const frames = segment.frameend - segment.framestart;
+    const segments = this.getSegments();
+    // 获取紧邻右侧的邻居
+    const segmentRightSide = getRightSideSegments(
+      segments,
+      getLeftValue(segment.dom)
+    )[0];
+    // 如果右侧有 segment 则将右侧segment 起始帧移到被删除segment的起始帧
+    if (segmentRightSide) {
+      const framestart = segmentRightSide.framestart - frames;
+      const frameend = segmentRightSide.frameend;
+      segmentRightSide.setRange(framestart, frameend);
+    } else {
+      // 右侧没有且左侧有，则将左侧 segment 结束帧移到被删除 segment 结束帧
+      const segmentLeftSide = getLeftSideSegments(
+        segments,
+        getLeftValue(segment.dom)
+      ).reverse()[0];
+      if (segmentLeftSide) {
+        const framestart = segmentLeftSide.framestart;
+        const frameend = segmentLeftSide.frameend + frames;
+        segmentLeftSide.setRange(framestart, frameend);
+      }
+    }
+    // 调用父类执行删除操作
+    super.removeSegment(segment);
   }
   // 更新可拖动手柄
   updateSegmentHandler(){
@@ -216,5 +240,8 @@ export class TrackFlex extends Track {
       }
       segment.setHandleEnable(true, true);
     });
+  }
+  setTotalFrames(n: number){
+    this.totalFrames = n;
   }
 }

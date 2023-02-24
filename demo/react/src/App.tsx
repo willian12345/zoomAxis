@@ -100,7 +100,6 @@ function App() {
   };
   // 滚动 timeline  x 轴
   const scrollTimelineX =(pointerX: number) => {
-    console.log(trackScrollWidth,44444444);
     if (!scrollContainerRef.current){
       return;
     }
@@ -119,7 +118,6 @@ function App() {
     const dom = scrollContainerRef.current as HTMLElement
     // 根据当前帧滚动滚动条
     if(dom){
-      console.log(dom.scrollLeft)
       dom.scrollLeft += (40 * direct);
     }
   };
@@ -183,8 +181,8 @@ function App() {
     segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DROP_EFFECT, (event) => {
       console.log('DROP_EFFECT', event);
     });
-    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENTS_SLIDED, (event) => {
-      // console.log(segments);
+    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_DELETED, (event) => {
+      console.log(event);
     });
     segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DRAGING_OVER, (e) => {
       if(e.pointerEvent){
@@ -201,7 +199,7 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [trackScrollWidth]);
+  }, []);
   return (
     <div className="App">
       <div className="wrapper">
@@ -216,8 +214,6 @@ function App() {
             <button onClick={()=> add('c')}> add </button>
           </div>
         </div>
-        {trackScrollWidth}
-        {stageWidth}
         <div className="timeline-container" onWheel={(e) => handleWheel(e)}>
           <div className="track-operation">
             <div className="track-operation-item">普通轨道</div>
