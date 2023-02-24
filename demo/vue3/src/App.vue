@@ -141,6 +141,34 @@ const initApp = () => {
   segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DRAG_END, () => {
     // addTrackWidth(trackCursor);
   });
+  // 滚动 timeline  x 轴
+  const scrollTimelineX =(pointerX: number) => {
+    if (!scrollContainerRef.value){
+      return;
+    }
+    if (trackWidth.value <= stageWidth.value) {
+      return;
+    }
+    if(pointerX < stageWidth.value - 150 && pointerX > 150){
+      return ;
+    }
+    let direct = 0;
+    if(pointerX >= stageWidth.value - 150){
+      direct = 1
+    }else if(pointerX <= 150){
+      direct = -1
+    }
+    const dom = scrollContainerRef.value as HTMLElement
+    // 根据当前帧滚动滚动条
+    if(dom){
+      dom.scrollLeft += (40 * direct);
+    }
+  };
+  segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DRAGING_OVER, (e) => {
+    if(e.pointerEvent){
+      scrollTimelineX(e.pointerEvent?.clientX);
+    }
+  })
 
 };
 
