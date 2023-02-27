@@ -63,6 +63,10 @@ export class Segment {
     if (args.extra) {
       this.extra = args.extra;
     }
+    this.initEvents();
+  }
+  private initEvents() {
+    // this.dom.addEventListener('mouseup', this.handleClick.bind(this));
   }
   private createSegmentId() {
     return String(segmentIdIndex++);
@@ -94,6 +98,7 @@ export class Segment {
   private setHandleEnableStatus(dom: HTMLElement, enable: boolean){
     dom.style.pointerEvents = enable ? 'initial' : 'none';
   }
+  
   // 设置帧范围
   setRange(framestart: number, frameend: number) {
     this.framestart = framestart;
@@ -174,5 +179,8 @@ export class Segment {
       this.deleteKeyframe(keyframe.frame);
     });
     return deletedArr;
+  }
+  destroy(){
+    this.dom.removeEventListener('click', this.handleClick.bind(this));
   }
 }

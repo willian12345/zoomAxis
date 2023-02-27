@@ -105,6 +105,7 @@ export abstract class Tracks extends EventHelper {
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_DELETED);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDED);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END);
+      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_RIGHT_CLICK);
     })
   }
   private initTracks() {
@@ -113,15 +114,18 @@ export abstract class Tracks extends EventHelper {
     ) as HTMLElement[];
     this.virtualTracks = arr.map((trackDom) => {
       const isFlex = isFlexTrack(trackDom);
+      const trackType = trackDom.dataset.trackType ?? '';
       if (isFlex) {
         return new TrackFlex({
           dom: trackDom,
+          trackType,
           frameWidth: this.timeline.frameWidth,
           totalFrames: this.timeline.totalFrames,
         });
       }
       return new Track({
         dom: trackDom,
+        trackType,
         frameWidth: this.timeline.frameWidth,
       });
     });

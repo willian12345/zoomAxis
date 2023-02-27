@@ -17,7 +17,7 @@ import {
   getRightSideSegments,
   getLeftSideSegments,
 } from "./trackUtils";
-import { TrackArgs, DragingArgs, TRACKS_EVENT_TYPES } from "./TrackType";
+import { TrackArgs, DragingArgs, TRACKS_EVENT_TYPES, SegmentType } from "./TrackType";
 import { EventHelper } from "./EventHelper";
 import { TrackFlex } from "./TrackFlex";
 
@@ -31,9 +31,10 @@ type MoveFunctionArgs = {
 
 export class Track extends EventHelper {
   dom = {} as HTMLElement;
-  trackId = "";
-  trackClass = "";
-  trackPlaceholderClass = "";
+  trackId = '';
+  trackType = '';
+  trackClass = '';
+  trackPlaceholderClass = '';
   dragoverClass = "dragover";
   dragoverErrorClass = "dragover-error";
   visibility = true;
@@ -47,6 +48,7 @@ export class Track extends EventHelper {
     trackClass = "track",
     trackPlaceholderClass = "track-placeholder",
     dom,
+    trackType,
     frameWidth,
   }: TrackArgs) {
     super();
@@ -54,6 +56,7 @@ export class Track extends EventHelper {
     this.trackPlaceholderClass = trackPlaceholderClass;
     this.frameWidth = frameWidth;
     this.dom = dom;
+    this.trackType = trackType
     this.trackId = dom.dataset.trackId ?? "";
     this.initEvent();
   }
@@ -68,12 +71,10 @@ export class Track extends EventHelper {
     }
     if (target.classList.contains("segment-handle-left")) {
       this.dragHandleStart(e, target, this.leftHandleMove);
-      e.stopPropagation();
       return;
     }
     if (target.classList.contains("segment-handle-right")) {
       this.dragHandleStart(e, target, this.rightHandleMove);
-      e.stopPropagation();
       return;
     }
   }
@@ -81,6 +82,21 @@ export class Track extends EventHelper {
     let target = e.target as HTMLElement | null;
     if (!target) {
       return;
+    }
+    if(e.button === 2){
+      if(!target.classList.contains("segment")){
+        let segmentDom = findParentElementByClassName(target, 'segment');
+        if(segmentDom){
+          const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? '')
+          this.dispatchEvent(
+            { eventType: TRACKS_EVENT_TYPES.SEGMENT_RIGHT_CLICK },
+            {
+              segment,
+            }
+          );
+          return;
+        }
+      } 
     }
     if (target.classList.contains("segment-handle-left")) {
       this.dragHandleStart(e, target, this.leftHandleMove);
@@ -100,7 +116,6 @@ export class Track extends EventHelper {
       handle,
       "segment"
     ) as HTMLElement;
-    e.stopPropagation();
     e.preventDefault();
     const left: number = getLeftValue(segmentDom) as number;
     const width = segmentDom.getBoundingClientRect().width;
@@ -117,7 +132,6 @@ export class Track extends EventHelper {
       });
     };
     const mouseup = (e: MouseEvent) => {
-      e.stopPropagation();
       startX = e.clientX;
       //注意： 宽度调节完毕后，影响到的相关 segment 不能同时调整需要另外再调用，所以使用了新的 SEGMENTS_SLIDE_END 事件
       this.triggerSlideEndEvent();
@@ -315,7 +329,7 @@ export class Track extends EventHelper {
       return;
     }
     this.dom.classList.add(this.dragoverClass);
-    const trackType = this.dom.dataset.trackType ?? "";
+    const trackType = this.trackType;
     const segmentType = segment.dataset.segmentType ?? "";
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(trackType, segmentType)) {
@@ -348,6 +362,12 @@ export class Track extends EventHelper {
       return null;
     }
     placeHolder.style.opacity = "0";
+    const trackType = this.trackType;
+    const segmentType = `${segment.segmentType}`;
+    // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
+    if (!isContainSplitFromComma(trackType, segmentType)) {
+      return null;
+    }
     // 如果不合法，则需要删除
     const checkResult = this.check(copy, segment);
     if (checkResult) {

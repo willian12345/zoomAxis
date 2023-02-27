@@ -63,9 +63,9 @@ export class SegmentTracks extends Tracks {
   private mousedownDelegateHandle = (e: MouseEvent) => {
     const target = e.target as HTMLElement;
     // 右健点击忽略
-    if(e.button === 2){
-      return;
-    }
+    // if(e.button === 2){
+    //   return;
+    // }
     if (!target) {
       return;
     }

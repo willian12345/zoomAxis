@@ -12,6 +12,7 @@ export enum SegmentType {
   CAMERA,
   EFFECT,
   BGM,
+  AVATAR,
 }
 export enum TRACKS_EVENT_TYPES {
   DRAG_END, // 拖动结束事件
@@ -24,6 +25,7 @@ export enum TRACKS_EVENT_TYPES {
   SEGMENT_ADDED, // 添加
   KEYFRAME_CLICK, // 关键帧被点击
   DRAGING_OVER, // 在容器上方拖动事件
+  SEGMENT_RIGHT_CLICK, // 右健
 }
 export type ERROR_DATA = {
   eventType: TRACKS_EVENT_TYPES
@@ -126,6 +128,7 @@ export type KeyframeConstructInfo = {
 export interface TrackArgs {
   dom: HTMLElement;
   frameWidth: number;
+  trackType: string;
   trackClass?: string;
   trackPlaceholderClass?: string;
 }
