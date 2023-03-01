@@ -12,6 +12,7 @@ export class SegmentTracks extends Tracks {
   private mousedownTimer = 0
   constructor({
     trackCursor,
+    tracks,
     scrollContainer,
     timeline,
     segmentDelegate,
@@ -21,51 +22,65 @@ export class SegmentTracks extends Tracks {
     if (!scrollContainer) {
       return;
     }
-    super({ trackCursor, scrollContainer, timeline, segmentDelegate, deleteableCheck, dropableCheck });
+    super({tracks, trackCursor, scrollContainer, timeline, segmentDelegate, deleteableCheck, dropableCheck });
     this.scrollContainer = scrollContainer;
     this.scrollContainerRect = scrollContainer.getBoundingClientRect();
     this.dropableCheck = dropableCheck;
     if (segmentDelegate) {
       this.segmentDelegate = segmentDelegate;
     }
+    scrollContainer.addEventListener("click", this.clickHandle.bind(this));
     // 代理 segment 鼠标事件
-    this.segmentDelegate.addEventListener("mousedown", this.mousedownDelegateHandle);
+    this.segmentDelegate.addEventListener("mousedown", this.mousedownDelegateHandle.bind(this));
     // 代理 segment 鼠标事件
-    scrollContainer.addEventListener("mousedown", this.mouseDownHandle);
-    scrollContainer.addEventListener('mouseup', () => {
-      this.clearTimer();
-    })
+    scrollContainer.addEventListener("mousedown", this.mousedownHandle.bind(this));
+    scrollContainer.addEventListener('mouseup', this.mouseupHandle.bind(this))
+  }
+  private checkClickedOnSegment(e: MouseEvent){
+    let target = e.target as HTMLElement | null;
+    if (!target) {
+      return null;
+    }
+    // 找到事件对应的 segment 元素，如果当前不是，则冒泡往上找
+    if(!target.classList.contains("segment")){
+      target = findParentElementByClassName(target, 'segment');
+    }
+    if(target){
+      return target;
+    }
+    return null;
+  }
+  private clickHandle(e: MouseEvent){
+    const result = this.checkClickedOnSegment(e)
+    if(result){
+      e.stopPropagation();
+    }
+  }
+  private mouseupHandle(){
+    this.clearTimer();
   }
   private clearTimer(){
     if(this.mousedownTimer){
       clearTimeout(this.mousedownTimer);
     }
   }
-  private mouseDownHandle: MouseHandle = (e: MouseEvent) => {
+  private mousedownHandle: MouseHandle = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (this?.timeline?.playing) {
       return;
     }
-    let target = e.target as HTMLElement | null;
-    if (!target) {
-      return;
-    }
-    
-    // 找到事件对应的 segment 元素，如果当前不是，则冒泡往上找
-    if(!target.classList.contains("segment")){
-      target = findParentElementByClassName(target, 'segment');
-    }
-    if (target && this.trackCursor && this.scrollContainer) {
-      this.segmentDragStart(e, this.trackCursor, this.scrollContainer, target);
+    const result = this.checkClickedOnSegment(e)
+    if (result && this.trackCursor && this.scrollContainer) {
+      this.segmentDragStart(e, this.trackCursor, this.scrollContainer, result);
     }
   };
   private mousedownDelegateHandle = (e: MouseEvent) => {
     const target = e.target as HTMLElement;
     // 右健点击忽略
-    // if(e.button === 2){
-    //   return;
-    // }
+    if(e.button === 2){
+      return;
+    }
     if (!target) {
       return;
     }
@@ -90,7 +105,9 @@ export class SegmentTracks extends Tracks {
     }, 300);
   }
   override destroy(): void {
-    this?.scrollContainer?.removeEventListener("mousedown", this.mouseDownHandle);
+    this?.scrollContainer?.removeEventListener("mouseup", this.mouseupHandle);
+    this?.scrollContainer?.removeEventListener("click", this.clickHandle);
+    this?.scrollContainer?.removeEventListener("mousedown", this.mousedownHandle);
     this.segmentDelegate.removeEventListener("mousedown", this.mousedownDelegateHandle);
   }
 }

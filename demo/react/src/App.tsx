@@ -7,7 +7,7 @@ import "./App.css";
 import Cursor from "./components/Cursor";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "../../../src/js/TimelineAxis";
 import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/CursorPointer";
-import { TRACKS_EVENT_TYPES } from "../../../src/js/TrackType";
+import { TRACKS_EVENT_TYPES, TrackBasicConfig } from "../../../src/js/TrackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
 import { SegmentTracks } from "../../../src/js/SegmentTracks";
 
@@ -164,11 +164,18 @@ function App() {
         timeline?.setCurrentFrame(e.frame);
       }
     );
-
+    const trackDoms = Array.from(scrollContent.querySelectorAll('.track')) as HTMLElement[];
+    
+    const tracks:TrackBasicConfig[] = trackDoms.map( (dom: HTMLElement) => {
+      console.log( dom.classList.contains('track-flexible'))
+      return {trackType: dom.dataset.trackType ?? '', trackId: dom.dataset.trackId ?? '', dom, flexiable: dom.classList.contains('track-flexible')}
+    })
+    
     // 初始化轨道
     segmentTracks = new SegmentTracks({
       trackCursor,
       scrollContainer,
+      tracks,
       timeline,
       segmentDelegate: segmentItemList,
     });

@@ -4,6 +4,14 @@ import { TimelineAxis } from "./TimelineAxis";
 import { Track } from './Track';
 import { Segment } from "./Segment";
 import { TrackFlex } from "./TrackFlex";
+// 轨道基本配置信息
+export type TrackBasicConfig = {
+  trackId: string,
+  trackType: string|SegmentType,
+  flexiable?: boolean,
+  subTracks?: TrackBasicConfig[],
+  dom: HTMLElement,
+}
 export enum SegmentType {
   BODY_ANIMATION,
   FACE_ANIMATION,
@@ -75,6 +83,7 @@ export interface TracksArgs {
   deleteableCheck?: DeleteableCheck
   ondragover?:any
   ondrop?:any
+  tracks: TrackBasicConfig[]
 }
 export interface SegmentTracksArgs  extends TracksArgs{
   deleteableCheck?: DeleteableCheck

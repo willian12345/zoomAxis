@@ -40,6 +40,7 @@ export class Track extends EventHelper {
   visibility = true;
   segments: Map<string, Segment> = new Map(); // 轨道内的 segment
   subTracks: Map<string, Track> = new Map(); // 子轨道
+  parent: Track|null = null;// 父轨道
   frameWidth: number = 0;
   originFramestart = 0; // 拖动前 framestart
   originFrameend = 0; // 拖动前 frameend
@@ -474,6 +475,15 @@ export class Track extends EventHelper {
   setVisibility(visibility: boolean) {
     this.visibility = visibility;
     this.dom.style.visibility = this.visibility ? "visible" : "hidden";
+  }
+  getTracks(){
+    return Array.from(this.subTracks.values());
+  }
+  addTrack(track: Track){
+    this.subTracks.set(track.trackId, track);
+  }
+  removeTrack(track: Track){
+    this.subTracks.delete(track.trackId);
   }
   destroy() {
     this.dom.removeEventListener("mousedown", this.mousedown);
