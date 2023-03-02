@@ -9,11 +9,11 @@ import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "../../../src/js/Timeline
 import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/CursorPointer";
 import { TRACKS_EVENT_TYPES, TrackBasicConfig } from "../../../src/js/TrackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
-import { SegmentTracks } from "../../../src/js/SegmentTracks";
+import { Tracks } from "../../../src/js/Tracks";
 
 let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;
-let segmentTracks: SegmentTracks;
+let segmentTracks: Tracks;
 let isCtrlDown = false
 const handleKeyUp = () => {
   isCtrlDown = false
@@ -172,7 +172,7 @@ function App() {
     })
     
     // 初始化轨道
-    segmentTracks = new SegmentTracks({
+    segmentTracks = new Tracks({
       trackCursor,
       scrollContainer,
       tracks,

@@ -78,14 +78,13 @@ export class CursorPointer extends EventHelper{
 
     // 滚动区域 mouseup 移动游标
     scrollContentDom.addEventListener("click", (e: MouseEvent) => {
-      console.log('click')
       if (!this._enable || this.timeline?.playing) {
         return;
       }
-      const target = e.target as HTMLElement;
-      if(target && target.classList.contains('segment')){
-        return;
-      }
+      // const target = e.target as HTMLElement;
+      // if(target && target.classList.contains('segment')){
+      //   return;
+      // }
       this.cursorUpdate(timeline, this.getX(e.clientX, scrollContentDom));
       this.triggerDragEnd(timeline, this.getX(e.clientX, scrollContentDom));
     });

@@ -92,9 +92,6 @@ export interface SegmentTracksOutArgs extends TracksArgs {
   
 }
 
-export interface MouseHandle {
-  (e: MouseEvent):void
-}
 export interface DragingArgs { 
   isCopy: boolean,
   scrollContainerX: number, 
@@ -141,3 +138,5 @@ export interface TrackArgs {
   trackClass?: string;
   trackPlaceholderClass?: string;
 }
+
+export type EventListenerType<T extends keyof HTMLElementEventMap> = (this: HTMLElement, e: HTMLElementEventMap[T]) => any

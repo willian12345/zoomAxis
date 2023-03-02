@@ -5,11 +5,11 @@ import Cursor from "./components/Cursor.vue";
 import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/cursorPointer";
 import { TRACKS_EVENT_TYPES, DropableArgs } from "../../../src/js/trackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
-import { SegmentTracks } from "../../../src/js/SegmentTracks";
+import { Tracks } from "../../../src/js/Tracks";
 
 let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;
-let segmentTracks: SegmentTracks;
+let segmentTracks: Tracks;
 let stageWidth = ref(920);
 const scrollContentWidth = ref(920);
 let trackWidth = ref(920);
@@ -132,7 +132,7 @@ const initApp = () => {
   );
 
   // 初始化轨道
-  segmentTracks = new SegmentTracks({
+  segmentTracks = new Tracks({
     trackCursor,
     scrollContainer,
     timeline,

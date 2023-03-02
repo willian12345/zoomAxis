@@ -24,11 +24,9 @@ import {
   isCloseEnouphToY,
   getSegmentPlaceholder,
   isContainSplitFromComma,
-  sortByLeftValue,
   findParentElementByClassName,
   getFrameRange,
   findEndestSegmentOnTrack,
-  isFlexTrack,
 } from "./trackUtils";
 import { TrackFlex } from "./TrackFlex";
 
@@ -39,11 +37,9 @@ export interface Tracks {
     callback: TracksEvent
   ): void;
 }
-
 // 轨道
-export abstract class Tracks extends EventHelper {
+export class Tracks extends EventHelper {
   static DEFAULT_SEGMENT_FRAMES = DEFAULT_SEGMENT_FRAMES;
-  abstract destroy(): void;
   protected scrollContainer: HTMLElement = {} as HTMLElement;
   protected dragoverClass = "dragover";
   protected dragoverErrorClass = "dragover-error";
@@ -55,11 +51,15 @@ export abstract class Tracks extends EventHelper {
   ondrop: any = null;
   currentSegment: HTMLElement | null = null;
   virtualTracks: (Track)[] = []; // 扁平化的虚拟轨道数据
+  segmentDelegate: HTMLElement = document.body;
+  private mousedownTimer = 0
+  private bindedEventArray: {ele: HTMLElement, eventName: keyof HTMLElementEventMap, listener: any, options?:any}[] = []
   constructor({
     tracks,
     trackCursor,
     scrollContainer,
     timeline,
+    segmentDelegate,
     dropableCheck,
     deleteableCheck,
     ondragover,
@@ -72,7 +72,9 @@ export abstract class Tracks extends EventHelper {
     this.timeline = timeline;
     this.trackCursor = trackCursor;
     this.scrollContainer = scrollContainer;
-
+    if (segmentDelegate) {
+      this.segmentDelegate = segmentDelegate;
+    }
     if (dropableCheck) {
       this.dropableCheck = dropableCheck;
     }
@@ -85,6 +87,71 @@ export abstract class Tracks extends EventHelper {
 
     this.initEvent();
     return this;
+  }
+  private checkClickedOnSegment(e: MouseEvent){
+    let target = e.target as HTMLElement | null;
+    if (!target) {
+      return null;
+    }
+    // 找到事件对应的 segment 元素，如果当前不是，则冒泡往上找
+    if(!target.classList.contains("segment")){
+      target = findParentElementByClassName(target, 'segment');
+    }
+    if(target){
+      return target;
+    }
+    return null;
+  }
+  private clickHandle(e: MouseEvent){
+    const result = this.checkClickedOnSegment(e)
+    if(result){
+      e.stopPropagation();
+    }
+  }
+  private mouseupHandle(){
+    this.clearTimer();
+  }
+  private clearTimer(){
+    if(this.mousedownTimer){
+      clearTimeout(this.mousedownTimer);
+    }
+  }
+  private mousedownHandle(e: MouseEvent){
+    e.preventDefault();
+    e.stopPropagation();
+    if (this?.timeline?.playing) {
+      return;
+    }
+    const result = this.checkClickedOnSegment(e)
+    if (result && this.trackCursor && this.scrollContainer) {
+      this.segmentDragStart(e, this.trackCursor, this.scrollContainer, result);
+    }
+  };
+  private mousedownDelegateHandle(ev: MouseEvent){
+    const target = ev.target as HTMLElement;
+    // 右健点击忽略
+    if(ev.button === 2){
+      return;
+    }
+    if (!target) {
+      return;
+    }
+    if (!target.classList.contains("segment-item")) {
+      return;
+    }
+    this.dragStart(ev, this.trackCursor, this.scrollContainer, target, true);
+  }
+  private segmentDragStart(
+    e: MouseEvent,
+    trackCursor: CursorPointer,
+    scrollContainer: HTMLElement,
+    segment: HTMLElement
+  ) {
+    this.select(segment.dataset.segmentId ?? '');
+    this.clearTimer();
+    this.mousedownTimer = setTimeout(()=> {
+      this.dragStart(e, trackCursor, scrollContainer, segment);  
+    }, 300);
   }
   private delegateDispatchEvent(vt: Track, EventType: TRACKS_EVENT_TYPES, interceptor?: () => Promise<void>){
     vt.addEventListener(EventType, async (args) => {
@@ -110,7 +177,7 @@ export abstract class Tracks extends EventHelper {
     })
   }
   private createVirtualTrack(tbc: TrackBasicConfig){
-    const isFlex = tbc.flexiable;
+    const isFlex = tbc.flexiable
     const trackType = String(tbc.trackType);
     let vt: Track|null = null;
     if (isFlex) {
@@ -155,15 +222,29 @@ export abstract class Tracks extends EventHelper {
     // 代理 Track 事件至 Tracks
     this.delegateTrackEvents();
   }
-  private initEvent() {
-    // 点击轨道外部时清除选中过的 segment 状态    
-    this.scrollContainer.addEventListener(
-      "click",
-      this.keyframeMousedownHandle.bind(this)
-    );
+  // 代理 HTMLElement 事件，以便 destroy 时正确清除
+  private on<T extends keyof HTMLElementEventMap>(ele: HTMLElement, eventName: T,  listener: (this: HTMLElement, ev: HTMLElementEventMap[T]) => any, options?: boolean | AddEventListenerOptions){
+    ele.addEventListener(eventName, listener, options);
+    this.bindedEventArray.push({
+      ele,
+      eventName,
+      listener,
+      options,
+    })
   }
-  keyframeMousedownHandle(e: MouseEvent) {
-    const target = e.target as HTMLElement;
+  private initEvent() {
+    // 关键帧点击事件
+    this.on(this.scrollContainer, 'click', (ev)=> this.keyframeMousedownHandle(ev));
+    // 滚动区域 click 击事件
+    this.on(this.scrollContainer, 'click', (ev) => this.clickHandle(ev));
+    // 代理素材列表 segment 可拖入项 鼠标事件
+    this.on(this.segmentDelegate, 'mousedown', (ev) => this.mousedownDelegateHandle(ev));
+    // 代理 轨道内 segment 鼠标事件
+    this.on(this.scrollContainer, 'mousedown',  (ev) => this.mousedownHandle(ev));
+    this.on(this.scrollContainer, 'mouseup',  () => this.mouseupHandle());
+  }
+  keyframeMousedownHandle(ev: MouseEvent) {
+    const target = ev.target as HTMLElement;
     if (!target) return;
     const segment = findParentElementByClassName(target, "segment");
     if (segment) {
@@ -281,10 +362,6 @@ export abstract class Tracks extends EventHelper {
     }
     return currentFrame;
   }
-  private getSegmentLeft(framestart: number): number {
-    const frameWidth = this.timeline?.frameWidth ?? 0;
-    return framestart * frameWidth;
-  }
   protected async getSegment(
     copy: boolean,
     segment: HTMLElement,
@@ -345,47 +422,6 @@ export abstract class Tracks extends EventHelper {
     return this.getTracks().find((track: HTMLElement) =>
       isContainSplitFromComma(track.dataset.trackId ?? "", trackId)
     );
-  }
-  setSegmentPosition(
-    segment: HTMLElement,
-    framestart: number,
-    frameend: number
-  ) {
-    const segmentLeft = this.getSegmentLeft(framestart);
-    segment.style.left = `${segmentLeft}px`;
-    const frames = frameend - framestart;
-    if (this.timeline) {
-      segment.style.width = `${this.timeline?.frameWidth * frames}px`;
-    }
-  }
-  // 获取相对于 leftValue 右侧所有 segment
-  getRightSideSegments(segments: Segment[], leftValue: number) {
-    return segments
-      .filter((segment) => {
-        const segmentX = getLeftValue(segment.dom);
-        return leftValue < segmentX;
-      })
-      .sort(sortByLeftValue);
-  }
-  // 获取相对于 leftValue 左侧所有 segment
-  getLeftSideSegments(segments: Segment[], leftValue: number) {
-    return segments
-      .filter((segment) => {
-        const segmentX = getLeftValue(segment.dom);
-        // ？？ 是否拖动手柄时也使用此判断 todo
-        const _leftValue =
-          segmentX + segment.dom.getBoundingClientRect().width * 0.5;
-        return leftValue > _leftValue;
-      })
-      .sort(sortByLeftValue);
-  }
-  getLeftSideSegmentsInTrack(track: Track, leftValue: number) {
-    const segments = track.getSegments();
-    return this.getLeftSideSegments(segments, leftValue);
-  }
-  getRightSideSegmentsInTrack(track: Track, leftValue: number) {
-    const segments = track.getSegments();
-    return this.getRightSideSegments(segments, leftValue);
   }
   protected triggerSelected(segment: Segment) {
     this.dispatchEvent(
@@ -607,20 +643,6 @@ export abstract class Tracks extends EventHelper {
     segment.setRange(segment.framestart, segment.frameend);
     track.addSegment(segment)
   }
-  // 获取轨道结束帧最靠右边的 segment
-  // 注意：有可能最右边的有多个
-  getMaxFrameendSegments() {
-    const segments = this.getVirtualSegmentAll();
-    const result: Segment[] = [];
-    let maxFrameend = 0;
-    segments.forEach((segment) => {
-      if (segment.frameend >= maxFrameend) {
-        result.push(segment);
-        maxFrameend = segment.frameend;
-      }
-    });
-    return result;
-  }
   getEndestSegmentFrameRange(trackId: string): [number, number] {
     let track = this.getTrackById(trackId);
     if (!track) {
@@ -679,9 +701,10 @@ export abstract class Tracks extends EventHelper {
   width() {
     return this.timeline.totalFrames * this.timeline.frameWidth;
   }
-  unMounted() {
+  destroy(){
     this.virtualTracks.forEach( vt => vt.destroy());
-    document.removeEventListener("mousedown", this.removeSegmentActivedStatus);
-    this.destroy();
+    for(let {ele, eventName, listener, options} of this.bindedEventArray){
+      ele.removeEventListener(eventName, listener, options);
+    }
   }
 }

@@ -71,11 +71,11 @@ export class Track extends EventHelper {
       return;
     }
     if (target.classList.contains("segment-handle-left")) {
-      this.dragHandleStart(e, target, this.leftHandleMove);
+      e.stopPropagation();
       return;
     }
     if (target.classList.contains("segment-handle-right")) {
-      this.dragHandleStart(e, target, this.rightHandleMove);
+      e.stopPropagation();
       return;
     }
   }
@@ -100,10 +100,12 @@ export class Track extends EventHelper {
       } 
     }
     if (target.classList.contains("segment-handle-left")) {
+      e.stopPropagation();
       this.dragHandleStart(e, target, this.leftHandleMove);
       return;
     }
     if (target.classList.contains("segment-handle-right")) {
+      e.stopPropagation();
       this.dragHandleStart(e, target, this.rightHandleMove);
       return;
     }
@@ -160,7 +162,7 @@ export class Track extends EventHelper {
     if (currentFrame >= frameend) {
       return;
     }
-    const segments = this.getSegments();
+    const segments = this.getSegmentsSelf();
     const result: Segment[] = [segment];
     // 伸缩轨道，左侧 segment frameend 设为当前调整的 segment 的 framestart
     const track = segment.parentTrack;
@@ -219,7 +221,7 @@ export class Track extends EventHelper {
     if (frameend <= framestart) return;
 
     const result: Segment[] = [segment];
-    const segments = this.getSegments();
+    const segments = this.getSegmentsSelf();
     // 伸缩轨道，右侧 segment framestart 设为当前调整的 segment 的 frameend
     const track = segment.parentTrack;
 
@@ -441,6 +443,9 @@ export class Track extends EventHelper {
   getOtherSegments(segmentId: string) {
     const segments = this.getSegments();
     return segments.filter((segment) => segment.segmentId !== segmentId);
+  }
+  getSegmentsSelf(){
+    return Array.from(this.segments.values())
   }
   getSegments() {
     let result: Segment[] = Array.from(this.segments.values());
