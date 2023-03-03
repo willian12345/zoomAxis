@@ -167,10 +167,9 @@ function App() {
     const trackDoms = Array.from(scrollContent.querySelectorAll('.track')) as HTMLElement[];
     
     const tracks:TrackBasicConfig[] = trackDoms.map( (dom: HTMLElement) => {
-      console.log( dom.classList.contains('track-flexible'))
-      return {trackType: dom.dataset.trackType ?? '', trackId: dom.dataset.trackId ?? '', dom, flexiable: dom.classList.contains('track-flexible')}
-    })
-    
+      return {trackType: dom.dataset.trackType ?? '', trackId: dom.dataset.trackId ?? '', dom, flexiable: dom.classList.contains('track-flexible')};
+    });
+  
     // 初始化轨道
     segmentTracks = new Tracks({
       trackCursor,
@@ -215,7 +214,7 @@ function App() {
           <div className="segment-item" data-segment-type="0">拖我</div>
           <div className="segment-item" data-segment-type="0">拖我</div>
           <div className="segment-item" data-segment-type="0">拖我</div>
-          <div className="segment-item segment-item-flex" data-segment-type="1">
+          <div className="segment-item segment-item-flex" data-segment-type="1" data-track-type="c">
             拖我
             <em>(伸缩轨道)</em>
             <button onClick={()=> add('c')}> add </button>

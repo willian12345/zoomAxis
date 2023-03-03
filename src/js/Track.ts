@@ -17,7 +17,7 @@ import {
   getRightSideSegments,
   getLeftSideSegments,
 } from "./trackUtils";
-import { TrackArgs, DragingArgs, TRACKS_EVENT_TYPES, SegmentType } from "./TrackType";
+import { TrackArgs, DragingArgs, TRACKS_EVENT_TYPES } from "./TrackType";
 import { EventHelper } from "./EventHelper";
 import { TrackFlex } from "./TrackFlex";
 
@@ -366,7 +366,7 @@ export class Track extends EventHelper {
     }
     placeHolder.style.opacity = "0";
     const trackType = this.trackType;
-    const segmentType = `${segment.segmentType}`;
+    const segmentType = String(segment.segmentType);
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(trackType, segmentType)) {
       return null;

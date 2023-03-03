@@ -14,15 +14,15 @@ import {
   getLeftSideSegments,
 } from "./trackUtils";
 interface TrackFlexArgs {
-  totalFrames: number
+  totalFrames: number;
 }
 const DEFAULT_SEGMENT_FRAMES = 150;
 export class TrackFlex extends Track {
-  totalFrames = 0
+  totalFrames = 0;
   isFlex = true;
   framestart = 0; // 当前轨道拖动的 segment  framestart
   frameend = 0; // 当前轨道拖动的 segment frameend
-  frames = 0; // 当前轨道拖动的 segment frames 
+  frames = 0; // 当前轨道拖动的 segment frames
   constructor(args: TrackArgs & TrackFlexArgs) {
     super(args);
     this.totalFrames = args.totalFrames;
@@ -63,7 +63,7 @@ export class TrackFlex extends Track {
     }
     return [collisionSegment, collisionSegmentFrameend];
   }
-  pointerdown(segment: Segment){
+  pointerdown(segment: Segment) {
     this.framestart = segment.framestart;
     this.frameend = segment.frameend;
     this.frames = segment.frameend - segment.framestart;
@@ -79,7 +79,7 @@ export class TrackFlex extends Track {
       return;
     }
     this.dom.classList.add(this.dragoverClass);
-    const trackType = this.dom.dataset.trackType ?? "";
+    const trackType = this.trackType;
     const segmentType = segment.dataset.segmentType ?? "";
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(trackType, segmentType)) {
@@ -98,7 +98,7 @@ export class TrackFlex extends Track {
   collisionHorizontal(
     isCopy: boolean,
     currentSegment: Segment,
-    placeholder: HTMLElement,
+    placeholder: HTMLElement
   ) {
     if (isCopy) {
       return;
@@ -153,7 +153,13 @@ export class TrackFlex extends Track {
     copy: boolean;
     framestart: number;
     segment: Segment;
-  }): Segment|null{
+  }): Segment | null {
+    const trackType = this.trackType;
+    const segmentType = String(segment.segmentType);
+    // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
+    if (!isContainSplitFromComma(trackType, segmentType)) {
+      return null;
+    }
     // 如果是轨道内的拖动，则不需要裁剪功能
     if (!copy) {
       this.addSegment(segment);
@@ -220,7 +226,7 @@ export class TrackFlex extends Track {
     super.removeSegment(segment);
   }
   // 更新可拖动手柄
-  updateSegmentHandler(){
+  updateSegmentHandler() {
     const segments = this.getSegments().sort(sortByLeftValue);
     console.log(segments);
     // 如果只有一个 segment 则不允许左右手柄拖动
@@ -240,7 +246,7 @@ export class TrackFlex extends Track {
       segment.setHandleEnable(true, true);
     });
   }
-  setTotalFrames(n: number){
+  setTotalFrames(n: number) {
     this.totalFrames = n;
   }
 }

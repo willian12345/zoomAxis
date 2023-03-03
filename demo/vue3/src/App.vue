@@ -3,7 +3,7 @@ import { onMounted, onUnmounted, ref, Ref } from "vue";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "../../../src/js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
 import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/cursorPointer";
-import { TRACKS_EVENT_TYPES, DropableArgs } from "../../../src/js/trackType";
+import { TRACKS_EVENT_TYPES, TrackBasicConfig } from "../../../src/js/trackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
 import { Tracks } from "../../../src/js/Tracks";
 
@@ -130,11 +130,16 @@ const initApp = () => {
       timeline?.setCurrentFrame(frame);
     }
   );
-
+  const trackDoms = Array.from(scrollContent.querySelectorAll('.track')) as HTMLElement[];
+  const tracks:TrackBasicConfig[] = trackDoms.map( (dom: HTMLElement) => {
+    return {trackType: dom.dataset.trackType ?? '', trackId: dom.dataset.trackId ?? '', dom, flexiable: dom.classList.contains('track-flexible')};
+  });
+  console.log(tracks,3333)
   // 初始化轨道
   segmentTracks = new Tracks({
     trackCursor,
     scrollContainer,
+    tracks,
     timeline,
     segmentDelegate: segmentItemList,
   });
@@ -175,9 +180,6 @@ const initApp = () => {
 onMounted(() => {
   initApp();
 });
-onUnmounted(()=> {
-  segmentTracks.unMounted();
-})
 </script>
 
 <template>
@@ -186,7 +188,7 @@ onUnmounted(()=> {
       <div class="segment-item" data-segment-type="0">拖我</div>
       <div class="segment-item" data-segment-type="0">拖我</div>
       <div class="segment-item" data-segment-type="0">拖我</div>
-      <div class="segment-item" data-segment-type="0">拖我</div>
+      <div class="segment-item" data-segment-type="0" data-track-type="1">拖我</div>
       <div class="segment-item segment-item-flex" data-segment-type="1" data-track-id="c">
         拖我
         <em>(伸缩轨道)</em>
@@ -378,6 +380,13 @@ onUnmounted(()=> {
     border-radius: 4px;
     background-color: rgba(aquamarine, 0.3);
   }
+}
+
+.track.dragover {
+  background-color: rgba(white, 0.08);
+}
+.track.dragover-error {
+  background-color: rgba(red, 0.08);
 }
 
 .segment-list {

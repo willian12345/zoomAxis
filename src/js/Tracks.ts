@@ -50,10 +50,15 @@ export class Tracks extends EventHelper {
   ondragover: any = null;
   ondrop: any = null;
   currentSegment: HTMLElement | null = null;
-  virtualTracks: (Track)[] = []; // 扁平化的虚拟轨道数据
+  virtualTracks: Track[] = []; // 扁平化的虚拟轨道数据
   segmentDelegate: HTMLElement = document.body;
-  private mousedownTimer = 0
-  private bindedEventArray: {ele: HTMLElement, eventName: keyof HTMLElementEventMap, listener: any, options?:any}[] = []
+  private mousedownTimer = 0;
+  private bindedEventArray: {
+    ele: HTMLElement;
+    eventName: keyof HTMLElementEventMap;
+    listener: any;
+    options?: any;
+  }[] = [];
   constructor({
     tracks,
     trackCursor,
@@ -88,49 +93,49 @@ export class Tracks extends EventHelper {
     this.initEvent();
     return this;
   }
-  private checkClickedOnSegment(e: MouseEvent){
+  private checkClickedOnSegment(e: MouseEvent) {
     let target = e.target as HTMLElement | null;
     if (!target) {
       return null;
     }
     // 找到事件对应的 segment 元素，如果当前不是，则冒泡往上找
-    if(!target.classList.contains("segment")){
-      target = findParentElementByClassName(target, 'segment');
+    if (!target.classList.contains("segment")) {
+      target = findParentElementByClassName(target, "segment");
     }
-    if(target){
+    if (target) {
       return target;
     }
     return null;
   }
-  private clickHandle(e: MouseEvent){
-    const result = this.checkClickedOnSegment(e)
-    if(result){
+  private clickHandle(e: MouseEvent) {
+    const result = this.checkClickedOnSegment(e);
+    if (result) {
       e.stopPropagation();
     }
   }
-  private mouseupHandle(){
+  private mouseupHandle() {
     this.clearTimer();
   }
-  private clearTimer(){
-    if(this.mousedownTimer){
+  private clearTimer() {
+    if (this.mousedownTimer) {
       clearTimeout(this.mousedownTimer);
     }
   }
-  private mousedownHandle(e: MouseEvent){
+  private mousedownHandle(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
     if (this?.timeline?.playing) {
       return;
     }
-    const result = this.checkClickedOnSegment(e)
+    const result = this.checkClickedOnSegment(e);
     if (result && this.trackCursor && this.scrollContainer) {
       this.segmentDragStart(e, this.trackCursor, this.scrollContainer, result);
     }
-  };
-  private mousedownDelegateHandle(ev: MouseEvent){
+  }
+  private mousedownDelegateHandle(ev: MouseEvent) {
     const target = ev.target as HTMLElement;
     // 右健点击忽略
-    if(ev.button === 2){
+    if (ev.button === 2) {
       return;
     }
     if (!target) {
@@ -147,25 +152,26 @@ export class Tracks extends EventHelper {
     scrollContainer: HTMLElement,
     segment: HTMLElement
   ) {
-    this.select(segment.dataset.segmentId ?? '');
+    this.select(segment.dataset.segmentId ?? "");
     this.clearTimer();
-    this.mousedownTimer = setTimeout(()=> {
-      this.dragStart(e, trackCursor, scrollContainer, segment);  
+    this.mousedownTimer = setTimeout(() => {
+      this.dragStart(e, trackCursor, scrollContainer, segment);
     }, 300);
   }
-  private delegateDispatchEvent(vt: Track, EventType: TRACKS_EVENT_TYPES, interceptor?: () => Promise<void>){
+  private delegateDispatchEvent(
+    vt: Track,
+    EventType: TRACKS_EVENT_TYPES,
+    interceptor?: () => Promise<void>
+  ) {
     vt.addEventListener(EventType, async (args) => {
       // 如有需要事件发出前可以拦一道
       await interceptor?.();
-      this.dispatchEvent(
-        { eventType: EventType },
-        args
-      )
-    })
+      this.dispatchEvent({ eventType: EventType }, args);
+    });
   }
   // 代理 Track 事件
-  private delegateTrackEvents () {
-    this.virtualTracks.forEach( vt => {
+  private delegateTrackEvents() {
+    this.virtualTracks.forEach((vt) => {
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DRAG_END);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DROP_EFFECT);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_ADDED);
@@ -174,12 +180,12 @@ export class Tracks extends EventHelper {
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDED);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_RIGHT_CLICK);
-    })
+    });
   }
-  private createVirtualTrack(tbc: TrackBasicConfig){
-    const isFlex = tbc.flexiable
+  private createVirtualTrack(tbc: TrackBasicConfig) {
+    const isFlex = tbc.flexiable;
     const trackType = String(tbc.trackType);
-    let vt: Track|null = null;
+    let vt: Track | null = null;
     if (isFlex) {
       vt = new TrackFlex({
         dom: tbc.dom,
@@ -187,30 +193,31 @@ export class Tracks extends EventHelper {
         frameWidth: this.timeline.frameWidth,
         totalFrames: this.timeline.totalFrames,
       });
+    } else {
+      vt = new Track({
+        dom: tbc.dom,
+        trackType,
+        frameWidth: this.timeline.frameWidth,
+      });
     }
-    vt = new Track({
-      dom: tbc.dom,
-      trackType,
-      frameWidth: this.timeline.frameWidth,
-    });
-    if(tbc.subTracks){
+    if (tbc.subTracks) {
       // 递归创建虚拟轨道
       tbc.subTracks.forEach((stbc: TrackBasicConfig) => {
         const svt = this.createVirtualTrack(stbc);
         vt?.addTrack(svt);
       });
     }
-    return vt
+    return vt;
   }
-  private getPlainTracks(tracks: Track[], result:Track[] = []){
-    for(let track of tracks){
-      result.push(track)
+  private getPlainTracks(tracks: Track[], result: Track[] = []) {
+    for (let track of tracks) {
+      result.push(track);
       const sub = track.getTracks();
-      if(sub.length){
-        this.getPlainTracks(sub, result)
+      if (sub.length) {
+        this.getPlainTracks(sub, result);
       }
     }
-    return result
+    return result;
   }
   private initTracks(tracks: TrackBasicConfig[]) {
     const trackTree = tracks.map((tbc: TrackBasicConfig) => {
@@ -218,30 +225,41 @@ export class Tracks extends EventHelper {
     });
     // 存储扁平结构的虚拟轨道方便处理
     const plain = this.getPlainTracks(trackTree);
-    this.virtualTracks = plain
+    this.virtualTracks = plain;
     // 代理 Track 事件至 Tracks
     this.delegateTrackEvents();
   }
   // 代理 HTMLElement 事件，以便 destroy 时正确清除
-  private on<T extends keyof HTMLElementEventMap>(ele: HTMLElement, eventName: T,  listener: (this: HTMLElement, ev: HTMLElementEventMap[T]) => any, options?: boolean | AddEventListenerOptions){
+  private on<T extends keyof HTMLElementEventMap>(
+    ele: HTMLElement,
+    eventName: T,
+    listener: (this: HTMLElement, ev: HTMLElementEventMap[T]) => any,
+    options?: boolean | AddEventListenerOptions
+  ) {
     ele.addEventListener(eventName, listener, options);
     this.bindedEventArray.push({
       ele,
       eventName,
       listener,
       options,
-    })
+    });
   }
   private initEvent() {
     // 关键帧点击事件
-    this.on(this.scrollContainer, 'click', (ev)=> this.keyframeMousedownHandle(ev));
+    this.on(this.scrollContainer, "click", (ev) =>
+      this.keyframeMousedownHandle(ev)
+    );
     // 滚动区域 click 击事件
-    this.on(this.scrollContainer, 'click', (ev) => this.clickHandle(ev));
+    this.on(this.scrollContainer, "click", (ev) => this.clickHandle(ev));
     // 代理素材列表 segment 可拖入项 鼠标事件
-    this.on(this.segmentDelegate, 'mousedown', (ev) => this.mousedownDelegateHandle(ev));
+    this.on(this.segmentDelegate, "mousedown", (ev) =>
+      this.mousedownDelegateHandle(ev)
+    );
     // 代理 轨道内 segment 鼠标事件
-    this.on(this.scrollContainer, 'mousedown',  (ev) => this.mousedownHandle(ev));
-    this.on(this.scrollContainer, 'mouseup',  () => this.mouseupHandle());
+    this.on(this.scrollContainer, "mousedown", (ev) =>
+      this.mousedownHandle(ev)
+    );
+    this.on(this.scrollContainer, "mouseup", () => this.mouseupHandle());
   }
   keyframeMousedownHandle(ev: MouseEvent) {
     const target = ev.target as HTMLElement;
@@ -255,7 +273,7 @@ export class Tracks extends EventHelper {
     }
     if (target.classList.contains("segment-keyframe")) {
       target.classList.add("actived");
-      e.stopPropagation();
+      ev.stopPropagation();
       this.dispatchEvent(
         { eventType: TRACKS_EVENT_TYPES.KEYFRAME_CLICK },
         {
@@ -281,10 +299,13 @@ export class Tracks extends EventHelper {
     virtualSegment?.parentTrack?.removeSegment(virtualSegment);
     return result;
   }
-  async deleteSegments(segments: Segment[]){
-    for(let segment of segments){
-      if(segment.parentTrack?.trackId){
-        await this.deleteSegment(segment.parentTrack.trackId, segment.segmentId);
+  async deleteSegments(segments: Segment[]) {
+    for (let segment of segments) {
+      if (segment.parentTrack?.trackId) {
+        await this.deleteSegment(
+          segment.parentTrack.trackId,
+          segment.segmentId
+        );
       }
     }
   }
@@ -292,7 +313,7 @@ export class Tracks extends EventHelper {
     const virtualSegments = this.getVirtualSegmentAll();
     virtualSegments.forEach((vs) => vs.setActived(false));
   }
-  
+
   private putSegmentBack(
     segment: HTMLElement,
     segmentLeft: number,
@@ -411,8 +432,8 @@ export class Tracks extends EventHelper {
   }
   // 获取某条轨道内的所有 segments
   getSegmentsByTrackId(trackId: string): Segment[] {
-    const track = this.getVirtualTrack(trackId)
-    if(!track) return [];
+    const track = this.getVirtualTrack(trackId);
+    if (!track) return [];
     return track.getSegments();
   }
   getTracks() {
@@ -442,7 +463,6 @@ export class Tracks extends EventHelper {
     if (!scrollContainer) {
       return;
     }
-    let pointerEnter = false;
     // 获取所有轨道
     const tracks: HTMLElement[] = this.virtualTracks.map((vt) => vt.dom);
     // 全局拖动容器
@@ -471,7 +491,7 @@ export class Tracks extends EventHelper {
       const virtualSegment = this.getVirtualSegmentById(
         segmentDom.dataset.segmentId ?? ""
       );
-      const track = virtualSegment?.parentTrack
+      const track = virtualSegment?.parentTrack;
       virtualSegment && track?.pointerdown(virtualSegment);
     }
 
@@ -494,7 +514,7 @@ export class Tracks extends EventHelper {
       dragTrackContainer.style.top = `${top}px`;
       const scrollContainerX =
         scrollContainer.scrollLeft - scrollContainerRect.left;
-      this.virtualTracks.forEach( vt => vt.removeStatusClass())
+      this.virtualTracks.forEach((vt) => vt.removeStatusClass());
       // Y 轴碰撞
       const collisionTrack = trackCollisionCheckY(
         this.virtualTracks,
@@ -507,7 +527,7 @@ export class Tracks extends EventHelper {
         segment: segmentDom,
         dragTrackContainerRect,
         tracks,
-      })
+      });
 
       // 拖动容器形变
       // todo: 外部指定容器变形大小
@@ -544,7 +564,7 @@ export class Tracks extends EventHelper {
       const scrollContainerScrollLeft = scrollContainer.scrollLeft;
       const { left } = dragTrackContainer.getBoundingClientRect();
       dragTrackContainer.style.transition = "none";
-      
+
       // x = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
       const x = left - scrollContainerRect.left + scrollContainerScrollLeft;
       const framestart = this.getFramestartByX(x);
@@ -578,7 +598,11 @@ export class Tracks extends EventHelper {
             dragTrackContainer.removeChild(segmentCopy);
           }
           if (originTrack) {
-            this.putSegmentBack(segmentDom, getLeftValue(segmentDom), originTrack);
+            this.putSegmentBack(
+              segmentDom,
+              getLeftValue(segmentDom),
+              originTrack
+            );
           }
         }
         // 重新允许游标交互
@@ -641,7 +665,7 @@ export class Tracks extends EventHelper {
       frameWidth: this.timeline.frameWidth,
     });
     segment.setRange(segment.framestart, segment.frameend);
-    track.addSegment(segment)
+    track.addSegment(segment);
   }
   getEndestSegmentFrameRange(trackId: string): [number, number] {
     let track = this.getTrackById(trackId);
@@ -660,8 +684,6 @@ export class Tracks extends EventHelper {
     framestart: number
   ) {
     if (framestart === undefined) return;
-    const track = this.getTrackById(trackId);
-    if (!track) return;
     const virtualTrack = this.getVirtualTrack(trackId);
     if (!virtualTrack) return;
     const virtualSegment = await this.createSegment(
@@ -670,15 +692,18 @@ export class Tracks extends EventHelper {
       segmentType
     );
     if (!virtualSegment) return;
-    if(virtualTrack instanceof TrackFlex){
+    if (virtualTrack instanceof TrackFlex) {
       virtualTrack.pointerup({
         copy: true,
         framestart: this.timeline.currentFrame,
         segment: virtualSegment,
       });
-    }else{
+    } else {
       virtualTrack.addSegment(virtualSegment);
-      virtualSegment.setRange(virtualSegment.framestart, virtualSegment.frameend);
+      virtualSegment.setRange(
+        virtualSegment.framestart,
+        virtualSegment.frameend
+      );
     }
   }
   // 帧位置更新
@@ -691,9 +716,9 @@ export class Tracks extends EventHelper {
     const segments = this.getVirtualSegmentAll();
     segments.forEach((segment) => segment.setFrameWidth(frameWidth));
   }
-  setTotalFrames(n: number){
-    this.virtualTracks.forEach( vt => {
-      if(vt instanceof TrackFlex){
+  setTotalFrames(n: number) {
+    this.virtualTracks.forEach((vt) => {
+      if (vt instanceof TrackFlex) {
         vt.setTotalFrames(n);
       }
     });
@@ -701,9 +726,9 @@ export class Tracks extends EventHelper {
   width() {
     return this.timeline.totalFrames * this.timeline.frameWidth;
   }
-  destroy(){
-    this.virtualTracks.forEach( vt => vt.destroy());
-    for(let {ele, eventName, listener, options} of this.bindedEventArray){
+  destroy() {
+    this.virtualTracks.forEach((vt) => vt.destroy());
+    for (let { ele, eventName, listener, options } of this.bindedEventArray) {
       ele.removeEventListener(eventName, listener, options);
     }
   }
