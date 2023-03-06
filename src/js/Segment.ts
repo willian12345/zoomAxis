@@ -30,6 +30,7 @@ export class Segment {
   leftHandler = {} as HTMLElement
   rightHandler = {} as HTMLElement
   keyframes = [] as Keyframe[]
+  disabled = false
   // 内容渲染器，可传自定义的渲染内容，用于个性化
   contentRender: string|HTMLElement|null = null
   constructor(args: SegmentConstructInfo) {
@@ -181,6 +182,6 @@ export class Segment {
     return deletedArr;
   }
   destroy(){
-    this.dom.removeEventListener('click', this.handleClick.bind(this));
+    // this.dom.removeEventListener('click', this.handleClick.bind(this));
   }
 }

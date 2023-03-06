@@ -59,6 +59,15 @@ export class Tracks extends EventHelper {
     listener: any;
     options?: any;
   }[] = [];
+  private _disabled = false;
+  get disabled(){
+    return this._disabled
+  };
+  set disabled(v){
+    this._disabled = v;
+    this.virtualTracks.forEach( s => s.disabled = v)
+  }
+
   constructor({
     tracks,
     trackCursor,
@@ -246,20 +255,28 @@ export class Tracks extends EventHelper {
   }
   private initEvent() {
     // 关键帧点击事件
-    this.on(this.scrollContainer, "click", (ev) =>
+    this.on(this.scrollContainer, "click", (ev) =>{
+      if(this.disabled) return;
       this.keyframeMousedownHandle(ev)
-    );
+    });
     // 滚动区域 click 击事件
-    this.on(this.scrollContainer, "click", (ev) => this.clickHandle(ev));
+    this.on(this.scrollContainer, "click", (ev) => {
+      this.clickHandle(ev);
+    });
     // 代理素材列表 segment 可拖入项 鼠标事件
-    this.on(this.segmentDelegate, "mousedown", (ev) =>
-      this.mousedownDelegateHandle(ev)
-    );
+    this.on(this.segmentDelegate, "mousedown", (ev) =>{
+      if(this.disabled) return;
+      this.mousedownDelegateHandle(ev);
+    });
     // 代理 轨道内 segment 鼠标事件
-    this.on(this.scrollContainer, "mousedown", (ev) =>
+    this.on(this.scrollContainer, "mousedown", (ev) =>{
+      if(this.disabled) return;
       this.mousedownHandle(ev)
-    );
-    this.on(this.scrollContainer, "mouseup", () => this.mouseupHandle());
+    });
+    this.on(this.scrollContainer, "mouseup", () => {
+      if(this.disabled) return;
+      this.mouseupHandle();
+    });
   }
   keyframeMousedownHandle(ev: MouseEvent) {
     const target = ev.target as HTMLElement;

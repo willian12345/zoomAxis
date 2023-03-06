@@ -44,6 +44,7 @@ export class Track extends EventHelper {
   frameWidth: number = 0;
   originFramestart = 0; // 拖动前 framestart
   originFrameend = 0; // 拖动前 frameend
+  disabled = false;
   private lastEffectSegments: Segment[] = [];
   constructor({
     trackClass = "track",
@@ -66,6 +67,9 @@ export class Track extends EventHelper {
     this.dom.addEventListener("click", this.click.bind(this));
   }
   click(e: MouseEvent) {
+    if(this.disabled){
+      return;
+    }
     let target = e.target as HTMLElement | null;
     if (!target) {
       return;
@@ -80,6 +84,9 @@ export class Track extends EventHelper {
     }
   }
   mousedown(e: MouseEvent) {
+    if(this.disabled){
+      return;
+    }
     let target = e.target as HTMLElement | null;
     if (!target) {
       return;

@@ -8,6 +8,7 @@ export enum TIMELINE_AXIS_EVENT_TYPE {
   PLAY_START,
   PLAY_END,
   STOP,
+  PAUSE,
 }
 
 export interface TimelineAxisCallback {
@@ -88,6 +89,7 @@ export class TimelineAxis extends ZoomAxis {
   pause() {
     this.paused = true;
     this.playing = false;
+    this.dispatchEvent({eventType: TIMELINE_AXIS_EVENT_TYPE.PAUSE}, {});
   }
   play(currentFrame?: number) {
     if (
@@ -100,6 +102,7 @@ export class TimelineAxis extends ZoomAxis {
     this.paused = false;
     this.stoped = false;
     this.enterFrame();
+    this.dispatchEvent({eventType: TIMELINE_AXIS_EVENT_TYPE.PLAY_START}, {});
     this.playing = true;
   }
   stop() {
