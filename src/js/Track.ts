@@ -374,10 +374,12 @@ export class Track extends EventHelper {
     placeHolder.style.opacity = "0";
     const trackType = this.trackType;
     const segmentType = String(segment.segmentType);
+    
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(trackType, segmentType)) {
       return null;
     }
+    
     // 如果不合法，则需要删除
     const checkResult = this.check(copy, segment);
     if (checkResult) {
@@ -423,6 +425,10 @@ export class Track extends EventHelper {
         );
       }, 2);
       return;
+    }
+    // 如果是从别的轨道拖过来的，需要从原轨道移聊
+    if(segment.parentTrack){
+      segment.parentTrack.segments.delete(segment.segmentId);
     }
     this.segments.set(segment.segmentId, segment);
     this.dom.appendChild(segment.dom);
