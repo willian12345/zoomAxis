@@ -154,13 +154,16 @@ const initApp = () => {
     if (trackWidth.value <= stageWidth.value) {
       return;
     }
-    if(pointerX < stageWidth.value - 150 && pointerX > 150){
+    // 修正 pointerX 值
+    const scrollContainerLeft = scrollContainerRef.value.getBoundingClientRect().left;
+    pointerX -= scrollContainerLeft
+    if(pointerX < stageWidth.value - 50 && pointerX > 50){
       return ;
     }
     let direct = 0;
-    if(pointerX >= stageWidth.value - 150){
+    if(pointerX >= stageWidth.value - 50){
       direct = 1
-    }else if(pointerX <= 150){
+    }else if(pointerX <= 50){
       direct = -1
     }
     const dom = scrollContainerRef.value as HTMLElement

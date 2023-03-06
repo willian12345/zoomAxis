@@ -343,9 +343,9 @@ export class Track extends EventHelper {
     placeHolder.style.width = `${dragTrackContainerRect.width}px`;
     placeHolder.style.left = `${x}px`;
     // 利用各轨道内的 placeholder 与 轨道内所有现有存 segment进行x轴碰撞检测
-    const [isCollistion] = collisionCheckX(placeHolder, this.dom);
+    const [isCollistion, magnet] = collisionCheckX(placeHolder, this.dom);
     // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
-    if (isCollistion) {
+    if (isCollistion && !magnet) {
       placeHolder.style.opacity = "0";
     } else {
       placeHolder.style.opacity = "1";
@@ -385,10 +385,7 @@ export class Track extends EventHelper {
     if (!isCollistion || magnet) {
       // 如果 x 轴磁吸，则需要根据磁吸的 segment 重新计算 framestart 与 segmentLeft 值
       if (magnet && magnetTo) {
-        const magnetToRect: DOMRect = magnetTo.getBoundingClientRect();
-        const magnetLeft: number = getLeftValue(magnetTo);
-        const x = magnetLeft + magnetToRect.width;
-        framestart = this.getFramestartByX(x);
+        framestart = this.getFramestartByX(magnetTo);
       }
       const [fs, fd] = getFrameRange(segment.dom);
       const frameend = framestart + (fd - fs);

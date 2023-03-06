@@ -3,9 +3,8 @@ import { SegmentBasicInfo, SegmentType, SegmentConstructInfo } from './TrackType
 import { Segment } from './Segment';
 import { getRendererBySegmentType } from './SegmentRenderers'
 import { Track } from './Track';
-import { TrackFlex } from './TrackFlex';
-const CLOSE_ENOUPH_DISTANCE_Y = 10; // 距离 y 是否够近
-const CLOSE_ENOUPH_SEGMENT_X = 60; // 距离 segment x是否够
+const CLOSE_ENOUPH_DISTANCE_Y = 15; // 距离 y 是否够近
+const CLOSE_ENOUPH_SEGMENT_X = 20; // 距离 segment x是否够
 
 
 export const createSegment = (segmentInfo: SegmentConstructInfo ) => {
@@ -85,13 +84,13 @@ export const getSegmentPlaceholder = (track: HTMLElement) => {
   return dom;
 };
 
-type  collisionCheckXResult = [collision:boolean, magnet: boolean, magnetTo?:HTMLElement]
+type  collisionCheckXResult = [collision:boolean, magnet: boolean, magnetTo?:number]
 // 轨道内 segment x 轴横向碰撞检测
 export const collisionCheckX = (
-  target: HTMLElement,
+  target: HTMLElement, // placeholder
   track: HTMLElement
 ): collisionCheckXResult => {
-  // target 即轨道内的 placeholder 替身
+  // target 即轨道内的 当前拖动 segment 的 placeholder 替身
   const targetRect = target.getBoundingClientRect();
   const segments: HTMLElement[] = Array.from(
     track.querySelectorAll(".segment")
@@ -107,11 +106,7 @@ export const collisionCheckX = (
     let targetLeft = getLeftValue(target);
     // 如果值是负数说明拖到超出轨道左侧需要修正为 0
     targetLeft = targetLeft < 0 ? 0 : targetLeft;
-    const closeDistance = targetLeft - (segmentLeft + segmentRect.width);
-    if(closeDistance <= 0 && closeDistance >= -CLOSE_ENOUPH_SEGMENT_X){
-      return [true, true, segment]
-    }
-    // x 轴碰撞检测
+    // x 轴碰撞检测，判断如果targetLeft值处于 segment 位置有重叠则表示碰撞了
     if (
       targetLeft + targetRect.width > segmentLeft &&
       targetLeft < segmentLeft + segmentRect.width
@@ -119,6 +114,29 @@ export const collisionCheckX = (
       return [true, false];
     }
   }
+  // 如果没有任何碰撞，则循环找到是否可吸附的 segment 
+  for (let segment of segments) {
+    const segmentRect = segment.getBoundingClientRect();
+    // placeholder与 segment 都属于轨道内，left 值取 style内的值 即相对坐标
+    const segmentLeft = getLeftValue(segment);
+    let targetLeft = getLeftValue(target);
+    // 如果值是负数说明拖到超出轨道左侧需要修正为 0
+    targetLeft = targetLeft < 0 ? 0 : targetLeft;
+    // 左右吸附效果
+    // 检测左边
+    let closeDistance = targetLeft - (segmentLeft + segmentRect.width);
+    //target 距离左侧 segment 的结束足够近
+    if(targetLeft > (segmentLeft + segmentRect.width) && closeDistance <= CLOSE_ENOUPH_SEGMENT_X){
+      return [true, true, segmentLeft + segmentRect.width]
+    }
+    // 检测右边
+    closeDistance = segmentLeft - (targetLeft + targetRect.width);
+    // target 结束帧距离右侧 segment 开始足够近
+    if(targetLeft+targetRect.width < segmentLeft && closeDistance <= CLOSE_ENOUPH_SEGMENT_X){
+      return [true, true, segmentLeft - targetRect.width]
+    }  
+  }
+  
   return [false, false];
 };
 export const getSegmentsByTrack = (track: HTMLElement): HTMLElement[] => {

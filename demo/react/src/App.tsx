@@ -1,4 +1,5 @@
 import React, {
+  Ref,
   useEffect,
   useRef,
   useState,
@@ -31,7 +32,7 @@ function App() {
   console.log('render')
   const cursorRef = useRef(null);
   const segmentItemListRef = useRef(null);
-  const scrollContainerRef = useRef(null);
+  const scrollContainerRef:Ref<HTMLElement|null> = useRef(null);
   const scrollContentRef = useRef(null);
   const [stageWidth, setStageWidth] = useState(920);
   const trackScrollWidthRef = useRef(920);
@@ -106,13 +107,16 @@ function App() {
     if (trackScrollWidthRef.current <= stageWidth) {
       return;
     }
-    if(pointerX < stageWidth - 150 && pointerX > 150){
+    // 修正 pointerX 值
+    const scrollContainerLeft = scrollContainerRef.current.getBoundingClientRect().left;
+    pointerX -= scrollContainerLeft
+    if(pointerX < stageWidth - 50 && pointerX > 50){
       return ;
     }
     let direct = 0;
-    if(pointerX >= stageWidth - 150){
+    if(pointerX >= stageWidth - 50){
       direct = 1
-    }else if(pointerX <= 150){
+    }else if(pointerX < 150){
       direct = -1
     }
     const dom = scrollContainerRef.current as HTMLElement
@@ -195,6 +199,7 @@ function App() {
         scrollTimelineX(e.pointerEvent?.clientX);
       }
     })
+    syncTrackWidth();
   };
   const add = (trackId: string) => {
     segmentTracks?.addSegmentWithFramestart(trackId, 1, timeline?.currentFrame ?? 0);
