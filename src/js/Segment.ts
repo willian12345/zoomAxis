@@ -14,15 +14,16 @@ export class Segment {
   framestart = 0;
   frameend = 0;
   frames = 0;
-  width: string | number = "80px";
-  height: string | number = "24px";
-  left: string | number = "0";
-  segmentId = "";
-  segmentClass = "segment segment-action";
+  width: string | number = '80px';
+  height: string | number = '24px';
+  left: string | number = '0';
+  segmentId = '';
+  segmentStyle = '';
+  segmentClass = 'segment';
   dom = {} as HTMLElement;
-  trackId = "";
+  trackId = '';
   segmentType = SegmentType.BODY_ANIMATION;
-  name = "";
+  name = '';
   parentTrack: Track | null = null;
   actived = false;
   frameWidth = 0;
@@ -32,7 +33,7 @@ export class Segment {
   keyframes = [] as Keyframe[]
   disabled = false
   // 内容渲染器，可传自定义的渲染内容，用于个性化
-  contentRender: string|HTMLElement|null = null
+  contentRenderer: string|HTMLElement|null = null
   constructor(args: SegmentConstructInfo) {
     this.trackId = args.trackId;
     this.segmentId = args.segmentId ?? this.createSegmentId();
@@ -49,9 +50,15 @@ export class Segment {
     if (args.left !== undefined) {
       this.left = args.left;
     }
+    if(args.segmentClass){
+      this.segmentClass = args.segmentClass
+    }
+    if(args.segmentStyle){
+      this.segmentStyle = args.segmentStyle
+    }
     // 内容渲染器
-    if(args.contentRender){
-      this.contentRender = args.contentRender;
+    if(args.contentRenderer){
+      this.contentRenderer = args.contentRenderer;
     }
     this.framestart = args.framestart;
     this.framestart = args.framestart;
@@ -67,7 +74,10 @@ export class Segment {
     this.initEvents();
   }
   private initEvents() {
-    // this.dom.addEventListener('mouseup', this.handleClick.bind(this));
+    this.dom.addEventListener('click', this.handleClick);
+  }
+  private handleClick = () => {
+    
   }
   private createSegmentId() {
     return String(segmentIdIndex++);
@@ -75,8 +85,8 @@ export class Segment {
 
   private createDom() {
     const div = document.createElement("div");
-    const defaultContentRender = `<div class="segment-name">${this.name}</div>`
-    const contentRender = this.contentRender ? this.contentRender : defaultContentRender
+    const defaultContentRenderer = `<div class="segment-renderer segment-name">${this.name}</div>`
+    const contentRenderer = this.contentRenderer ? this.contentRenderer : defaultContentRenderer
     div.innerHTML = `
         <div 
           class="${this.segmentClass}" 
@@ -85,10 +95,10 @@ export class Segment {
           data-track-id="${this.trackId}" 
           data-framestart="${this.framestart}" 
           data-frameend="${this.frameend}"
-          style="width: ${this.width}; height: ${this.height}; left: ${this.left};">
+          style="width: ${this.width}; height: ${this.height}; left: ${this.left}; ${this.segmentStyle}">
           <div class="segment-handle segment-handle-left"></div>
           <div class="segment-handle segment-handle-right"></div>
-          ${contentRender}
+          ${contentRenderer}
         </div>
       `;
     return div.firstElementChild as HTMLElement;
@@ -181,7 +191,20 @@ export class Segment {
     });
     return deletedArr;
   }
+  // 更新 自定义渲染器 renderer 用于渲染不同UI
+  updateContentRenderer(renderer: string|HTMLElement){
+    let div: HTMLElement;
+    if(!renderer) return;
+    if(typeof renderer === 'string'){
+      div = document.createElement('div');
+      div.innerHTML = renderer;
+    }else{
+      div = renderer;
+    }
+    const sr = this.dom.querySelector('.segment-renderer');
+    sr?.parentElement?.replaceChild(div, sr);
+  }
   destroy(){
-    // this.dom.removeEventListener('click', this.handleClick.bind(this));
+    this.dom.removeEventListener('click', this.handleClick);
   }
 }

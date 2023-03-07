@@ -23,6 +23,7 @@ export interface TimelineAxis {
 
 const FRAME_RATE = 30;
 export class TimelineAxis extends ZoomAxis {
+  static defaultFrameRate = FRAME_RATE
   private fps = 0;
   private preTimestamp = 0;
   private paused = true;

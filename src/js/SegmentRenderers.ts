@@ -1,5 +1,18 @@
+/**
+ * 自定义渲染函数
+ */
 import { SegmentType, SegmentConstructInfo } from './TrackType';
 
+const  getAvatarRenderer = (name: string) => {
+  return `
+  <div class="flex items-center text-12">
+  <svg width="24" height="24" viewBox="0 0 24 24" class="ml-6">
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M6 3.5H18C19.3807 3.5 20.5 4.61929 20.5 6V18C20.5 19.1715 19.6941 20.1549 18.6065 20.4259L18.2127 18.8507C17.682 16.7278 16.126 15.0767 14.1526 14.372C15.2635 13.6613 16 12.4167 16 11C16 8.79086 14.2091 7 12 7C9.79083 7 7.99997 8.79086 7.99997 11C7.99997 12.4167 8.73644 13.6613 9.84741 14.372C7.87401 15.0767 6.31808 16.7278 5.78736 18.8507L5.39355 20.4259C4.30588 20.1549 3.5 19.1716 3.5 18V6C3.5 4.61929 4.61929 3.5 6 3.5ZM6.9212 20.5H17.0789L16.7575 19.2145C16.2117 17.0315 14.2503 15.5 12 15.5C9.7498 15.5 7.78833 17.0315 7.24257 19.2145L6.9212 20.5ZM5.02968 21.8815C3.28941 21.4479 2 19.8745 2 18V6C2 3.79086 3.79086 2 6 2H18C20.2091 2 22 3.79086 22 6V18C22 19.8745 20.7106 21.4478 18.9704 21.8815C18.9481 21.887 18.9258 21.8924 18.9033 21.8976C18.6131 21.9646 18.3107 22 18 22M14.5 11C14.5 12.3807 13.3807 13.5 12 13.5C10.6193 13.5 9.49997 12.3807 9.49997 11C9.49997 9.61929 10.6193 8.5 12 8.5C13.3807 8.5 14.5 9.61929 14.5 11Z" />
+  </svg>
+  <div class="segment-name">${name}</div>
+  </div>
+`
+}
 const  getBodyAnimationRenderer = (name: string) => {
   return `
   <div class="flex items-center text-12">
@@ -17,6 +30,43 @@ const getFaceAnimationRenderer = (name: string) => {
         <path fill-rule="evenodd" clip-rule="evenodd" d="M21.5 12C21.5 17.2467 17.2467 21.5 12 21.5C6.75329 21.5 2.5 17.2467 2.5 12C2.5 6.75329 6.75329 2.5 12 2.5C17.2467 2.5 21.5 6.75329 21.5 12ZM23 12C23 18.0751 18.0751 23 12 23C5.92487 23 1 18.0751 1 12C1 5.92487 5.92487 1 12 1C18.0751 1 23 5.92487 23 12ZM8.81802 15.182C8.52513 14.8891 8.05025 14.8891 7.75736 15.182C7.46447 15.4749 7.46447 15.9497 7.75736 16.2426C8.88258 17.3679 10.4087 18 12 18C13.5913 18 15.1174 17.3679 16.2426 16.2426C16.5355 15.9497 16.5355 15.4749 16.2426 15.182C15.9497 14.8891 15.4749 14.8891 15.182 15.182C14.3381 16.0259 13.1935 16.5 12 16.5C10.8065 16.5 9.66193 16.0259 8.81802 15.182ZM10 9.5C10 10.3284 9.32843 11 8.5 11C7.67157 11 7 10.3284 7 9.5C7 8.67157 7.67157 8 8.5 8C9.32843 8 10 8.67157 10 9.5ZM15.5 11C16.3284 11 17 10.3284 17 9.5C17 8.67157 16.3284 8 15.5 8C14.6716 8 14 8.67157 14 9.5C14 10.3284 14.6716 11 15.5 11Z"/>
       </svg>
       <div class="segment-name">${name}</div>
+    </div>
+  `
+}
+const getVoiceRenderer = (name: string) => {
+  return  `
+    <div class="flex items-center text-12 w-full">
+      <svg width="24" height="24" viewBox="0 0 24 24" class="ml-6">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M21.5 12C21.5 17.2467 17.2467 21.5 12 21.5C6.75329 21.5 2.5 17.2467 2.5 12C2.5 6.75329 6.75329 2.5 12 2.5C17.2467 2.5 21.5 6.75329 21.5 12ZM23 12C23 18.0751 18.0751 23 12 23C5.92487 23 1 18.0751 1 12C1 5.92487 5.92487 1 12 1C18.0751 1 23 5.92487 23 12ZM8.81802 15.182C8.52513 14.8891 8.05025 14.8891 7.75736 15.182C7.46447 15.4749 7.46447 15.9497 7.75736 16.2426C8.88258 17.3679 10.4087 18 12 18C13.5913 18 15.1174 17.3679 16.2426 16.2426C16.5355 15.9497 16.5355 15.4749 16.2426 15.182C15.9497 14.8891 15.4749 14.8891 15.182 15.182C14.3381 16.0259 13.1935 16.5 12 16.5C10.8065 16.5 9.66193 16.0259 8.81802 15.182ZM10 9.5C10 10.3284 9.32843 11 8.5 11C7.67157 11 7 10.3284 7 9.5C7 8.67157 7.67157 8 8.5 8C9.32843 8 10 8.67157 10 9.5ZM15.5 11C16.3284 11 17 10.3284 17 9.5C17 8.67157 16.3284 8 15.5 8C14.6716 8 14 8.67157 14 9.5C14 10.3284 14.6716 11 15.5 11Z"/>
+      </svg>
+      <div class="segment-name flex-1">${name}</div>
+      <svg width="68" height="18" viewBox="0 0 68 18" style="width: 68px;" class="text-18 mr-6">
+        <g opacity="0.4">
+        <path opacity="0.2" d="M1 8.5V9.5" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.4" d="M4 8V10" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.6" d="M7 7V11" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.8" d="M10 5V13" stroke="white" stroke-linecap="round"/>
+        <path d="M13 7V11" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.8" d="M16 8V10" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.6" d="M19 8.5V9.5" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.4" d="M22 8V10" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.2" d="M25 8.5V9.5" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.4" d="M28 8V10" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.6" d="M31 7V11" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.8" d="M34 5V13" stroke="white" stroke-linecap="round"/>
+        <path d="M37 7V11" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.8" d="M40 8V10" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.6" d="M43 8.5V9.5" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.4" d="M46 8V10" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.2" d="M49 8.5V9.5" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.4" d="M52 8V10" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.6" d="M55 7V11" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.8" d="M58 5V13" stroke="white" stroke-linecap="round"/>
+        <path d="M61 7V11" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.8" d="M64 8V10" stroke="white" stroke-linecap="round"/>
+        <path opacity="0.4" d="M67 8.5V9.5" stroke="white" stroke-linecap="round"/>
+        </g>
+      </svg>
     </div>
   `
 }
@@ -61,9 +111,15 @@ const getBGMRenderer = (name: string) => {
   `
 }
 
-export const getRendererBySegmentType = ({ segmentType, name = '' }: SegmentConstructInfo ):string => {
-  if(segmentType === SegmentType.FACE_ANIMATION || segmentType === SegmentType.VOICE){
+export const getContentRenderer = ({ segmentType, name = '' }: SegmentConstructInfo ):string => {
+  if(segmentType === SegmentType.AVATAR){
+    return getAvatarRenderer(name);
+  }
+  if(segmentType === SegmentType.FACE_ANIMATION){
     return getFaceAnimationRenderer(name);
+  }
+  if(segmentType === SegmentType.VOICE){
+    return getVoiceRenderer(name);
   }
   if(segmentType === SegmentType.BODY_ANIMATION){
     return getBodyAnimationRenderer(name)
@@ -79,6 +135,38 @@ export const getRendererBySegmentType = ({ segmentType, name = '' }: SegmentCons
   }
   if(segmentType === SegmentType.BGM){
     return getBGMRenderer(name);
+  }
+  return ''
+}
+
+// segment 渲染背景颜色
+export const getSegmentStyle = ({ segmentType }: SegmentConstructInfo ): string => {
+  if(segmentType === SegmentType.AVATAR){
+    return 'background: #C66136;';
+  }
+  if(segmentType === SegmentType.FACE_ANIMATION){
+    // return 'background: #C66136;';
+    return 'background: rgba(198, 97, 54, 0.2);';
+  }
+  if(segmentType === SegmentType.VOICE){
+    // return 'background: #C66136;';
+    return 'background: rgba(198, 97, 54, 0.2);';
+  }
+  if(segmentType === SegmentType.BODY_ANIMATION){
+    // return 'background: #C66136;';
+    return 'background: rgba(198, 97, 54, 0.2);';
+  }
+  if(segmentType === SegmentType.EFFECT){
+    return 'background: #46A9CB;'
+  }
+  if(segmentType === SegmentType.SCENE){
+    return 'background: #6C4ACD;'
+  }
+  if(segmentType === SegmentType.CAMERA){
+    return 'background: #4767E8;';
+  }
+  if(segmentType === SegmentType.BGM){
+    return 'background: #46A9CB;';
   }
   return ''
 }

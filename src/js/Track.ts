@@ -63,10 +63,10 @@ export class Track extends EventHelper {
     this.initEvent();
   }
   initEvent() {
-    this.dom.addEventListener("mousedown", this.mousedown.bind(this));
-    this.dom.addEventListener("click", this.click.bind(this));
+    this.dom.addEventListener("mousedown", this.mousedown);
+    this.dom.addEventListener("click", this.click);
   }
-  click(e: MouseEvent) {
+  click = (e: MouseEvent) => {
     if(this.disabled){
       return;
     }
@@ -82,8 +82,21 @@ export class Track extends EventHelper {
       e.stopPropagation();
       return;
     }
+    if(!target.classList.contains("segment")){
+      let segmentDom = findParentElementByClassName(target, 'segment');
+      if(segmentDom){
+        const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? '')
+        this.dispatchEvent(
+          { eventType: TRACKS_EVENT_TYPES.SEGMENT_SELECTED },
+          {
+            segment,
+          }
+        );
+        return;
+      }
+    } 
   }
-  mousedown(e: MouseEvent) {
+  mousedown = (e: MouseEvent) => {
     if(this.disabled){
       return;
     }
@@ -217,7 +230,6 @@ export class Track extends EventHelper {
     widthOrigin,
     segmentDom,
   }: MoveFunctionArgs) => {
-    // this.trackCursor?.freeze();
     const x = moveX;
     let frameend = Math.round(
       (segmentleftOrigin + widthOrigin + x) / frameWidth
@@ -374,12 +386,10 @@ export class Track extends EventHelper {
     placeHolder.style.opacity = "0";
     const trackType = this.trackType;
     const segmentType = String(segment.segmentType);
-    
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(trackType, segmentType)) {
       return null;
     }
-    
     // 如果不合法，则需要删除
     const checkResult = this.check(copy, segment);
     if (checkResult) {
@@ -502,5 +512,6 @@ export class Track extends EventHelper {
   }
   destroy() {
     this.dom.removeEventListener("mousedown", this.mousedown);
+    this.dom.removeEventListener("click", this.click);
   }
 }

@@ -75,7 +75,6 @@ export interface DeleteableCheck{
   (trackId: string, sectionId: string): Promise<boolean>
 }
 export interface TracksArgs {
-  trackCursor: CursorPointer
   scrollContainer: HTMLElement
   timeline: TimelineAxis
   segmentDelegate: HTMLElement
@@ -121,7 +120,9 @@ export type SegmentConstructInfo = {
   height?: number|string,
   left?: number|string,
   extra?:any,
-  contentRender?: string | HTMLElement
+  contentRenderer?: string | HTMLElement
+  segmentClass?: string
+  segmentStyle?: string
 }
 // Keyframe 构造参数
 export type KeyframeConstructInfo = {

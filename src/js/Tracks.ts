@@ -8,7 +8,6 @@ import {
   TrackBasicConfig,
 } from "./TrackType";
 
-import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
 import { Track } from "./Track";
 import { Segment } from "./Segment";
@@ -43,7 +42,6 @@ export class Tracks extends EventHelper {
   protected scrollContainer: HTMLElement = {} as HTMLElement;
   protected dragoverClass = "dragover";
   protected dragoverErrorClass = "dragover-error";
-  protected trackCursor: CursorPointer = {} as CursorPointer;
   timeline: TimelineAxis = {} as TimelineAxis;
   dropableCheck?: DropableCheck;
   deleteableCheck?: DeleteableCheck;
@@ -70,7 +68,6 @@ export class Tracks extends EventHelper {
 
   constructor({
     tracks,
-    trackCursor,
     scrollContainer,
     timeline,
     segmentDelegate,
@@ -80,11 +77,10 @@ export class Tracks extends EventHelper {
     ondrop,
   }: TracksArgs) {
     super();
-    if (!timeline || !scrollContainer || !trackCursor) {
+    if (!timeline || !scrollContainer) {
       return;
     }
     this.timeline = timeline;
-    this.trackCursor = trackCursor;
     this.scrollContainer = scrollContainer;
     if (segmentDelegate) {
       this.segmentDelegate = segmentDelegate;
@@ -137,8 +133,8 @@ export class Tracks extends EventHelper {
       return;
     }
     const result = this.checkClickedOnSegment(e);
-    if (result && this.trackCursor && this.scrollContainer) {
-      this.segmentDragStart(e, this.trackCursor, this.scrollContainer, result);
+    if (result && this.scrollContainer) {
+      this.segmentDragStart(e, this.scrollContainer, result);
     }
   }
   private mousedownDelegateHandle(ev: MouseEvent) {
@@ -153,28 +149,26 @@ export class Tracks extends EventHelper {
     if (!target.classList.contains("segment-item")) {
       return;
     }
-    this.dragStart(ev, this.trackCursor, this.scrollContainer, target, true);
+    this.dragStart(ev, this.scrollContainer, target, true);
   }
   private segmentDragStart(
     e: MouseEvent,
-    trackCursor: CursorPointer,
     scrollContainer: HTMLElement,
     segment: HTMLElement
   ) {
-    this.select(segment.dataset.segmentId ?? "");
     this.clearTimer();
     this.mousedownTimer = setTimeout(() => {
-      this.dragStart(e, trackCursor, scrollContainer, segment);
+      this.dragStart(e, scrollContainer, segment);
     }, 300);
   }
   private delegateDispatchEvent(
     vt: Track,
     EventType: TRACKS_EVENT_TYPES,
-    interceptor?: () => Promise<void>
+    interceptor?: (...args) => Promise<void>
   ) {
     vt.addEventListener(EventType, async (args) => {
       // 如有需要事件发出前可以拦一道
-      await interceptor?.();
+      await interceptor?.(args);
       this.dispatchEvent({ eventType: EventType }, args);
     });
   }
@@ -184,7 +178,10 @@ export class Tracks extends EventHelper {
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DRAG_END);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DROP_EFFECT);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_ADDED);
-      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_SELECTED);
+      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_SELECTED, async ({segment}) => {
+        this.removeSegmentActivedStatus();
+        segment.setActived(true);
+      });
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_DELETED);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDED);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END);
@@ -461,17 +458,8 @@ export class Tracks extends EventHelper {
       isContainSplitFromComma(track.dataset.trackId ?? "", trackId)
     );
   }
-  protected triggerSelected(segment: Segment) {
-    this.dispatchEvent(
-      { eventType: TRACKS_EVENT_TYPES.SEGMENT_SELECTED },
-      {
-        segment,
-      }
-    );
-  }
   dragStart(
     e: MouseEvent,
-    trackCursor: InstanceType<typeof CursorPointer>,
     scrollContainer: HTMLElement,
     segmentDom: HTMLElement,
     isCopy: boolean = false
@@ -505,7 +493,7 @@ export class Tracks extends EventHelper {
     }
 
     if (!isCopy) {
-      const virtualSegment = this.getVirtualSegmentById(
+      const virtualSegment = this.getSegmentById(
         segmentDom.dataset.segmentId ?? ""
       );
       const track = virtualSegment?.parentTrack;
@@ -568,8 +556,6 @@ export class Tracks extends EventHelper {
           { pointerEvent: e }
         );
       }
-      // 游标禁止交互
-      trackCursor.enable = false;
       startX = e.clientX;
       startY = e.clientY;
     };
@@ -622,8 +608,6 @@ export class Tracks extends EventHelper {
             );
           }
         }
-        // 重新允许游标交互
-        trackCursor.enable = true;
       }, 0);
 
       document.removeEventListener("mouseup", mouseup);
@@ -632,7 +616,7 @@ export class Tracks extends EventHelper {
     document.addEventListener("mousemove", mousemove);
     document.addEventListener("mouseup", mouseup);
   }
-  getVirtualSegmentById(segmentId: string) {
+  getSegmentById(segmentId: string) {
     for (let track of this.virtualTracks) {
       const segment = track.segments.get(segmentId);
       if (segment) {
@@ -642,28 +626,34 @@ export class Tracks extends EventHelper {
     return null;
   }
   addKeyframe(segmentId: string, frame: number) {
-    this.getVirtualSegmentById(segmentId)?.addKeyframe(frame);
+    this.getSegmentById(segmentId)?.addKeyframe(frame);
   }
   deleteKeyframe(segmentId: string, frame: number) {
-    this.getVirtualSegmentById(segmentId)?.deleteKeyframe(frame);
+    this.getSegmentById(segmentId)?.deleteKeyframe(frame);
   }
   deleteAllKeyframe(segmentId: string) {
-    this.getVirtualSegmentById(segmentId)?.deleteKeyframeAll();
+    this.getSegmentById(segmentId)?.deleteKeyframeAll();
   }
   deleteKeyframeOutOfRange(segmentId: string) {
-    return this.getVirtualSegmentById(segmentId)?.deleteKeyframeOutOfRange();
+    return this.getSegmentById(segmentId)?.deleteKeyframeOutOfRange();
   }
-  select(segmentId: string) {
-    const virtualSegment = this.getVirtualSegmentById(segmentId);
-    if (!virtualSegment) {
+  // 主动选中 segment
+  selectSegment(segmentId: string) {
+    const segment = this.getSegmentById(segmentId);
+    if (!segment) {
       return;
     }
-    if (virtualSegment.actived) {
+    if (segment.actived) {
       return;
     }
     this.removeSegmentActivedStatus();
-    virtualSegment.setActived(true);
-    this.triggerSelected(virtualSegment);
+    segment.setActived(true);
+    this.dispatchEvent(
+      { eventType: TRACKS_EVENT_TYPES.SEGMENT_SELECTED },
+      {
+        segment,
+      }
+    );
   }
   addSegmentByTrackId(segmentConstructInfo: {
     trackId: string;
