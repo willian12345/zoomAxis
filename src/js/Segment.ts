@@ -85,7 +85,7 @@ export class Segment {
 
   private createDom() {
     const div = document.createElement("div");
-    const defaultContentRenderer = `<div class="segment-renderer segment-name">${this.name}</div>`
+    const defaultContentRenderer = `<div class="segment-name">${this.name}</div>`
     const contentRenderer = this.contentRenderer ? this.contentRenderer : defaultContentRenderer
     div.innerHTML = `
         <div 
@@ -98,7 +98,9 @@ export class Segment {
           style="width: ${this.width}; height: ${this.height}; left: ${this.left}; ${this.segmentStyle}">
           <div class="segment-handle segment-handle-left"></div>
           <div class="segment-handle segment-handle-right"></div>
-          ${contentRenderer}
+          <div class="segment-renderer">
+            ${contentRenderer}
+          </div>
         </div>
       `;
     return div.firstElementChild as HTMLElement;
@@ -202,7 +204,19 @@ export class Segment {
       div = renderer;
     }
     const sr = this.dom.querySelector('.segment-renderer');
-    sr?.parentElement?.replaceChild(div, sr);
+    if(!sr) return;
+    const arr = Array.from(sr?.children) as HTMLElement[];
+    arr.forEach((element) => {
+      sr.removeChild(element)
+    });
+    sr.appendChild(div);
+  }
+  updateName(name: string){
+    const sr = this.dom.querySelector('.segment-name');
+    if(sr){
+      sr.innerHTML = name;
+    }
+    this.name = name;
   }
   destroy(){
     this.dom.removeEventListener('click', this.handleClick);
