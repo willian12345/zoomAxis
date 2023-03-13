@@ -96,17 +96,11 @@ export const getSegmentPlaceholder = (track: HTMLElement) => {
   return dom;
 };
 
-type collisionCheckXResult = [
-  collision: boolean,
-  magnet: HTMLElement | null,
-  magnetTo?: number,
-  isOnLeft?: boolean // 碰撞的 segment 是否在左侧
-];
-// 轨道内 segment x 轴横向碰撞检测
+// 同轨道内 segment x 轴横向碰撞检测
 export const collisionCheckX = (
   target: HTMLElement, // placeholder
   track: HTMLElement
-): collisionCheckXResult => {
+): boolean => {
   // target 即轨道内的 当前拖动 segment 的 placeholder 替身
   const targetRect = target.getBoundingClientRect();
   const segments: HTMLElement[] = Array.from(
@@ -114,7 +108,7 @@ export const collisionCheckX = (
   );
   const segmentsLength = segments.length;
   if (!segmentsLength) {
-    return [false, null];
+    return false
   }
   for (let segment of segments) {
     const segmentRect = segment.getBoundingClientRect();
@@ -128,39 +122,10 @@ export const collisionCheckX = (
       targetLeft + targetRect.width > segmentLeft &&
       targetLeft < segmentLeft + segmentRect.width
     ) {
-      return [true, null];
+      return true;
     }
   }
-  // 如果没有任何碰撞，则循环找到是否可吸附的 segment
-  for (let segment of segments) {
-    const segmentRect = segment.getBoundingClientRect();
-    // placeholder与 segment 都属于轨道内，left 值取 style内的值 即相对坐标
-    const segmentLeft = getLeftValue(segment);
-    let targetLeft = getLeftValue(target);
-    // 如果值是负数说明拖到超出轨道左侧需要修正为 0
-    targetLeft = targetLeft < 0 ? 0 : targetLeft;
-    // 左右吸附效果
-    // 检测左边
-    let closeDistance = targetLeft - (segmentLeft + segmentRect.width);
-    //target 距离左侧 segment 的结束足够近
-    if (
-      targetLeft > segmentLeft + segmentRect.width &&
-      closeDistance <= CLOSE_ENOUPH_SEGMENT_X
-    ) {
-      return [true, segment, segmentLeft + segmentRect.width, true];
-    }
-    // 检测右边
-    closeDistance = segmentLeft - (targetLeft + targetRect.width);
-    // target 结束帧距离右侧 segment 开始足够近
-    if (
-      targetLeft + targetRect.width < segmentLeft &&
-      closeDistance <= CLOSE_ENOUPH_SEGMENT_X
-    ) {
-      return [true, segment, segmentLeft - targetRect.width, false];
-    }
-  }
-
-  return [false, null];
+  return false;
 };
 const getFrameByWidth = (width: number, frameWidth: number): number => {
   let frame = Math.round(width / frameWidth);
@@ -172,7 +137,7 @@ const getFrameByWidth = (width: number, frameWidth: number): number => {
 /**
  * 检测辅助线吸附 checkCoordinateLine
  * @param dragingDom 当前拖动的 dom
- * @param segments 轨道上所有 segment
+ * @param segments 所有轨道上所有 segment
  * @param frameWidth 当前帧宽
  * @returns [是否有吸附，吸附后 dom 的 framestart, 辅助线 style left 值]
  */

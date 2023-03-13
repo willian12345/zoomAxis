@@ -359,7 +359,7 @@ export class Tracks extends EventHelper {
         return;
       }
       placeHolder.style.opacity = "0";
-      const [isCollistion] = collisionCheckX(placeHolder, originTrack);
+      const isCollistion = collisionCheckX(placeHolder, originTrack);
       if (!isCollistion) {
         segment.style.left = `${segmentLeft}px`;
       }
