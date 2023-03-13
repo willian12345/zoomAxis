@@ -32,7 +32,7 @@ function App() {
   console.log('render')
   const cursorRef = useRef(null);
   const segmentItemListRef = useRef(null);
-  const scrollContainerRef:Ref<HTMLElement|null> = useRef(null);
+  const scrollContainerRef = useRef(null);
   const scrollContentRef = useRef(null);
   const [stageWidth, setStageWidth] = useState(920);
   const trackScrollWidthRef = useRef(920);
@@ -101,14 +101,15 @@ function App() {
   };
   // 滚动 timeline  x 轴
   const scrollTimelineX =(pointerX: number) => {
-    if (!scrollContainerRef.current){
+    const dom = scrollContainerRef.current as HTMLElement | null
+    if (!dom){
       return;
     }
     if (trackScrollWidthRef.current <= stageWidth) {
       return;
     }
     // 修正 pointerX 值
-    const scrollContainerLeft = scrollContainerRef.current.getBoundingClientRect().left;
+    const scrollContainerLeft = dom.getBoundingClientRect().left;
     pointerX -= scrollContainerLeft
     if(pointerX < stageWidth - 50 && pointerX > 50){
       return ;
@@ -119,11 +120,8 @@ function App() {
     }else if(pointerX < 150){
       direct = -1
     }
-    const dom = scrollContainerRef.current as HTMLElement
     // 根据当前帧滚动滚动条
-    if(dom){
-      dom.scrollLeft += (40 * direct);
-    }
+    dom.scrollLeft += (40 * direct);
   };
 
   const initApp = () => {
@@ -173,13 +171,13 @@ function App() {
     const tracks:TrackBasicConfig[] = trackDoms.map( (dom: HTMLElement) => {
       return {trackType: dom.dataset.trackType ?? '', trackId: dom.dataset.trackId ?? '', dom, flexiable: dom.classList.contains('track-flexible')};
     });
-  
+    const coordinateLines = Array.from(scrollContainer.querySelectorAll('.coordinate-line')) as HTMLElement[];
     // 初始化轨道
     segmentTracks = new Tracks({
-      trackCursor,
       scrollContainer,
       tracks,
       timeline,
+      coordinateLines,
       segmentDelegate: segmentItemList,
     });
     segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DRAG_END, (event) => {
@@ -261,6 +259,7 @@ function App() {
                   <div className="track-placeholder"></div>
                 </div>
               </div>
+              <div className="coordinate-line"></div>
             </div>
             <Cursor ref={cursorRef} />
           </div>

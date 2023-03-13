@@ -72,6 +72,34 @@ a:hover {
   overflow-x: auto;
   overflow-x: overlay;
 }
+.webkit-scrollbar::-webkit-scrollbar {
+    height: 10px;
+    width: 10px
+}
+
+.webkit-scrollbar::-webkit-scrollbar-track {
+    background-color: transparent
+}
+
+.webkit-scrollbar::-webkit-scrollbar-thumb {
+    background-clip: padding-box;
+    background-color: rgba(255, 255, 255, 0.3);
+    border: 2px solid transparent;
+    border-radius: 42px;
+    visibility: visible
+}
+
+.webkit-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.87);
+}
+
+.webkit-scrollbar:hover::-webkit-scrollbar-thumb {
+    visibility: visible
+}
+
+.webkit-scrollbar::-webkit-scrollbar-corner {
+    background-color: transparent
+}
 
 .scroll-content {
   position: absolute;
@@ -150,10 +178,6 @@ a:hover {
     }
   }
 
-  .segment-action {
-    background-color: #c66136;
-  }
-
   .actived.segment {
     border: 1px solid white;
   }
@@ -226,4 +250,16 @@ a:hover {
 }
 .segment-handle-right {
   right: 0;
+}
+
+.coordinate-line{
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  font-size: 0;
+  background-color: #00b6c2;
 }
