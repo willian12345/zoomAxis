@@ -26,6 +26,7 @@ import {
   findParentElementByClassName,
   getFrameRange,
   findEndestSegmentOnTrack,
+  checkCoordinateLine,
 } from "./trackUtils";
 import { TrackFlex } from "./TrackFlex";
 
@@ -51,6 +52,8 @@ export class Tracks extends EventHelper {
   virtualTracks: Track[] = []; // 扁平化的虚拟轨道数据
   segmentDelegate: HTMLElement = document.body;
   coordinateLines: HTMLElement[] = [];
+  frameWidth = 0;
+  coordinateLineLeft!: HTMLElement
   private mousedownTimer = 0;
   private bindedEventArray: {
     ele: HTMLElement;
@@ -66,7 +69,13 @@ export class Tracks extends EventHelper {
     this._disabled = v;
     this.virtualTracks.forEach( s => s.disabled = v)
   }
-
+  private _magnetEnable = true;
+  get magnetEnable () {
+    return this._magnetEnable;
+  }
+  set magnetEnable(v){
+    this._magnetEnable = v;
+  }
   constructor({
     tracks,
     scrollContainer,
@@ -90,7 +99,9 @@ export class Tracks extends EventHelper {
     // 辅助线
     if(coordinateLines) {
       this.coordinateLines = coordinateLines;
+      this.coordinateLineLeft = coordinateLines[0]
     }
+    this.frameWidth =  this.timeline.frameWidth;
     if (dropableCheck) {
       this.dropableCheck = dropableCheck;
     }
@@ -210,6 +221,7 @@ export class Tracks extends EventHelper {
       vt = new Track({
         dom: tbc.dom,
         trackType,
+        coordinateLines: this.coordinateLines,
         frameWidth: this.timeline.frameWidth,
       });
     }
@@ -465,6 +477,25 @@ export class Tracks extends EventHelper {
       isContainSplitFromComma(track.dataset.trackId ?? "", trackId)
     );
   }
+  hideCoordinateLeft(){
+    this.coordinateLineLeft.style.display = 'none';  
+    this.coordinateLineLeft.style.left = '0';  
+  }
+   /**
+   * 
+   * @param segmentDom  接近碰撞到的 segment DOM
+   * @param isOnLeft 接近碰撞的 segment DOM 是否在左侧，如果是右侧，则需要将辅助线移到 segment DOM 的起始位置
+   * @param magnetTo 磁吸的位置，即 left 值
+   */
+   private showVerticalCoordinateLine(isMagnet: boolean, _framestart: number, magnetTo: number ){
+    if(!isMagnet){
+      this.hideCoordinateLeft();
+    }else{
+      this.coordinateLineLeft.style.left = `${magnetTo}px`;
+      this.coordinateLineLeft.style.display = `block`;  
+    }
+    
+  }
   dragStart(
     e: MouseEvent,
     scrollContainer: HTMLElement,
@@ -526,7 +557,11 @@ export class Tracks extends EventHelper {
       dragTrackContainer.style.top = `${top}px`;
       const scrollContainerX =
         scrollContainer.scrollLeft - scrollContainerRect.left;
-      this.virtualTracks.forEach((vt) => vt.removeStatusClass());
+      // 移除所胡轨道碰撞前的状态
+      this.virtualTracks.forEach((vt) => {
+        vt.removeStatusClass();
+      });
+      this.hideCoordinateLeft();
       // Y 轴碰撞
       const collisionTrack = trackCollisionCheckY(
         this.virtualTracks,
@@ -540,15 +575,22 @@ export class Tracks extends EventHelper {
         dragTrackContainerRect,
         tracks,
       });
-
+      if(collisionTrack){
+        // 跨轨道检测 x 轴是否与其它 segment 有磁吸
+        const [isMagnet, _framestart, magnetTo ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll('.segment')) as HTMLElement[], this.frameWidth);
+        // 只要有一条轨道内的 segment 磁吸碰撞就显示垂直辅助线
+        if(isMagnet && _framestart){
+          this.showVerticalCoordinateLine(isMagnet, _framestart, magnetTo )
+        }
+      }
       // 拖动容器形变
-      // todo: 外部指定容器变形大小
       if (isCopy) {
         // 如果是复制，则需要形变成标准轨道内 segment 形状
         if (collisionTrack) {
+          const trackHeight = collisionTrack.dom.getBoundingClientRect().height;
           dragTrackContainer.style.left = `${e.clientX}px`;
-          dragTrackContainer.style.top = `${e.clientY - 14}px`;
-          dragTrackContainer.style.height = "24px";
+          dragTrackContainer.style.top = `${e.clientY - trackHeight * .5}px`;
+          dragTrackContainer.style.height = `${trackHeight}px`;
         } else {
           // 没有碰到轨道，则变回原来的形状
           dragTrackContainer.style.height = `${segmentRect.height}px`;
@@ -577,13 +619,21 @@ export class Tracks extends EventHelper {
 
       // x = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
       const x = left - scrollContainerRect.left + scrollContainerScrollLeft;
-      const framestart = this.getFramestartByX(x);
+      let framestart = this.getFramestartByX(x);
       const segmentTypeStr = segmentDom.dataset.segmentType ?? "0";
       const segmentTrackId = segmentDom.dataset.trackId ?? "";
       this.virtualTracks.forEach(async (vt) => {
         vt.dom.classList.remove(this.dragoverClass);
         vt.dom.classList.remove(this.dragoverErrorClass);
         if (isCloseEnouphToY(vt.dom, e.clientY)) {
+          const placeHolder = getSegmentPlaceholder(vt.dom);
+          if (!placeHolder) {
+            return;
+          }
+          const [ isMagnet, _framestart ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll('.segment')) as HTMLElement[], this.frameWidth);
+          if(isMagnet){
+            framestart = _framestart
+          }
           const virtualSegment = await this.getSegment(
             isCopy,
             segmentDom,
@@ -599,7 +649,7 @@ export class Tracks extends EventHelper {
           });
         }
       });
-
+      this.hideCoordinateLeft();
       // 如果没有跨轨道拖动成功，则 x 轴移动
       setTimeout(() => {
         if (dragTrackContainer.children.length) {
@@ -726,6 +776,7 @@ export class Tracks extends EventHelper {
       return;
     }
     const frameWidth = this.timeline.frameWidth;
+    this.frameWidth = frameWidth;
     this.virtualTracks.forEach((track) => track.setFrameWidth(frameWidth));
     const segments = this.getVirtualSegmentAll();
     segments.forEach((segment) => segment.setFrameWidth(frameWidth));

@@ -30,7 +30,7 @@ type MoveFunctionArgs = {
 };
 
 export class Track extends EventHelper {
-  dom = {} as HTMLElement;
+  dom!: HTMLElement;
   trackId = '';
   trackType = '';
   trackClass = '';
@@ -45,7 +45,8 @@ export class Track extends EventHelper {
   originFramestart = 0; // 拖动前 framestart
   originFrameend = 0; // 拖动前 frameend
   disabled = false;
-  coordinateLines: HTMLElement[] = [];
+  coordinateLines: HTMLElement[] = []; // 轨道所有辅助线
+  coordinateLineLeft!: HTMLElement; // segment 左侧辅助线
   private lastEffectSegments: Segment[] = [];
   constructor({
     trackClass = "track",
@@ -65,6 +66,7 @@ export class Track extends EventHelper {
     // 辅助线
     if(coordinateLines) {
       this.coordinateLines = coordinateLines;
+      this.coordinateLineLeft = coordinateLines[0];
     }
     this.initEvent();
   }
@@ -342,7 +344,7 @@ export class Track extends EventHelper {
     if (!placeHolder) {
       return;
     }
-    placeHolder.style.opacity = "0";
+    placeHolder.style.opacity = '0';
   }
   // 拖动开始
   pointerdown(segment: Segment) {
@@ -371,13 +373,12 @@ export class Track extends EventHelper {
     placeHolder.style.width = `${dragTrackContainerRect.width}px`;
     placeHolder.style.left = `${x}px`;
     // 利用各轨道内的 placeholder 与 轨道内所有现有存 segment进行x轴碰撞检测
-    const [isCollistion, magnet, magnetTo] = collisionCheckX(placeHolder, this.dom);
+    const [ isCollistion, magnet ] = collisionCheckX(placeHolder, this.dom);
     // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
     if (isCollistion && !magnet) {
       placeHolder.style.opacity = "0";
     } else {
       placeHolder.style.opacity = "1";
-      
     }
   }
   // 拖动结束
