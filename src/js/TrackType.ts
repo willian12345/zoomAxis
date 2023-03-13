@@ -78,11 +78,12 @@ export interface TracksArgs {
   scrollContainer: HTMLElement
   timeline: TimelineAxis
   segmentDelegate: HTMLElement
+  tracks: TrackBasicConfig[]
+  coordinateLines: HTMLElement[]
   dropableCheck?: DropableCheck
   deleteableCheck?: DeleteableCheck
   ondragover?:any
   ondrop?:any
-  tracks: TrackBasicConfig[]
 }
 export interface SegmentTracksArgs  extends TracksArgs{
   deleteableCheck?: DeleteableCheck
@@ -136,6 +137,7 @@ export interface TrackArgs {
   dom: HTMLElement;
   frameWidth: number;
   trackType: string;
+  coordinateLines: HTMLElement[];
   trackClass?: string;
   trackPlaceholderClass?: string;
 }

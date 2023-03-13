@@ -50,6 +50,7 @@ export class Tracks extends EventHelper {
   currentSegment: HTMLElement | null = null;
   virtualTracks: Track[] = []; // 扁平化的虚拟轨道数据
   segmentDelegate: HTMLElement = document.body;
+  coordinateLines: HTMLElement[] = [];
   private mousedownTimer = 0;
   private bindedEventArray: {
     ele: HTMLElement;
@@ -71,6 +72,7 @@ export class Tracks extends EventHelper {
     scrollContainer,
     timeline,
     segmentDelegate,
+    coordinateLines,
     dropableCheck,
     deleteableCheck,
     ondragover,
@@ -84,6 +86,10 @@ export class Tracks extends EventHelper {
     this.scrollContainer = scrollContainer;
     if (segmentDelegate) {
       this.segmentDelegate = segmentDelegate;
+    }
+    // 辅助线
+    if(coordinateLines) {
+      this.coordinateLines = coordinateLines;
     }
     if (dropableCheck) {
       this.dropableCheck = dropableCheck;
@@ -196,6 +202,7 @@ export class Tracks extends EventHelper {
       vt = new TrackFlex({
         dom: tbc.dom,
         trackType,
+        coordinateLines: this.coordinateLines,
         frameWidth: this.timeline.frameWidth,
         totalFrames: this.timeline.totalFrames,
       });

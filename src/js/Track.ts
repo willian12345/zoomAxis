@@ -45,12 +45,14 @@ export class Track extends EventHelper {
   originFramestart = 0; // 拖动前 framestart
   originFrameend = 0; // 拖动前 frameend
   disabled = false;
+  coordinateLines: HTMLElement[] = [];
   private lastEffectSegments: Segment[] = [];
   constructor({
     trackClass = "track",
     trackPlaceholderClass = "track-placeholder",
     dom,
     trackType,
+    coordinateLines,
     frameWidth,
   }: TrackArgs) {
     super();
@@ -60,6 +62,10 @@ export class Track extends EventHelper {
     this.dom = dom;
     this.trackType = trackType
     this.trackId = dom.dataset.trackId ?? "";
+    // 辅助线
+    if(coordinateLines) {
+      this.coordinateLines = coordinateLines;
+    }
     this.initEvent();
   }
   initEvent() {
@@ -130,6 +136,7 @@ export class Track extends EventHelper {
       return;
     }
   }
+  // 拖动手柄拖动开始
   private dragHandleStart = (
     e: MouseEvent,
     handle: HTMLElement,
@@ -319,7 +326,7 @@ export class Track extends EventHelper {
   }
   check(copy: boolean, segment: Segment) {
     // copy 说明是非轨道内的 Segment 拖动，即拖入并新建 Segment
-    // ！！！拖入后需要检测是否发生碰撞,如果发生碰撞则需要删除
+    // ！！！由于异步，拖入后需要检测是否发生碰撞,如果发生碰撞则需要删除
     if (copy && collisionCheckFrame(segment.dom, this.dom)) {
       this.removeSegment(segment);
       return true;
@@ -337,10 +344,12 @@ export class Track extends EventHelper {
     }
     placeHolder.style.opacity = "0";
   }
+  // 拖动开始
   pointerdown(segment: Segment) {
     this.originFramestart = segment.framestart;
     this.originFrameend = segment.frameend;
   }
+  // 拖动中
   pointermove({
     scrollContainerX,
     segment,
@@ -362,14 +371,16 @@ export class Track extends EventHelper {
     placeHolder.style.width = `${dragTrackContainerRect.width}px`;
     placeHolder.style.left = `${x}px`;
     // 利用各轨道内的 placeholder 与 轨道内所有现有存 segment进行x轴碰撞检测
-    const [isCollistion, magnet] = collisionCheckX(placeHolder, this.dom);
+    const [isCollistion, magnet, magnetTo] = collisionCheckX(placeHolder, this.dom);
     // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
     if (isCollistion && !magnet) {
       placeHolder.style.opacity = "0";
     } else {
       placeHolder.style.opacity = "1";
+      
     }
   }
+  // 拖动结束
   pointerup({
     copy,
     framestart,
