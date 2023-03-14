@@ -71,6 +71,12 @@ export type DropableArgs = {
 export interface DropableCheck {
   (trackId: string, startFrame: number): Promise<DropableArgs>
 }
+export interface DoSplit {
+  (): Promise<{
+    success: boolean,
+    segmentData?: ResponsedSegmentData | null
+  }>
+}
 export interface DeleteableCheck{
   (trackId: string, sectionId: string): Promise<boolean>
 }

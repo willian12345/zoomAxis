@@ -60,8 +60,6 @@ export class Segment {
     if(args.contentRenderer){
       this.contentRenderer = args.contentRenderer;
     }
-    this.framestart = args.framestart;
-    this.framestart = args.framestart;
     this.segmentType = args.segmentType;
     this.name = args.name ?? "";
     this.dom = this.createDom();
@@ -72,6 +70,7 @@ export class Segment {
       this.extra = args.extra;
     }
     this.initEvents();
+    this.setRange(this.framestart, this.frameend);
   }
   private initEvents() {
     this.dom.addEventListener('click', this.handleClick);

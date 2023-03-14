@@ -11,6 +11,7 @@ import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/Cursor
 import { TRACKS_EVENT_TYPES, TrackBasicConfig } from "../../../src/js/TrackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
 import { Tracks } from "../../../src/js/Tracks";
+import { Segment } from "../../../src/js/Segment";
 
 let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;
@@ -21,19 +22,21 @@ const handleKeyUp = () => {
   window.removeEventListener('keyup', handleKeyUp);
 }
 const handleKeyDown = (e: KeyboardEvent) => {
-  console.log(e.key)
   if(e.key === 'Control'){
     isCtrlDown = true
   }
   window.addEventListener('keyup', handleKeyUp);
 }
 let zoomRatio = 1;
+let currentSegment:Segment | null = null;
+let magnetEnable = true;
 function App() {
   console.log('render')
-  const cursorRef = useRef(null);
-  const segmentItemListRef = useRef(null);
-  const scrollContainerRef = useRef(null);
-  const scrollContentRef = useRef(null);
+  const cursorRef = useRef<HTMLInputElement>(null);
+  const segmentItemListRef = useRef<HTMLInputElement>(null);
+  const scrollContainerRef = useRef<HTMLInputElement>(null);
+  const scrollContentRef = useRef<HTMLInputElement>(null);
+  const timelineContainer = useRef<HTMLInputElement>(null);
   const [stageWidth, setStageWidth] = useState(920);
   const trackScrollWidthRef = useRef(920);
   const [trackScrollWidth, setTrackScrollWidth] = useState(920);
@@ -94,8 +97,9 @@ function App() {
   };
   
   // 滚轮缩放
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    // e.preventDefault();
+  const handleWheel = (e: WheelEvent) => {
+    e.preventDefault()
+    if(!isCtrlDown) return;
     e.deltaY > 0 ? zoomOut() : zoomIn();
     syncByZoom(zoomRatio);
   };
@@ -145,6 +149,7 @@ function App() {
     const scrollContainer: HTMLElement = scrollContainerRef.current;
     const scrollContent: HTMLElement = scrollContentRef.current;
     const width = scrollContainer.getBoundingClientRect().width;
+
     setStageWidth(width);
     // 初始化时间轴
     timeline = new TimelineAxis({
@@ -186,8 +191,9 @@ function App() {
     segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_ADDED, (event) => {
       console.log(event, 'added');
     })
-    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END, (event) => {
-      console.log('SEGMENTS_SLIDE_END', event);
+    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_SELECTED, (event) => {
+      console.log('SEGMENT_SELECTED', event);
+      currentSegment = event.segment ?? null
     });
     segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_DELETED, (event) => {
       console.log(event);
@@ -202,16 +208,25 @@ function App() {
   const add = (trackId: string) => {
     segmentTracks?.addSegmentWithFramestart(trackId, 1, timeline?.currentFrame ?? 0);
   }
-  window.addEventListener('keydown', handleKeyDown);
+  const splitHandler = () => {
+    currentSegment && segmentTracks.split(currentSegment);
+  }
+  const toggleMagnet = () => {
+    segmentTracks.magnetEnable = !segmentTracks.magnetEnable;
+  }
   useEffect(() => {
     initApp();
+    timelineContainer.current?.addEventListener('wheel', handleWheel);
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      timelineContainer.current?.removeEventListener('wheel', handleWheel);
     }
   }, []);
   return (
     <div className="App">
       <div className="wrapper">
+        <div className="btns"><button onClick={splitHandler}>分割</button><button onClick={toggleMagnet}>辅助线吸附</button></div>
         <div className="segment-list" ref={segmentItemListRef}>
           <div className="segment-item" data-segment-type="0">拖我</div>
           <div className="segment-item" data-segment-type="0">拖我</div>
@@ -223,7 +238,7 @@ function App() {
             <button onClick={()=> add('c')}> add </button>
           </div>
         </div>
-        <div className="timeline-container" onWheel={(e) => handleWheel(e)}>
+        <div className="timeline-container" ref={timelineContainer} >
           <div className="track-operation">
             <div className="track-operation-item">普通轨道</div>
             <div className="track-operation-item">普通轨道</div>

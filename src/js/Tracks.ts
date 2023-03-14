@@ -3,6 +3,7 @@ import {
   DeleteableCheck,
   SegmentType,
   DropableCheck,
+  DoSplit,
   TracksArgs,
   TracksEvent,
   TrackBasicConfig,
@@ -75,6 +76,7 @@ export class Tracks extends EventHelper {
   }
   set magnetEnable(v){
     this._magnetEnable = v;
+    console.log(this._magnetEnable)
   }
   constructor({
     tracks,
@@ -575,7 +577,7 @@ export class Tracks extends EventHelper {
         dragTrackContainerRect,
         tracks,
       });
-      if(collisionTrack){
+      if(collisionTrack && this._magnetEnable){
         // 跨轨道检测 x 轴是否与其它 segment 有磁吸
         const [isMagnet, _framestart, magnetTo ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll('.segment')) as HTMLElement[], this.frameWidth);
         // 只要有一条轨道内的 segment 磁吸碰撞就显示垂直辅助线
@@ -630,9 +632,11 @@ export class Tracks extends EventHelper {
           if (!placeHolder) {
             return;
           }
-          const [ isMagnet, _framestart ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll('.segment')) as HTMLElement[], this.frameWidth);
-          if(isMagnet){
-            framestart = _framestart
+          if(this._magnetEnable){
+            const [ isMagnet, _framestart ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll('.segment')) as HTMLElement[], this.frameWidth);
+            if(isMagnet){
+              framestart = _framestart
+            }
           }
           const virtualSegment = await this.getSegment(
             isCopy,
@@ -787,6 +791,48 @@ export class Tracks extends EventHelper {
         vt.setTotalFrames(n);
       }
     });
+  }
+  
+  async split(segment: Segment, doSplit?: DoSplit) {
+    const currentFrame = this.timeline.currentFrame;
+    const framestart = segment.framestart;
+    const frameend = segment.frameend;
+    if(currentFrame <= framestart || currentFrame >= frameend){
+      return false;
+    }
+    let newSegmentInfo;
+    // 如果需要异步判断
+    if(doSplit){
+      const { success, segmentData } = await doSplit();
+      if (!success || !segmentData) {
+        return false;
+      }
+      newSegmentInfo = {
+        trackId: segmentData.trackId ?? "",
+        segmentId: segmentData.sectionId,
+        framestart: framestart,
+        frameend: segmentData.endFrame,
+        name: segment.name,
+        segmentType: segment.segmentType,
+        frameWidth: this.timeline.frameWidth,
+        extra: segmentData,
+      };
+    }else{
+      newSegmentInfo = {
+        trackId: segment.trackId,
+        framestart: currentFrame,
+        frameend: segment.frameend,
+        name: segment.name,
+        segmentType: segment.segmentType,
+        frameWidth: this.timeline.frameWidth,
+      }
+    }
+
+    segment.setRange(framestart, currentFrame);
+    
+    const newSegment = createSegment(newSegmentInfo);
+    segment.parentTrack?.addSegment(newSegment);
+    return true;
   }
   width() {
     return this.timeline.totalFrames * this.timeline.frameWidth;
