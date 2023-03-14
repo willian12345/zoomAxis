@@ -183,15 +183,43 @@ export class Tracks extends EventHelper {
   private delegateDispatchEvent(
     vt: Track,
     EventType: TRACKS_EVENT_TYPES,
-    interceptor?: (...args) => Promise<void>
+    interceptor?: (...args: any) => Promise<any>
   ) {
     vt.addEventListener(EventType, async (args) => {
       // 如有需要事件发出前可以拦一道
-      await interceptor?.(args);
-      this.dispatchEvent({ eventType: EventType }, args);
+      const filtered = await interceptor?.(args);
+      this.dispatchEvent({ eventType: EventType }, filtered ?? args);
     });
   }
-  // 代理 Track 事件
+  private queryAllSegmentsDom(){
+    return Array.from(this.scrollContainer.querySelectorAll('.segment')) as HTMLElement[]
+  }
+  private checkSegmentHandleCoordinateLine({segment, handleCode}:any):[boolean, number, number, HTMLElement | null]{
+    const currentSegment: Segment|undefined = segment;
+    if(!currentSegment){
+      return [false, 0, 0, null];
+    }
+    const currentSegmentDom = currentSegment.dom;
+    const allsegments = this.queryAllSegmentsDom();
+    // 过滤掉自已，只对比其它
+    const segmentsFiltered = allsegments.filter((sDom)=> {
+      return sDom.dataset.segmentId !== currentSegment.segmentId
+    })
+    // 传入左|右手柄用于判断吸附位置
+    const segmentHandles = Array.from(currentSegmentDom.querySelectorAll('.segment-handle')) as HTMLElement[];
+    const dom = segmentHandles[handleCode];
+      // 跨轨道检测 x 轴是否与其它 segment 有磁吸
+    const result = checkCoordinateLine(dom, segmentsFiltered, this.frameWidth, segment);
+    const [isMagnet, _framestart, magnetTo, segmentDom ] = result;
+    // 只要有一条轨道内的 segment 磁吸碰撞就显示垂直辅助线
+    if(isMagnet && segmentDom){
+      this.showVerticalCoordinateLine(isMagnet, _framestart, magnetTo )
+    }else{
+      this.hideCoordinateLine();
+    }
+    return result
+  }
+  // 代理转发拦截 Track 事件
   private delegateTrackEvents() {
     this.virtualTracks.forEach((vt) => {
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DRAG_END);
@@ -202,8 +230,24 @@ export class Tracks extends EventHelper {
         segment.setActived(true);
       });
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_DELETED);
-      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDED);
-      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END);
+      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDED, async (data) => {
+        if(!this._magnetEnable) return;
+        this.checkSegmentHandleCoordinateLine(data)
+      });
+      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END, async ({segment, segments, handleCode}) => {
+        if(!this._magnetEnable) return;
+        const [isMagnet, _framestart, _magnetTo, segmentDom ] = this.checkSegmentHandleCoordinateLine({segment, segments, handleCode})
+        if(isMagnet && segmentDom && segment){
+          // 根据拖动手柄的左右位置选择自动吸附位置
+          if(handleCode === 0){
+            segment.setRange(_framestart, segment.frameend);
+          }else if(handleCode === 1){
+            segment.setRange(segment.framestart, _framestart);
+          }
+        }
+        this.hideCoordinateLine();
+        return {segment, segments, handleCode}
+      });
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_RIGHT_CLICK);
     });
   }
@@ -479,7 +523,9 @@ export class Tracks extends EventHelper {
       isContainSplitFromComma(track.dataset.trackId ?? "", trackId)
     );
   }
-  hideCoordinateLeft(){
+  hideCoordinateLine(){
+    // todo? 暂时只有一根辅助线
+    // 后期增加横向辅助线
     this.coordinateLineLeft.style.display = 'none';  
     this.coordinateLineLeft.style.left = '0';  
   }
@@ -491,12 +537,26 @@ export class Tracks extends EventHelper {
    */
    private showVerticalCoordinateLine(isMagnet: boolean, _framestart: number, magnetTo: number ){
     if(!isMagnet){
-      this.hideCoordinateLeft();
+      this.hideCoordinateLine();
     }else{
       this.coordinateLineLeft.style.left = `${magnetTo}px`;
       this.coordinateLineLeft.style.display = `block`;  
     }
     
+  }
+  private showCoordinateLine(dom: HTMLElement):boolean|[boolean, number, number]{
+    if(!this._magnetEnable || !dom){
+      return false;
+    }
+    // 跨轨道检测 x 轴是否与其它 segment 有磁吸
+    const [isMagnet, _framestart, magnetTo ] = checkCoordinateLine(dom, this.queryAllSegmentsDom(), this.frameWidth);
+    // 只要有一条轨道内的 segment 磁吸碰撞就显示垂直辅助线
+    if(isMagnet && _framestart){
+      this.showVerticalCoordinateLine(isMagnet, _framestart, magnetTo )
+    }else{
+      this.hideCoordinateLine();
+    }
+    return [isMagnet, _framestart, magnetTo ]
   }
   dragStart(
     e: MouseEvent,
@@ -563,7 +623,7 @@ export class Tracks extends EventHelper {
       this.virtualTracks.forEach((vt) => {
         vt.removeStatusClass();
       });
-      this.hideCoordinateLeft();
+      this.hideCoordinateLine();
       // Y 轴碰撞
       const collisionTrack = trackCollisionCheckY(
         this.virtualTracks,
@@ -577,13 +637,8 @@ export class Tracks extends EventHelper {
         dragTrackContainerRect,
         tracks,
       });
-      if(collisionTrack && this._magnetEnable){
-        // 跨轨道检测 x 轴是否与其它 segment 有磁吸
-        const [isMagnet, _framestart, magnetTo ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll('.segment')) as HTMLElement[], this.frameWidth);
-        // 只要有一条轨道内的 segment 磁吸碰撞就显示垂直辅助线
-        if(isMagnet && _framestart){
-          this.showVerticalCoordinateLine(isMagnet, _framestart, magnetTo )
-        }
+      if(collisionTrack ){
+        this.showCoordinateLine(dragTrackContainer);
       }
       // 拖动容器形变
       if (isCopy) {
@@ -653,7 +708,7 @@ export class Tracks extends EventHelper {
           });
         }
       });
-      this.hideCoordinateLeft();
+      this.hideCoordinateLine();
       // 如果没有跨轨道拖动成功，则 x 轴移动
       setTimeout(() => {
         if (dragTrackContainer.children.length) {
@@ -735,6 +790,11 @@ export class Tracks extends EventHelper {
     segment.setRange(segment.framestart, segment.frameend);
     track.addSegment(segment);
   }
+  /**
+   * 获取轨道内最后一个 segment 的帧范围
+   * @param trackId 
+   * @returns 
+   */
   getEndestSegmentFrameRange(trackId: string): [number, number] {
     let track = this.getTrackById(trackId);
     if (!track) {
@@ -746,6 +806,13 @@ export class Tracks extends EventHelper {
     }
     return [0, 0];
   }
+  /**
+   * 当前帧添加新的 segment
+   * @param trackId 
+   * @param segmentType 
+   * @param framestart 
+   * @returns 
+   */
   async addSegmentWithFramestart(
     trackId: string,
     segmentType: SegmentType,
@@ -754,23 +821,23 @@ export class Tracks extends EventHelper {
     if (framestart === undefined) return;
     const virtualTrack = this.getVirtualTrack(trackId);
     if (!virtualTrack) return;
-    const virtualSegment = await this.createSegment(
+    const segment = await this.createSegment(
       trackId,
       framestart,
       segmentType
     );
-    if (!virtualSegment) return;
+    if (!segment) return;
     if (virtualTrack instanceof TrackFlex) {
       virtualTrack.pointerup({
         copy: true,
         framestart: this.timeline.currentFrame,
-        segment: virtualSegment,
+        segment,
       });
     } else {
-      virtualTrack.addSegment(virtualSegment);
-      virtualSegment.setRange(
-        virtualSegment.framestart,
-        virtualSegment.frameend
+      virtualTrack.addSegment(segment);
+      segment.setRange(
+        segment.framestart,
+        segment.frameend
       );
     }
   }
@@ -785,6 +852,10 @@ export class Tracks extends EventHelper {
     const segments = this.getVirtualSegmentAll();
     segments.forEach((segment) => segment.setFrameWidth(frameWidth));
   }
+  /**
+   * 设置总帧数
+   * @param n 
+   */
   setTotalFrames(n: number) {
     this.virtualTracks.forEach((vt) => {
       if (vt instanceof TrackFlex) {
@@ -792,46 +863,33 @@ export class Tracks extends EventHelper {
       }
     });
   }
-  
-  async split(segment: Segment, doSplit?: DoSplit) {
+  /**
+   * 分割 segment
+   * @param segment 
+   * @param newSegmentId 如果不传,自动创建一个
+   * @returns 
+   */
+  split(segment: Segment, newSegmentId?: string) {
     const currentFrame = this.timeline.currentFrame;
     const framestart = segment.framestart;
     const frameend = segment.frameend;
+    // 当前帧必须在进行分割的 segment 内
     if(currentFrame <= framestart || currentFrame >= frameend){
       return false;
     }
-    let newSegmentInfo;
-    // 如果需要异步判断
-    if(doSplit){
-      const { success, segmentData } = await doSplit();
-      if (!success || !segmentData) {
-        return false;
-      }
-      newSegmentInfo = {
-        trackId: segmentData.trackId ?? "",
-        segmentId: segmentData.sectionId,
-        framestart: framestart,
-        frameend: segmentData.endFrame,
-        name: segment.name,
-        segmentType: segment.segmentType,
-        frameWidth: this.timeline.frameWidth,
-        extra: segmentData,
-      };
-    }else{
-      newSegmentInfo = {
-        trackId: segment.trackId,
-        framestart: currentFrame,
-        frameend: segment.frameend,
-        name: segment.name,
-        segmentType: segment.segmentType,
-        frameWidth: this.timeline.frameWidth,
-      }
-    }
-
-    segment.setRange(framestart, currentFrame);
-    
-    const newSegment = createSegment(newSegmentInfo);
+    const newSegment = createSegment({
+      trackId: segment.trackId,
+      segmentId: newSegmentId,
+      framestart: currentFrame,
+      frameend: segment.frameend,
+      name: segment.name,
+      segmentType: segment.segmentType,
+      extra: segment.extra,
+      frameWidth: this.timeline.frameWidth,
+    });
+    // 将新分割出的 segment 添加至轨道
     segment.parentTrack?.addSegment(newSegment);
+    segment.setRange(framestart, currentFrame);
     return true;
   }
   width() {

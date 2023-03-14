@@ -45,6 +45,7 @@ export class Track extends EventHelper {
   originFramestart = 0; // 拖动前 framestart
   originFrameend = 0; // 拖动前 frameend
   disabled = false;
+  magnetEnable = true;
   coordinateLines: HTMLElement[] = []; // 轨道所有辅助线
   coordinateLineLeft!: HTMLElement; // segment 左侧辅助线
   private lastEffectSegments: Segment[] = [];
@@ -129,12 +130,12 @@ export class Track extends EventHelper {
     }
     if (target.classList.contains("segment-handle-left")) {
       e.stopPropagation();
-      this.dragHandleStart(e, target, this.leftHandleMove);
+      this.dragHandleStart(e, target, this.leftHandleMove, 0);
       return;
     }
     if (target.classList.contains("segment-handle-right")) {
       e.stopPropagation();
-      this.dragHandleStart(e, target, this.rightHandleMove);
+      this.dragHandleStart(e, target, this.rightHandleMove, 1);
       return;
     }
   }
@@ -142,7 +143,8 @@ export class Track extends EventHelper {
   private dragHandleStart = (
     e: MouseEvent,
     handle: HTMLElement,
-    move: (args: MoveFunctionArgs) => void
+    move: (args: MoveFunctionArgs) => void,
+    handleCode: number
   ) => {
     const segmentDom: HTMLElement = findParentElementByClassName(
       handle,
@@ -165,8 +167,11 @@ export class Track extends EventHelper {
     };
     const mouseup = (e: MouseEvent) => {
       startX = e.clientX;
-      //注意： 宽度调节完毕后，影响到的相关 segment 不能同时调整需要另外再调用，所以使用了新的 SEGMENTS_SLIDE_END 事件
-      this.triggerSlideEndEvent();
+      const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? "");
+      if(segment){
+        //注意： 宽度调节完毕后，影响到的相关 segment 不能同时调整需要另外再调用，所以使用了新的 SEGMENTS_SLIDE_END 事件
+        this.triggerSlideEndEvent(segment, handleCode);
+      }
       document.body.removeEventListener("mousemove", mousemove);
       document.body.removeEventListener("mouseup", mouseup);
     };
@@ -228,7 +233,7 @@ export class Track extends EventHelper {
         }
         segment.setRange(currentFrame, frameend);
       }
-      this.lastEffectSegments = this.triggerSlideEvent(result);
+      this.lastEffectSegments = this.triggerSlideEvent(segment, result, 0);
     }
   };
   // segment 右侧手柄拖动
@@ -282,7 +287,7 @@ export class Track extends EventHelper {
           this.setSegmentPosition(segmentDom, framestart, frameend);
         }
       }
-      this.lastEffectSegments = this.triggerSlideEvent(segments);
+      this.lastEffectSegments = this.triggerSlideEvent(segment, segments, 1);
     }
   };
   getSegmentLeft(framestart: number): number {
@@ -299,32 +304,29 @@ export class Track extends EventHelper {
     const frames = frameend - framestart;
     segment.style.width = `${this.frameWidth * frames}px`;
   }
-  private triggerSlideEvent(segments: Segment[]) {
+  private triggerSlideEvent(segment:Segment, segments: Segment[], handleCode: number) {
     this.dispatchEvent(
       { eventType: TRACKS_EVENT_TYPES.SEGMENTS_SLIDED },
       {
+        segment,
         segments,
+        handleCode,
       }
     );
     return segments;
   }
-  private triggerSlideEndEvent() {
+  private triggerSlideEndEvent(segment: Segment, handleCode: number) {
     this.dispatchEvent(
       { eventType: TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END },
       {
+        segment,
         segments: this.lastEffectSegments,
+        handleCode,
       }
     );
   }
   setFrameWidth(w: number) {
     this.frameWidth = w;
-  }
-  private getFramestartByX(x: number): number {
-    let currentFrame = Math.round(x / this.frameWidth);
-    if (currentFrame < 0) {
-      currentFrame = 0;
-    }
-    return currentFrame;
   }
   check(copy: boolean, segment: Segment) {
     // copy 说明是非轨道内的 Segment 拖动，即拖入并新建 Segment

@@ -134,6 +134,12 @@ const getFrameByWidth = (width: number, frameWidth: number): number => {
   }
   return frame;
 };
+const getframes = (rect: DOMRect, frameWidth: number,  segment?: Segment) => {
+  if(segment){
+    return segment.frameend - segment.frameend;
+  }
+  return getFrameByWidth(rect.width, frameWidth)
+}
 /**
  * 检测辅助线吸附 checkCoordinateLine
  * @param dragingDom 当前拖动的 dom
@@ -144,29 +150,48 @@ const getFrameByWidth = (width: number, frameWidth: number): number => {
 export const checkCoordinateLine = (
   dragingDom: HTMLElement,
   segments: HTMLElement[],
-  frameWidth: number
-): [boolean, number, number] => {
+  frameWidth: number,
+  dragingSegment?: Segment,
+): [boolean, number, number, HTMLElement|null] => {
   if (!segments.length) {
-    return [false, 0, 0];
+    return [false, 0, 0, null];
   }
   const dragingDomRect = dragingDom.getBoundingClientRect();
+  // 与轨道内的所有 segments 进行距离碰撞对比
   for (let segment of segments) {
+    // 如果拖动的是自己（拖动手柄时）
+    if(segment.dataset.segmentId === dragingDom.dataset.segmentId){
+      continue
+    }
+    // 拖动 segment 时
     const rect = segment.getBoundingClientRect();
     const [framestart, frameend] = getFrameRange(segment);
     if (
       Math.abs(dragingDomRect.left - rect.right) <= CLOSE_ENOUPH_SEGMENT_X
     ) {
       // console.log("magnet!!!吸至右侧", frameend);
-      return [true, frameend, frameend * frameWidth];
+      return [true, frameend, frameend * frameWidth, segment];
     }
     if (
       Math.abs(dragingDomRect.right - rect.left) <= CLOSE_ENOUPH_SEGMENT_X
     ) {
       // console.log("magnet!!!吸至左侧", framestart);
+      const frames =  getframes(dragingDomRect, frameWidth, dragingSegment);
       return [
         true,
-        framestart - getFrameByWidth(dragingDomRect.width, frameWidth),
+        framestart - frames,
         framestart * frameWidth,
+        segment
+      ];
+    }
+    if(Math.abs(dragingDomRect.right - rect.right) <= CLOSE_ENOUPH_SEGMENT_X){
+      // console.log("magnet!!!吸至同右侧", framestart);
+      const frames =  getframes(dragingDomRect, frameWidth, dragingSegment);
+      return [
+        true,
+        frameend - frames,
+        frameend * frameWidth,
+        segment
       ];
     }
     if(Math.abs(dragingDomRect.left - rect.left) <= CLOSE_ENOUPH_SEGMENT_X ){
@@ -175,18 +200,12 @@ export const checkCoordinateLine = (
         true,
         framestart,
         framestart * frameWidth,
+        segment
       ];
     }
-    if(Math.abs(dragingDomRect.right - rect.right) <= CLOSE_ENOUPH_SEGMENT_X){
-      // console.log("magnet!!!吸至同右侧", framestart);
-      return [
-        true,
-        frameend - getFrameByWidth(dragingDomRect.width, frameWidth),
-        frameend * frameWidth,
-      ];
-    }
+    
   }
-  return [false, 0, 0];
+  return [false, 0, 0, null];
 };
 export const getSegmentsByTrack = (track: HTMLElement): HTMLElement[] => {
   const segments: HTMLElement[] = Array.from(

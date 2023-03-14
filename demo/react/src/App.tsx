@@ -185,7 +185,7 @@ function App() {
       coordinateLines,
       segmentDelegate: segmentItemList,
     });
-    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DRAG_END, (event) => {
+    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END, (event) => {
       console.log(event, 'dragend');
     })
     segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_ADDED, (event) => {
