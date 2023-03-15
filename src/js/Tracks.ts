@@ -3,10 +3,10 @@ import {
   DeleteableCheck,
   SegmentType,
   DropableCheck,
-  DoSplit,
   TracksArgs,
   TracksEvent,
   TrackBasicConfig,
+  TrackEventMap,
 } from "./TrackType";
 
 import { TimelineAxis } from "./TimelineAxis";
@@ -180,10 +180,11 @@ export class Tracks extends EventHelper {
       this.dragStart(e, scrollContainer, segment);
     }, 300);
   }
-  private delegateDispatchEvent(
+  // TrackEventMap
+  private delegateDispatchEvent<T extends TRACKS_EVENT_TYPES>(
     vt: Track,
-    EventType: TRACKS_EVENT_TYPES,
-    interceptor?: (...args: any) => Promise<any>
+    EventType: T,
+    interceptor?: TracksEvent
   ) {
     vt.addEventListener(EventType, async (args) => {
       // 如有需要事件发出前可以拦一道
@@ -227,7 +228,7 @@ export class Tracks extends EventHelper {
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_ADDED);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_SELECTED, async ({segment}) => {
         this.removeSegmentActivedStatus();
-        segment.setActived(true);
+        segment?.setActived(true);
       });
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_DELETED);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDED, async (data) => {
