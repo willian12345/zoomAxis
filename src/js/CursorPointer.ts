@@ -57,10 +57,8 @@ export class CursorPointer extends EventHelper{
       if (!this._enable || this.timeline?.playing) {
         return;
       }
-      let startX = e.clientX;
       const handleMouseup = (e: MouseEvent) => {
         e.stopPropagation();
-        startX = e.clientX;
         cursorEl.removeEventListener("mouseup", handleMouseup);
         document.removeEventListener("mouseup", handleMouseup);
         document.removeEventListener("mousemove", handleMousemove);
@@ -69,25 +67,25 @@ export class CursorPointer extends EventHelper{
       };
       const handleMousemove = (e: MouseEvent) => {
         this.cursorUpdate(timeline, this.getX(e.clientX, scrollContentDom));
-        startX = e.clientX;
       };
       document.addEventListener("mouseup", handleMouseup);
       cursorEl.addEventListener("mouseup", handleMouseup);
       document.addEventListener("mousemove", handleMousemove);
     });
 
+    cursorEl.addEventListener('click', this.clickHandle);
     // 滚动区域 mouseup 移动游标
-    scrollContentDom.addEventListener("click", (e: MouseEvent) => {
-      if (!this._enable || this.timeline?.playing) {
-        return;
-      }
-      // const target = e.target as HTMLElement;
-      // if(target && target.classList.contains('segment')){
-      //   return;
-      // }
-      this.cursorUpdate(timeline, this.getX(e.clientX, scrollContentDom));
-      this.triggerDragEnd(timeline, this.getX(e.clientX, scrollContentDom));
-    });
+    scrollContentDom.addEventListener("click", this.scrollContentDomHandle);
+  }
+  private clickHandle = (e: MouseEvent) => {
+    e.stopPropagation();
+  }
+  private scrollContentDomHandle =  (e: MouseEvent) => {
+    if (!this.timeline || !this._enable || this.timeline?.playing || !this.scrollContentDom) {
+      return;
+    }
+    this.cursorUpdate(this.timeline, this.getX(e.clientX, this.scrollContentDom));
+    this.triggerDragEnd(this.timeline, this.getX(e.clientX, this.scrollContentDom));
   }
   private triggerDragEnd(timelineAxis: TimelineAxis, x){
     const frame = Math.round(x / timelineAxis.frameWidth);
@@ -137,6 +135,7 @@ export class CursorPointer extends EventHelper{
   }
   refresh() {}
   destroy(){
-    
+    this.scrollContentDom?.removeEventListener("click", this.scrollContentDomHandle);
+    this.cursorEl?.removeEventListener('click', this.clickHandle);
   }
 }
