@@ -21,6 +21,7 @@ export enum SegmentType {
   EFFECT,
   BGM,
   AVATAR,
+  CAMERA_DYNAMIC,
 }
 export enum TRACKS_EVENT_TYPES {
   DRAG_END, // 拖动结束事件

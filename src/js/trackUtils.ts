@@ -169,13 +169,13 @@ export const checkCoordinateLine = (
     if (
       Math.abs(dragingDomRect.left - rect.right) <= CLOSE_ENOUPH_SEGMENT_X
     ) {
-      // console.log("magnet!!!吸至右侧", frameend);
+      // console.log("adsorb!!!吸至右侧", frameend);
       return [true, frameend, frameend * frameWidth, segment];
     }
     if (
       Math.abs(dragingDomRect.right - rect.left) <= CLOSE_ENOUPH_SEGMENT_X
     ) {
-      // console.log("magnet!!!吸至左侧", framestart);
+      // console.log("adsorb!!!吸至左侧", framestart);
       const frames =  getframes(dragingDomRect, frameWidth, dragingSegment);
       return [
         true,
@@ -185,7 +185,7 @@ export const checkCoordinateLine = (
       ];
     }
     if(Math.abs(dragingDomRect.right - rect.right) <= CLOSE_ENOUPH_SEGMENT_X){
-      // console.log("magnet!!!吸至同右侧", framestart);
+      // console.log("adsorb!!!吸至同右侧", framestart);
       const frames =  getframes(dragingDomRect, frameWidth, dragingSegment);
       return [
         true,
@@ -195,7 +195,7 @@ export const checkCoordinateLine = (
       ];
     }
     if(Math.abs(dragingDomRect.left - rect.left) <= CLOSE_ENOUPH_SEGMENT_X ){
-      // console.log("magnet!!!吸至同左侧", framestart);
+      // console.log("adsorb!!!吸至同左侧", framestart);
       return [
         true,
         framestart,

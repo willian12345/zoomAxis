@@ -45,7 +45,6 @@ export class Track extends EventHelper {
   originFramestart = 0; // 拖动前 framestart
   originFrameend = 0; // 拖动前 frameend
   disabled = false;
-  magnetEnable = true;
   coordinateLines: HTMLElement[] = []; // 轨道所有辅助线
   coordinateLineLeft!: HTMLElement; // segment 左侧辅助线
   private lastEffectSegments: Segment[] = [];

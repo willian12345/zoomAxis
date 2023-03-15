@@ -100,6 +100,17 @@ const getCameraRenderer = (name: string) => {
     </div>
   `
 }
+const getCameraDynamicRenderer = (name: string) => {
+  return `
+    <div class="flex items-center text-12 w-full">
+      <svg width="24" height="24" viewBox="0 0 24 24" class="ml-16">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M4 4.5H14C14.8284 4.5 15.5 5.17157 15.5 6V8V12V14C15.5 14.8284 14.8284 15.5 14 15.5H4C3.17157 15.5 2.5 14.8284 2.5 14V6C2.5 5.17157 3.17157 4.5 4 4.5ZM17 13.2V14C17 15.6569 15.6569 17 14 17H12.5078L14.1964 21.2215C14.3502 21.606 14.1631 22.0425 13.7785 22.1964C13.394 22.3502 12.9575 22.1631 12.8036 21.7785L10.8922 17H7.10778L5.19636 21.7785C5.04252 22.1631 4.60604 22.3502 4.22146 22.1964C3.83687 22.0425 3.64981 21.606 3.80364 21.2215L5.49222 17H4C2.34315 17 1 15.6569 1 14V6C1 4.34315 2.34315 3 4 3H14C15.6569 3 17 4.34315 17 6V6.8L19.7506 4.59951C21.0601 3.55189 23 4.48424 23 6.16125V13.8388C23 15.5158 21.0601 16.4481 19.7506 15.4005L17 13.2ZM17 11.2791L20.6877 14.2292C21.015 14.4911 21.5 14.258 21.5 13.8388V6.16125C21.5 5.742 21.015 5.50891 20.6877 5.77082L17 8.72094V11.2791Z"/>
+      </svg>
+      <div class="segment-name flex-1">${name}</div>
+      <img style="display: block;width: 64px;" src="data:image/png;base64,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" />
+    </div>
+  `
+}
 const getBGMRenderer = (name: string) => {
   return  `
     <div class="flex items-center text-12">
@@ -133,6 +144,9 @@ export const getContentRenderer = ({ segmentType, name = '' }: SegmentConstructI
   if(segmentType === SegmentType.CAMERA){
     return getCameraRenderer(name);
   }
+  if(segmentType === SegmentType.CAMERA_DYNAMIC){
+    return getCameraDynamicRenderer(name);
+  }
   if(segmentType === SegmentType.BGM){
     return getBGMRenderer(name);
   }
@@ -163,6 +177,9 @@ export const getSegmentStyle = ({ segmentType }: SegmentConstructInfo ): string 
     return 'background: #6C4ACD;'
   }
   if(segmentType === SegmentType.CAMERA){
+    return 'background: #4767E8;';
+  }
+  if(segmentType === SegmentType.CAMERA_DYNAMIC){
     return 'background: #4767E8;';
   }
   if(segmentType === SegmentType.BGM){

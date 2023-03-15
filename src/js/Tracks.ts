@@ -70,13 +70,13 @@ export class Tracks extends EventHelper {
     this._disabled = v;
     this.virtualTracks.forEach( s => s.disabled = v)
   }
-  private _magnetEnable = true;
-  get magnetEnable () {
-    return this._magnetEnable;
+  private _adsorbable = true;
+  get adsorbable () {
+    return this._adsorbable;
   }
-  set magnetEnable(v){
-    this._magnetEnable = v;
-    console.log(this._magnetEnable)
+  set adsorbable(v){
+    this._adsorbable = v;
+    console.log(this._adsorbable)
   }
   constructor({
     tracks,
@@ -210,10 +210,10 @@ export class Tracks extends EventHelper {
     const dom = segmentHandles[handleCode];
       // 跨轨道检测 x 轴是否与其它 segment 有磁吸
     const result = checkCoordinateLine(dom, segmentsFiltered, this.frameWidth, segment);
-    const [isMagnet, _framestart, magnetTo, segmentDom ] = result;
+    const [isAdsorbing, _framestart, adsorbTo, segmentDom ] = result;
     // 只要有一条轨道内的 segment 磁吸碰撞就显示垂直辅助线
-    if(isMagnet && segmentDom){
-      this.showVerticalCoordinateLine(isMagnet, _framestart, magnetTo )
+    if(isAdsorbing && segmentDom){
+      this.showVerticalCoordinateLine(isAdsorbing, _framestart, adsorbTo )
     }else{
       this.hideCoordinateLine();
     }
@@ -231,13 +231,13 @@ export class Tracks extends EventHelper {
       });
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_DELETED);
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDED, async (data) => {
-        if(!this._magnetEnable) return;
+        if(!this._adsorbable) return;
         this.checkSegmentHandleCoordinateLine(data)
       });
       this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END, async ({segment, segments, handleCode}) => {
-        if(!this._magnetEnable) return;
-        const [isMagnet, _framestart, _magnetTo, segmentDom ] = this.checkSegmentHandleCoordinateLine({segment, segments, handleCode})
-        if(isMagnet && segmentDom && segment){
+        if(!this._adsorbable) return;
+        const [isAdsorbing, _framestart, _adsorbTo, segmentDom ] = this.checkSegmentHandleCoordinateLine({segment, segments, handleCode})
+        if(isAdsorbing && segmentDom && segment){
           // 根据拖动手柄的左右位置选择自动吸附位置
           if(handleCode === 0){
             segment.setRange(_framestart, segment.frameend);
@@ -533,30 +533,30 @@ export class Tracks extends EventHelper {
    * 
    * @param segmentDom  接近碰撞到的 segment DOM
    * @param isOnLeft 接近碰撞的 segment DOM 是否在左侧，如果是右侧，则需要将辅助线移到 segment DOM 的起始位置
-   * @param magnetTo 磁吸的位置，即 left 值
+   * @param adsorbTo 磁吸的位置，即 left 值
    */
-   private showVerticalCoordinateLine(isMagnet: boolean, _framestart: number, magnetTo: number ){
-    if(!isMagnet){
+   private showVerticalCoordinateLine(isAdsorbing: boolean, _framestart: number, adsorbTo: number ){
+    if(!isAdsorbing){
       this.hideCoordinateLine();
     }else{
-      this.coordinateLineLeft.style.left = `${magnetTo}px`;
+      this.coordinateLineLeft.style.left = `${adsorbTo}px`;
       this.coordinateLineLeft.style.display = `block`;  
     }
     
   }
   private showCoordinateLine(dom: HTMLElement):boolean|[boolean, number, number]{
-    if(!this._magnetEnable || !dom){
+    if(!this._adsorbable || !dom){
       return false;
     }
     // 跨轨道检测 x 轴是否与其它 segment 有磁吸
-    const [isMagnet, _framestart, magnetTo ] = checkCoordinateLine(dom, this.queryAllSegmentsDom(), this.frameWidth);
+    const [isAdsorbing, _framestart, adsorbTo ] = checkCoordinateLine(dom, this.queryAllSegmentsDom(), this.frameWidth);
     // 只要有一条轨道内的 segment 磁吸碰撞就显示垂直辅助线
-    if(isMagnet && _framestart){
-      this.showVerticalCoordinateLine(isMagnet, _framestart, magnetTo )
+    if(isAdsorbing && _framestart){
+      this.showVerticalCoordinateLine(isAdsorbing, _framestart, adsorbTo )
     }else{
       this.hideCoordinateLine();
     }
-    return [isMagnet, _framestart, magnetTo ]
+    return [isAdsorbing, _framestart, adsorbTo ]
   }
   dragStart(
     e: MouseEvent,
@@ -687,9 +687,9 @@ export class Tracks extends EventHelper {
           if (!placeHolder) {
             return;
           }
-          if(this._magnetEnable){
-            const [ isMagnet, _framestart ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll('.segment')) as HTMLElement[], this.frameWidth);
-            if(isMagnet){
+          if(this._adsorbable){
+            const [ isAdsorbing, _framestart ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll('.segment')) as HTMLElement[], this.frameWidth);
+            if(isAdsorbing){
               framestart = _framestart
             }
           }
