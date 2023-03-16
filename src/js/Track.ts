@@ -47,6 +47,8 @@ export class Track extends EventHelper {
   disabled = false;
   coordinateLines: HTMLElement[] = []; // 轨道所有辅助线
   coordinateLineLeft!: HTMLElement; // segment 左侧辅助线
+  collapsed = false;
+  subTracksCollapsed = false;
   private lastEffectSegments: Segment[] = [];
   constructor({
     trackClass = "track",
@@ -518,6 +520,16 @@ export class Track extends EventHelper {
   }
   removeTrack(track: Track){
     this.subTracks.delete(track.trackId);
+  }
+  // 折叠
+  collapse(collapse: boolean){
+    this.collapsed = collapse;
+    this.dom.style.display = collapse ? 'none' : 'block';
+  }
+  // 折叠子轨道
+  collapseSubTracks(collapse: boolean){
+    this.subTracksCollapsed = collapse;
+    this.subTracks.forEach( v => v.collapse(collapse));
   }
   destroy() {
     this.dom.removeEventListener("mousedown", this.mousedown);

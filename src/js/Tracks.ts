@@ -484,7 +484,7 @@ export class Tracks extends EventHelper {
     const segmentId = segment.dataset.segmentId ?? "";
     this.deleteSegment(trackId, segmentId);
   }
-  getVirtualTrack(trackId: string): Track | TrackFlex | null {
+  getTrack(trackId: string): Track | TrackFlex | null {
     if (!trackId.length) {
       console.warn("注意：轨道 id 为空");
       return null;
@@ -512,17 +512,12 @@ export class Tracks extends EventHelper {
   }
   // 获取某条轨道内的所有 segments
   getSegmentsByTrackId(trackId: string): Segment[] {
-    const track = this.getVirtualTrack(trackId);
+    const track = this.getTrack(trackId);
     if (!track) return [];
     return track.getSegments();
   }
   getTracks() {
     return this.virtualTracks.map((vt) => vt.dom);
-  }
-  getTrackById(trackId: string) {
-    return this.getTracks().find((track: HTMLElement) =>
-      isContainSplitFromComma(track.dataset.trackId ?? "", trackId)
-    );
   }
   hideCoordinateLine(){
     // todo? 暂时只有一根辅助线
@@ -780,7 +775,7 @@ export class Tracks extends EventHelper {
     frameend: number;
     segmentType: SegmentType;
   }) {
-    const track = this.getVirtualTrack(segmentConstructInfo.trackId);
+    const track = this.getTrack(segmentConstructInfo.trackId);
     if (!track) {
       return;
     }
@@ -797,13 +792,13 @@ export class Tracks extends EventHelper {
    * @returns 
    */
   getEndestSegmentFrameRange(trackId: string): [number, number] {
-    let track = this.getTrackById(trackId);
+    let track = this.getTrack(trackId);
     if (!track) {
       return [-1, -1];
     }
-    const [segment] = findEndestSegmentOnTrack(track);
+    const segment = track.getLastSegment()
     if (segment) {
-      return getFrameRange(segment);
+      return [segment.framestart, segment.frameend];
     }
     return [0, 0];
   }
@@ -820,7 +815,7 @@ export class Tracks extends EventHelper {
     framestart: number
   ) {
     if (framestart === undefined) return;
-    const virtualTrack = this.getVirtualTrack(trackId);
+    const virtualTrack = this.getTrack(trackId);
     if (!virtualTrack) return;
     const segment = await this.createSegment(
       trackId,
