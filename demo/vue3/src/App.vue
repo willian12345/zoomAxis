@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, Ref } from "vue";
-import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "../../../src/js/TimelineAxis";
+import {
+  TimelineAxis,
+  TIMELINE_AXIS_EVENT_TYPE,
+} from "../../../src/js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
-import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/cursorPointer";
-import { TRACKS_EVENT_TYPES, TrackBasicConfig } from "../../../src/js/trackType";
+import {
+  CursorPointer,
+  CURSOR_POINTER_EVENT_TYPE,
+} from "../../../src/js/cursorPointer";
+import {
+  TRACKS_EVENT_TYPES,
+  TrackBasicConfig,
+} from "../../../src/js/trackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
 import { Tracks } from "../../../src/js/Tracks";
+import { Segment } from "../../../src/js/Segment";
 
 let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;
@@ -18,6 +28,7 @@ const cursorRef = ref<InstanceType<typeof Cursor> | null>(null);
 const scrollContentRef = ref<HTMLElement | null>(null);
 const trackListRef = ref<HTMLElement | null>(null);
 const segmentItemListRef = ref<HTMLElement | null>(null);
+let currentSegment: Segment | null = null;
 // 左右滚动
 const handleScroll = (e: UIEvent) => {
   if (!e) {
@@ -38,15 +49,16 @@ const zoomIn = () => {
 };
 const zoomOut = () => {
   if (zoomRatio <= 0.1) {
-    zoomRatio = 0.1
-    return
+    zoomRatio = 0.1;
+    return;
   }
   zoomRatio -= 0.1;
 };
 const syncTrackWidth = () => {
-  const trackItemWidth = segmentTracks.width() 
-  trackWidth.value = trackItemWidth < stageWidth.value ? stageWidth.value : trackItemWidth;
-}
+  const trackItemWidth = segmentTracks.width();
+  trackWidth.value =
+    trackItemWidth < stageWidth.value ? stageWidth.value : trackItemWidth;
+};
 const syncByZoom = (zoom: number) => {
   // 根据缩放比较，减小滚动宽度
   if (zoom) {
@@ -58,12 +70,12 @@ const syncByZoom = (zoom: number) => {
       trackCursor.sync();
     }
   }
-}
+};
 // 滚轮缩放
 const handleWheel = (e: WheelEvent) => {
   e.preventDefault();
   e.deltaY > 0 ? zoomOut() : zoomIn();
-  syncByZoom(zoomRatio)
+  syncByZoom(zoomRatio);
 };
 
 const handlePlay = () => {
@@ -125,61 +137,78 @@ const initApp = () => {
   trackCursor = new CursorPointer(scrollContent, cursor, timeline);
   trackCursor.addEventListener(
     CURSOR_POINTER_EVENT_TYPE.UPDATE,
-    ({frame}) => {
+    ({ frame }) => {
       console.log(frame);
       timeline?.setCurrentFrame(frame);
     }
   );
-  const trackDoms = Array.from(scrollContent.querySelectorAll('.track')) as HTMLElement[];
-  const tracks:TrackBasicConfig[] = trackDoms.map( (dom: HTMLElement) => {
-    return {trackType: dom.dataset.trackType ?? '', trackId: dom.dataset.trackId ?? '', dom, flexiable: dom.classList.contains('track-flexible')};
+  const trackDoms = Array.from(
+    scrollContent.querySelectorAll(".track")
+  ) as HTMLElement[];
+  const tracks: TrackBasicConfig[] = trackDoms.map((dom: HTMLElement) => {
+    return {
+      trackType: dom.dataset.trackType ?? "",
+      trackId: dom.dataset.trackId ?? "",
+      dom,
+      flexiable: dom.classList.contains("track-flexible"),
+    };
   });
-  console.log(tracks,3333)
+  const coordinateLines = Array.from(
+    scrollContainer.querySelectorAll(".coordinate-line")
+  ) as HTMLElement[];
   // 初始化轨道
   segmentTracks = new Tracks({
-    trackCursor,
     scrollContainer,
     tracks,
     timeline,
+    coordinateLines,
     segmentDelegate: segmentItemList,
   });
   segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DRAG_END, () => {
     // addTrackWidth(trackCursor);
   });
   // 滚动 timeline  x 轴
-  const scrollTimelineX =(pointerX: number) => {
-    if (!scrollContainerRef.value){
+  const scrollTimelineX = (pointerX: number) => {
+    if (!scrollContainerRef.value) {
       return;
     }
     if (trackWidth.value <= stageWidth.value) {
       return;
     }
     // 修正 pointerX 值
-    const scrollContainerLeft = scrollContainerRef.value.getBoundingClientRect().left;
-    pointerX -= scrollContainerLeft
-    if(pointerX < stageWidth.value - 50 && pointerX > 50){
-      return ;
+    const scrollContainerLeft =
+      scrollContainerRef.value.getBoundingClientRect().left;
+    pointerX -= scrollContainerLeft;
+    if (pointerX < stageWidth.value - 50 && pointerX > 50) {
+      return;
     }
     let direct = 0;
-    if(pointerX >= stageWidth.value - 50){
-      direct = 1
-    }else if(pointerX <= 50){
-      direct = -1
+    if (pointerX >= stageWidth.value - 50) {
+      direct = 1;
+    } else if (pointerX <= 50) {
+      direct = -1;
     }
-    const dom = scrollContainerRef.value as HTMLElement
+    const dom = scrollContainerRef.value as HTMLElement;
     // 根据当前帧滚动滚动条
-    if(dom){
-      dom.scrollLeft += (40 * direct);
+    if (dom) {
+      dom.scrollLeft += 40 * direct;
     }
   };
   segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DRAGING_OVER, (e) => {
-    if(e.pointerEvent){
+    if (e.pointerEvent) {
       scrollTimelineX(e.pointerEvent?.clientX);
     }
-  })
-
+  });
+  segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_SELECTED, (e) => {
+    currentSegment = e.segment ?? null;
+  });
 };
-
+const splitHandler = () => {
+  currentSegment && segmentTracks.split(currentSegment);
+};
+const toggleMagnet = () => {
+  segmentTracks.adsorbable = !segmentTracks.adsorbable;
+};
 onMounted(() => {
   initApp();
 });
@@ -187,12 +216,23 @@ onMounted(() => {
 
 <template>
   <div class="wrapper">
+    <div className="btns">
+      <button @click="splitHandler">分割</button>
+      <button @click="toggleMagnet">辅助线吸附</button>
+      <button @click="handlePlay">播放</button>
+    </div>
     <div class="segment-list" ref="segmentItemListRef">
       <div class="segment-item" data-segment-type="0">拖我</div>
       <div class="segment-item" data-segment-type="0">拖我</div>
       <div class="segment-item" data-segment-type="0">拖我</div>
-      <div class="segment-item" data-segment-type="0" data-track-type="1">拖我</div>
-      <div class="segment-item segment-item-flex" data-segment-type="1" data-track-id="c">
+      <div class="segment-item" data-segment-type="0" data-track-type="1">
+        拖我
+      </div>
+      <div
+        class="segment-item segment-item-flex"
+        data-segment-type="1"
+        data-track-id="c"
+      >
         拖我
         <em>(伸缩轨道)</em>
       </div>
@@ -227,16 +267,18 @@ onMounted(() => {
             <div class="track" data-track-id="b" data-track-type="0">
               <div class="track-placeholder"></div>
             </div>
-            <div class="track track-flexible" data-track-id="c" data-track-type="1">
+            <div
+              class="track track-flexible"
+              data-track-id="c"
+              data-track-type="1"
+            >
               <div class="track-placeholder"></div>
             </div>
           </div>
+          <div className="coordinate-line"></div>
         </div>
         <Cursor ref="cursorRef" />
       </div>
-    </div>
-    <div style="display: flex; gap: 10px">
-      <button @click="handlePlay">play</button>
     </div>
   </div>
 </template>
@@ -302,14 +344,14 @@ onMounted(() => {
   padding-top: @markHeight;
   flex-basis: 120px;
   border-right: 1px solid black;
-  background-color: rgba(white, .01);
+  background-color: rgba(white, 0.01);
   .track-operation-item {
     margin-bottom: 2px;
     padding-left: 6px;
     font-size: 12px;
     height: @trackHeight;
     line-height: @trackHeight;
-    color: rgba(255, 255, 255, .5);
+    color: rgba(255, 255, 255, 0.5);
     background-color: rgba(white, 0.05);
   }
 }
@@ -356,13 +398,13 @@ onMounted(() => {
     pointer-events: all;
     border: 1px solid transparent;
   }
-  svg{
-      width: 1em;
-      height: 1em;
-      fill: currentColor;
-      overflow: hidden;
-      font-size: inherit;
-    }
+  svg {
+    width: 1em;
+    height: 1em;
+    fill: currentColor;
+    overflow: hidden;
+    font-size: inherit;
+  }
   .segment-action {
     background-color: #c66136;
   }
@@ -408,12 +450,12 @@ onMounted(() => {
     cursor: move;
     user-select: none;
   }
-  .segment-item-stretch{
+  .segment-item-stretch {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    em{
+    em {
       font-size: 8px;
     }
   }
@@ -447,5 +489,27 @@ onMounted(() => {
 }
 .segment-handle-right {
   right: 0;
+}
+.coordinate-line {
+  display: none;
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  font-size: 0;
+  background-color: #00b6c2;
+}
+
+// 工具按钮
+.btns {
+  padding: 40px 0;
+  display: flex;
+  gap: 20px;
+}
+button {
+  padding: 4px 6px;
 }
 </style>

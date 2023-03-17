@@ -29,7 +29,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
 }
 let zoomRatio = 1;
 let currentSegment:Segment | null = null;
-let magnetEnable = true;
 function App() {
   console.log('render')
   const cursorRef = useRef<HTMLInputElement>(null);
@@ -212,7 +211,7 @@ function App() {
     currentSegment && segmentTracks.split(currentSegment);
   }
   const toggleMagnet = () => {
-    segmentTracks.magnetEnable = !segmentTracks.magnetEnable;
+    segmentTracks.adsorbable = !segmentTracks.adsorbable;
   }
   useEffect(() => {
     initApp();
