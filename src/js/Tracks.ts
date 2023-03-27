@@ -6,7 +6,6 @@ import {
   TracksArgs,
   TracksEvent,
   TrackBasicConfig,
-  TrackEventMap,
 } from "./TrackType";
 
 import { TimelineAxis } from "./TimelineAxis";
@@ -23,11 +22,13 @@ import {
   trackCollisionCheckY,
   isCloseEnouphToY,
   getSegmentPlaceholder,
-  isContainSplitFromComma,
   findParentElementByClassName,
-  getFrameRange,
-  findEndestSegmentOnTrack,
   checkCoordinateLine,
+  CLASS_NAME_NEW_SEGMENT,
+  CLASS_NAME_TRACK_DRAG_OVER,
+  CLASS_NAME_TRACK_DRAG_OVER_ERROR,
+  CLASS_NAME_SEGMENT,
+  CLASS_NAME_SEGMENT_HANDLE,
 } from "./trackUtils";
 import { TrackFlex } from "./TrackFlex";
 
@@ -41,9 +42,12 @@ export interface Tracks {
 // 轨道
 export class Tracks extends EventHelper {
   static DEFAULT_SEGMENT_FRAMES = DEFAULT_SEGMENT_FRAMES;
-  protected scrollContainer: HTMLElement = {} as HTMLElement;
-  protected dragoverClass = "dragover";
-  protected dragoverErrorClass = "dragover-error";
+  private scrollContainer: HTMLElement = {} as HTMLElement;
+  private classNameTrackDragOver = CLASS_NAME_TRACK_DRAG_OVER;
+  private classNameTtrackDragoverError = CLASS_NAME_TRACK_DRAG_OVER_ERROR;
+  private classNameNewSegment = CLASS_NAME_NEW_SEGMENT;
+  private classNameSegment = CLASS_NAME_SEGMENT;
+  private classNameSegmentHandle = CLASS_NAME_SEGMENT_HANDLE;
   timeline: TimelineAxis = {} as TimelineAxis;
   dropableCheck?: DropableCheck;
   deleteableCheck?: DeleteableCheck;
@@ -76,7 +80,6 @@ export class Tracks extends EventHelper {
   }
   set adsorbable(v){
     this._adsorbable = v;
-    console.log(this._adsorbable)
   }
   constructor({
     tracks,
@@ -123,8 +126,8 @@ export class Tracks extends EventHelper {
       return null;
     }
     // 找到事件对应的 segment 元素，如果当前不是，则冒泡往上找
-    if (!target.classList.contains("segment")) {
-      target = findParentElementByClassName(target, "segment");
+    if (!target.classList.contains(this.classNameSegment)) {
+      target = findParentElementByClassName(target, this.classNameSegment);
     }
     if (target) {
       return target;
@@ -165,7 +168,7 @@ export class Tracks extends EventHelper {
     if (!target) {
       return;
     }
-    if (!target.classList.contains("segment-item")) {
+    if (!target.classList.contains(this.classNameNewSegment)) {
       return;
     }
     this.dragStart(ev, this.scrollContainer, target, true);
@@ -193,7 +196,7 @@ export class Tracks extends EventHelper {
     });
   }
   private queryAllSegmentsDom(){
-    return Array.from(this.scrollContainer.querySelectorAll('.segment')) as HTMLElement[]
+    return Array.from(this.scrollContainer.querySelectorAll(`.${this.classNameSegment}`)) as HTMLElement[]
   }
   private checkSegmentHandleCoordinateLine({segment, handleCode}:any):[boolean, number, number, HTMLElement | null]{
     const currentSegment: Segment|undefined = segment;
@@ -207,7 +210,7 @@ export class Tracks extends EventHelper {
       return sDom.dataset.segmentId !== currentSegment.segmentId
     })
     // 传入左|右手柄用于判断吸附位置
-    const segmentHandles = Array.from(currentSegmentDom.querySelectorAll('.segment-handle')) as HTMLElement[];
+    const segmentHandles = Array.from(currentSegmentDom.querySelectorAll(`.${this.classNameSegmentHandle}`)) as HTMLElement[];
     const dom = segmentHandles[handleCode];
       // 跨轨道检测 x 轴是否与其它 segment 有磁吸
     const result = checkCoordinateLine(dom, segmentsFiltered, this.frameWidth, segment);
@@ -344,7 +347,7 @@ export class Tracks extends EventHelper {
   keyframeMousedownHandle(ev: MouseEvent) {
     const target = ev.target as HTMLElement;
     if (!target) return;
-    const segment = findParentElementByClassName(target, "segment");
+    const segment = findParentElementByClassName(target, this.classNameSegment);
     if (segment) {
       const sks = Array.from(
         segment.querySelectorAll(".segment-keyframe")
@@ -676,15 +679,15 @@ export class Tracks extends EventHelper {
       const segmentTypeStr = segmentDom.dataset.segmentType ?? "0";
       const segmentTrackId = segmentDom.dataset.trackId ?? "";
       this.virtualTracks.forEach(async (vt) => {
-        vt.dom.classList.remove(this.dragoverClass);
-        vt.dom.classList.remove(this.dragoverErrorClass);
+        vt.dom.classList.remove(this.classNameTrackDragOver);
+        vt.dom.classList.remove(this.classNameTtrackDragoverError);
         if (isCloseEnouphToY(vt.dom, e.clientY)) {
           const placeHolder = getSegmentPlaceholder(vt.dom);
           if (!placeHolder) {
             return;
           }
           if(this._adsorbable){
-            const [ isAdsorbing, _framestart ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll('.segment')) as HTMLElement[], this.frameWidth);
+            const [ isAdsorbing, _framestart ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll(`.${this.classNameSegment}`)) as HTMLElement[], this.frameWidth);
             if(isAdsorbing){
               framestart = _framestart
             }

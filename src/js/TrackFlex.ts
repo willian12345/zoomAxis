@@ -78,12 +78,12 @@ export class TrackFlex extends Track {
     if (!placeHolder) {
       return;
     }
-    this.dom.classList.add(this.dragoverClass);
+    this.dom.classList.add(this.trackDragoverClassName);
     const trackType = this.trackType;
     const segmentType = segment.dataset.segmentType ?? "";
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(trackType, segmentType)) {
-      this.dom.classList.add(this.dragoverErrorClass);
+      this.dom.classList.add(this.trackDragoverErrorClassName);
     }
     const x = dragTrackContainerRect.left + scrollContainerX;
     // 拖动时轨道内占位元素

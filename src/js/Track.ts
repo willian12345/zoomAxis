@@ -35,8 +35,8 @@ export class Track extends EventHelper {
   trackType = '';
   trackClass = '';
   trackPlaceholderClass = '';
-  dragoverClass = "dragover";
-  dragoverErrorClass = "dragover-error";
+  trackDragoverClassName = "dragover";
+  trackDragoverErrorClassName = "dragover-error";
   visibility = true;
   segments: Map<string, Segment> = new Map(); // 轨道内的 segment
   subTracks: Map<string, Track> = new Map(); // 子轨道
@@ -341,8 +341,8 @@ export class Track extends EventHelper {
   // 删除 class 状态
   removeStatusClass() {
     const cl = this.dom.classList;
-    cl.remove(this.dragoverClass);
-    cl.remove(this.dragoverErrorClass);
+    cl.remove(this.trackDragoverClassName);
+    cl.remove(this.trackDragoverErrorClassName);
     const placeHolder = getSegmentPlaceholder(this.dom);
     if (!placeHolder) {
       return;
@@ -364,12 +364,12 @@ export class Track extends EventHelper {
     if (!placeHolder) {
       return;
     }
-    this.dom.classList.add(this.dragoverClass);
+    this.dom.classList.add(this.trackDragoverClassName);
     const trackType = this.trackType;
     const segmentType = segment.dataset.segmentType ?? "";
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(trackType, segmentType)) {
-      this.dom.classList.add(this.dragoverErrorClass);
+      this.dom.classList.add(this.trackDragoverErrorClassName);
     }
     const x = dragTrackContainerRect.left + scrollContainerX;
     // 拖动时轨道内占位元素
@@ -475,9 +475,11 @@ export class Track extends EventHelper {
     const segments = this.getSegments();
     return segments.filter((segment) => segment.segmentId !== segmentId);
   }
+  // 仅获取自身轨道内的 segments
   getSegmentsSelf(){
     return Array.from(this.segments.values())
   }
+  // 获取自身轨道及子轨道内的所有 segmetns 
   getSegments() {
     let result: Segment[] = Array.from(this.segments.values());
     if (this.subTracks) {

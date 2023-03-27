@@ -10,6 +10,12 @@ import { Track } from "./Track";
 const CLOSE_ENOUPH_DISTANCE_Y = 15; // 距离 y 是否够近
 const CLOSE_ENOUPH_SEGMENT_X = 20; // 距离 segment x是否够
 
+export const CLASS_NAME_TRACK_DRAG_OVER = 'dragover';
+export const CLASS_NAME_TRACK_DRAG_OVER_ERROR = 'dragover-error';
+export const CLASS_NAME_NEW_SEGMENT = 'segment-item';
+export const CLASS_NAME_SEGMENT = 'segment';
+export const CLASS_NAME_SEGMENT_HANDLE = 'segment-handle';
+
 export const createSegment = (segmentInfo: SegmentConstructInfo) => {
   segmentInfo.contentRenderer = getContentRenderer(segmentInfo);
   segmentInfo.segmentStyle = getSegmentStyle(segmentInfo);
