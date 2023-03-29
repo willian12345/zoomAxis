@@ -14,6 +14,11 @@ import { Segment } from "./Segment";
 import { EventHelper } from "./EventHelper";
 
 import {
+  CLASS_NAME_NEW_SEGMENT,
+  CLASS_NAME_TRACK_DRAG_OVER,
+  CLASS_NAME_TRACK_DRAG_OVER_ERROR,
+  CLASS_NAME_SEGMENT,
+  CLASS_NAME_SEGMENT_HANDLE,
   createSegment,
   createSegmentFake,
   getDragTrackCotainer,
@@ -24,11 +29,8 @@ import {
   getSegmentPlaceholder,
   findParentElementByClassName,
   checkCoordinateLine,
-  CLASS_NAME_NEW_SEGMENT,
-  CLASS_NAME_TRACK_DRAG_OVER,
-  CLASS_NAME_TRACK_DRAG_OVER_ERROR,
-  CLASS_NAME_SEGMENT,
-  CLASS_NAME_SEGMENT_HANDLE,
+  getDatasetNumberByKey,
+  isContainSplitFromComma,
 } from "./trackUtils";
 import { TrackFlex } from "./TrackFlex";
 
@@ -461,7 +463,8 @@ export class Tracks extends EventHelper {
     }
     return currentFrame;
   }
-  protected async getSegment(
+  // 获取 segment 实例，如果没有则创建（从外部拖入新建）
+  private async getSegment(
     copy: boolean,
     segment: HTMLElement,
     segmentTrackId: string,
@@ -580,6 +583,11 @@ export class Tracks extends EventHelper {
     // 如果拖动是复制
     if (isCopy) {
       segmentCopy = createSegmentFake(segmentRect);
+      // 如果已知 frames 则需要设置相应的宽度
+      const frames = getDatasetNumberByKey(segmentDom, 'frames');
+      if(frames > 0){
+        segmentCopy.style.width = `${frames * this.frameWidth}px`;
+      }
       dragTrackContainer.appendChild(segmentCopy);
     } else {
       // 将 segment 暂时放到 dragTracContainer 内
@@ -677,8 +685,10 @@ export class Tracks extends EventHelper {
         vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER);
         vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
         if (isCloseEnouphToY(vt.dom, e.clientY)) {
-          const placeHolder = getSegmentPlaceholder(vt.dom);
-          if (!placeHolder) {
+          // 预先检测是否是相同轨道，以及有没有发生碰撞
+          const r = vt.precheck(segmentTypeStr);
+          vt.hidePlaceHolder();
+          if(!r){ 
             return;
           }
           if(this._adsorbable){
@@ -687,6 +697,7 @@ export class Tracks extends EventHelper {
               framestart = _framestart
             }
           }
+          // !!!注意：没有 frames 的项，需要先异步添加后才能获取 frames，先试着添加
           const virtualSegment = await this.getSegment(
             isCopy,
             segmentDom,
@@ -695,6 +706,7 @@ export class Tracks extends EventHelper {
             parseInt(segmentTypeStr)
           );
           if (!virtualSegment) return;
+          // 再次判断是否可以添加进轨道
           vt.pointerup({
             copy: isCopy,
             framestart,

@@ -381,6 +381,31 @@ export class Track extends EventHelper {
       placeHolder.style.opacity = "1";
     }
   }
+  hidePlaceHolder(){
+    const placeHolder = getSegmentPlaceholder(this.dom);
+    if (!placeHolder) {
+      return;
+    }
+    placeHolder.style.opacity = "0";
+  }
+  precheck(segmentType: string){
+    // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
+    if(!isContainSplitFromComma(this.trackType, segmentType)){
+      return false;
+    }
+    const placeHolder = getSegmentPlaceholder(this.dom);
+    if (!placeHolder) {
+      return false;
+    }
+    const isCollistion = collisionCheckX(
+      placeHolder,
+      this.dom
+    );
+    if(isCollistion){
+      return false;
+    }
+    return true;
+  }
   // 拖动结束
   pointerup({
     copy,
@@ -396,12 +421,6 @@ export class Track extends EventHelper {
       return null;
     }
     placeHolder.style.opacity = "0";
-    const trackType = this.trackType;
-    const segmentType = String(segment.segmentType);
-    // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
-    if (!isContainSplitFromComma(trackType, segmentType)) {
-      return null;
-    }
     // 如果不合法，则需要删除
     const checkResult = this.check(copy, segment);
     if (checkResult) {
