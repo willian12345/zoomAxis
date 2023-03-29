@@ -16,6 +16,11 @@ import {
   findParentElementByClassName,
   getRightSideSegments,
   getLeftSideSegments,
+  CLASS_NAME_TRACK_DRAG_OVER,
+  CLASS_NAME_TRACK_DRAG_OVER_ERROR,
+  CLASS_NAME_SEGMENT,
+  CLASS_NAME_SEGMENT_HANDLE_LEFT,
+  CLASS_NAME_SEGMENT_HANDLE_RIGHT,
 } from "./trackUtils";
 import { TrackArgs, DragingArgs, TRACKS_EVENT_TYPES } from "./TrackType";
 import { EventHelper } from "./EventHelper";
@@ -33,10 +38,6 @@ export class Track extends EventHelper {
   dom!: HTMLElement;
   trackId = '';
   trackType = '';
-  trackClass = '';
-  trackPlaceholderClass = '';
-  trackDragoverClassName = "dragover";
-  trackDragoverErrorClassName = "dragover-error";
   visibility = true;
   segments: Map<string, Segment> = new Map(); // 轨道内的 segment
   subTracks: Map<string, Track> = new Map(); // 子轨道
@@ -51,16 +52,12 @@ export class Track extends EventHelper {
   subTracksCollapsed = false;
   private lastEffectSegments: Segment[] = [];
   constructor({
-    trackClass = "track",
-    trackPlaceholderClass = "track-placeholder",
     dom,
     trackType,
     coordinateLines,
     frameWidth,
   }: TrackArgs) {
     super();
-    this.trackClass = trackClass;
-    this.trackPlaceholderClass = trackPlaceholderClass;
     this.frameWidth = frameWidth;
     this.dom = dom;
     this.trackType = trackType
@@ -84,16 +81,16 @@ export class Track extends EventHelper {
     if (!target) {
       return;
     }
-    if (target.classList.contains("segment-handle-left")) {
+    if (target.classList.contains(CLASS_NAME_SEGMENT_HANDLE_LEFT)) {
       e.stopPropagation();
       return;
     }
-    if (target.classList.contains("segment-handle-right")) {
+    if (target.classList.contains(CLASS_NAME_SEGMENT_HANDLE_RIGHT)) {
       e.stopPropagation();
       return;
     }
-    if(!target.classList.contains("segment")){
-      let segmentDom = findParentElementByClassName(target, 'segment');
+    if(!target.classList.contains(CLASS_NAME_SEGMENT)){
+      let segmentDom = findParentElementByClassName(target, CLASS_NAME_SEGMENT);
       if(segmentDom){
         const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? '')
         this.dispatchEvent(
@@ -115,8 +112,8 @@ export class Track extends EventHelper {
       return;
     }
     if(e.button === 2){
-      if(!target.classList.contains("segment")){
-        let segmentDom = findParentElementByClassName(target, 'segment');
+      if(!target.classList.contains(CLASS_NAME_SEGMENT)){
+        let segmentDom = findParentElementByClassName(target, CLASS_NAME_SEGMENT);
         if(segmentDom){
           const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? '')
           this.dispatchEvent(
@@ -129,12 +126,12 @@ export class Track extends EventHelper {
         }
       } 
     }
-    if (target.classList.contains("segment-handle-left")) {
+    if (target.classList.contains(CLASS_NAME_SEGMENT_HANDLE_LEFT)) {
       e.stopPropagation();
       this.dragHandleStart(e, target, this.leftHandleMove, 0);
       return;
     }
-    if (target.classList.contains("segment-handle-right")) {
+    if (target.classList.contains(CLASS_NAME_SEGMENT_HANDLE_RIGHT)) {
       e.stopPropagation();
       this.dragHandleStart(e, target, this.rightHandleMove, 1);
       return;
@@ -341,8 +338,8 @@ export class Track extends EventHelper {
   // 删除 class 状态
   removeStatusClass() {
     const cl = this.dom.classList;
-    cl.remove(this.trackDragoverClassName);
-    cl.remove(this.trackDragoverErrorClassName);
+    cl.remove(CLASS_NAME_TRACK_DRAG_OVER);
+    cl.remove(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
     const placeHolder = getSegmentPlaceholder(this.dom);
     if (!placeHolder) {
       return;
@@ -364,12 +361,12 @@ export class Track extends EventHelper {
     if (!placeHolder) {
       return;
     }
-    this.dom.classList.add(this.trackDragoverClassName);
+    this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER);
     const trackType = this.trackType;
     const segmentType = segment.dataset.segmentType ?? "";
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(trackType, segmentType)) {
-      this.dom.classList.add(this.trackDragoverErrorClassName);
+      this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
     }
     const x = dragTrackContainerRect.left + scrollContainerX;
     // 拖动时轨道内占位元素

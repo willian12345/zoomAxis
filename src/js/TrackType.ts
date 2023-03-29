@@ -147,8 +147,6 @@ export interface TrackArgs {
   frameWidth: number;
   trackType: string;
   coordinateLines: HTMLElement[];
-  trackClass?: string;
-  trackPlaceholderClass?: string;
 }
 
 export type EventListenerType<T extends keyof HTMLElementEventMap> = (

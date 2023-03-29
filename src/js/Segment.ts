@@ -8,6 +8,11 @@
 import { SegmentConstructInfo, SegmentType } from "./TrackType";
 import { Track } from "./Track";
 import { Keyframe } from "./Keyframe";
+import {
+  CLASS_NAME_SEGMENT_HANDLE,
+  CLASS_NAME_SEGMENT_HANDLE_LEFT,
+  CLASS_NAME_SEGMENT_HANDLE_RIGHT,
+} from './trackUtils'
 
 let segmentIdIndex = 0;
 export class Segment {
@@ -63,8 +68,8 @@ export class Segment {
     this.segmentType = args.segmentType;
     this.name = args.name ?? "";
     this.dom = this.createDom();
-    this.leftHandler = this.dom.querySelector('.segment-handle-left') as HTMLElement;
-    this.rightHandler = this.dom.querySelector('.segment-handle-right') as HTMLElement;
+    this.leftHandler = this.dom.querySelector(`.${CLASS_NAME_SEGMENT_HANDLE_LEFT}`) as HTMLElement;
+    this.rightHandler = this.dom.querySelector(`.${CLASS_NAME_SEGMENT_HANDLE_RIGHT}`) as HTMLElement;
     // 额外其它信息
     if (args.extra) {
       this.extra = args.extra;
@@ -95,8 +100,8 @@ export class Segment {
           data-framestart="${this.framestart}" 
           data-frameend="${this.frameend}"
           style="width: ${this.width}; height: ${this.height}; left: ${this.left}; ${this.segmentStyle}">
-          <div class="segment-handle segment-handle-left"></div>
-          <div class="segment-handle segment-handle-right"></div>
+          <div class="${CLASS_NAME_SEGMENT_HANDLE} ${CLASS_NAME_SEGMENT_HANDLE_LEFT}"></div>
+          <div class="${CLASS_NAME_SEGMENT_HANDLE} ${CLASS_NAME_SEGMENT_HANDLE_RIGHT}"></div>
           <div class="segment-renderer">
             ${contentRenderer}
           </div>

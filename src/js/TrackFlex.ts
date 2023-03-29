@@ -12,6 +12,8 @@ import {
   sortByLeftValue,
   getRightSideSegments,
   getLeftSideSegments,
+  CLASS_NAME_TRACK_DRAG_OVER,
+  CLASS_NAME_TRACK_DRAG_OVER_ERROR,
 } from "./trackUtils";
 interface TrackFlexArgs {
   totalFrames: number;
@@ -78,12 +80,12 @@ export class TrackFlex extends Track {
     if (!placeHolder) {
       return;
     }
-    this.dom.classList.add(this.trackDragoverClassName);
+    this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER);
     const trackType = this.trackType;
     const segmentType = segment.dataset.segmentType ?? "";
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(trackType, segmentType)) {
-      this.dom.classList.add(this.trackDragoverErrorClassName);
+      this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
     }
     const x = dragTrackContainerRect.left + scrollContainerX;
     // 拖动时轨道内占位元素
@@ -228,7 +230,6 @@ export class TrackFlex extends Track {
   // 更新可拖动手柄
   updateSegmentHandler() {
     const segments = this.getSegments().sort(sortByLeftValue);
-    console.log(segments);
     // 如果只有一个 segment 则不允许左右手柄拖动
     if (segments.length === 1) {
       return segments[0].setHandleEnable(false, false);

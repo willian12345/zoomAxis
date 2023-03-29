@@ -10,11 +10,19 @@ import { Track } from "./Track";
 const CLOSE_ENOUPH_DISTANCE_Y = 15; // 距离 y 是否够近
 const CLOSE_ENOUPH_SEGMENT_X = 20; // 距离 segment x是否够
 
+export const CLASS_NAME_TRACK = 'track';
+export const CLASS_NAME_TRACK_FLEX = 'track-flexible';
+export const CLASS_NAME_TRACK_DRAG_CONTAINER = 'track-drag-container';
+export const CLASS_NAME_TRACK_PLACEHOLDER = 'track-placeholder';
 export const CLASS_NAME_TRACK_DRAG_OVER = 'dragover';
 export const CLASS_NAME_TRACK_DRAG_OVER_ERROR = 'dragover-error';
 export const CLASS_NAME_NEW_SEGMENT = 'segment-item';
 export const CLASS_NAME_SEGMENT = 'segment';
+export const CLASS_NAME_SEGMENT_FAKE = 'segment-fake';
+export const CLASS_NAME_SEGMENT_PLACEHOLDER = 'segment-placeholder'
 export const CLASS_NAME_SEGMENT_HANDLE = 'segment-handle';
+export const CLASS_NAME_SEGMENT_HANDLE_LEFT = 'segment-handle-left';
+export const CLASS_NAME_SEGMENT_HANDLE_RIGHT = 'segment-handle-right';
 
 export const createSegment = (segmentInfo: SegmentConstructInfo) => {
   segmentInfo.contentRenderer = getContentRenderer(segmentInfo);
@@ -29,7 +37,7 @@ export const createNodeWidthClass = (className: string) => {
 };
 export const createSegmentFake = (rect: DOMRect) => {
   const dom = document.createElement("div");
-  dom.className = "segment-fake";
+  dom.className = CLASS_NAME_SEGMENT_FAKE;
   dom.style.width = `${rect.width}px`;
   dom.style.borderRadius = "4px";
   return dom;
@@ -69,14 +77,14 @@ export const getLeftValue = (dom: HTMLElement | undefined) => {
 };
 export const createDragTrackContainer = () => {
   const div = document.createElement("div");
-  div.className = "track-drag-container";
+  div.className = CLASS_NAME_TRACK_DRAG_CONTAINER;
   document.body.appendChild(div);
   return div;
 };
 export const getDragTrackCotainer = () => {
   let div =
     Array.from(document.body.children).find((element) => {
-      return element.className === "track-drag-container";
+      return element.className === CLASS_NAME_TRACK_DRAG_CONTAINER;
     }) ?? createDragTrackContainer();
   return div;
 };
@@ -84,16 +92,17 @@ export const getDragTrackCotainer = () => {
 // 创建 segment 点位器
 export const createSegmentPlaceHolder = () => {
   const dom = document.createElement("div");
-  dom.className = "segment-placeholder";
+  dom.className = CLASS_NAME_SEGMENT_PLACEHOLDER;
   return dom;
 };
 // 获取轨道内 segment 占位器
 export const getSegmentPlaceholder = (track: HTMLElement) => {
+  // segment 点位器在单独的占位容器内
   const trackPlaceholder: HTMLElement | null =
-    track.querySelector(".track-placeholder");
+    track.querySelector(`.${CLASS_NAME_TRACK_PLACEHOLDER}`);
   let dom: HTMLElement | null = null;
   if (trackPlaceholder) {
-    dom = trackPlaceholder.querySelector(".segment-placeholder") as HTMLElement;
+    dom = trackPlaceholder.querySelector(`.${CLASS_NAME_SEGMENT_PLACEHOLDER}`) as HTMLElement;
     if (!dom) {
       dom = createSegmentPlaceHolder();
       trackPlaceholder?.appendChild(dom);
@@ -110,7 +119,7 @@ export const collisionCheckX = (
   // target 即轨道内的 当前拖动 segment 的 placeholder 替身
   const targetRect = target.getBoundingClientRect();
   const segments: HTMLElement[] = Array.from(
-    track.querySelectorAll(".segment")
+    track.querySelectorAll(`.${CLASS_NAME_SEGMENT}`)
   );
   const segmentsLength = segments.length;
   if (!segmentsLength) {
@@ -215,7 +224,7 @@ export const checkCoordinateLine = (
 };
 export const getSegmentsByTrack = (track: HTMLElement): HTMLElement[] => {
   const segments: HTMLElement[] = Array.from(
-    track.querySelectorAll(".segment")
+    track.querySelectorAll(`.${CLASS_NAME_SEGMENT}`)
   );
   return segments;
 };
@@ -274,7 +283,7 @@ export const findEndestSegment = function (
   let end: HTMLElement | null = null;
   let max: number = 0;
   const segments: HTMLElement[] = Array.from(
-    container.querySelectorAll(".segment")
+    container.querySelectorAll(`.${CLASS_NAME_SEGMENT}`)
   );
   segments.forEach((segment) => {
     const rect = segment.getBoundingClientRect();
@@ -310,7 +319,7 @@ export const sortByLeftValue = (segmentA: Segment, segmentB: Segment) => {
 };
 
 export const isFlexTrack = (track: HTMLElement) => {
-  return track.classList.contains("track-flexible");
+  return track.classList.contains(CLASS_NAME_TRACK_FLEX);
 };
 
 // 获取 leftValue 轨道右侧的所有 segments

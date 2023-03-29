@@ -43,11 +43,6 @@ export interface Tracks {
 export class Tracks extends EventHelper {
   static DEFAULT_SEGMENT_FRAMES = DEFAULT_SEGMENT_FRAMES;
   private scrollContainer: HTMLElement = {} as HTMLElement;
-  private classNameTrackDragOver = CLASS_NAME_TRACK_DRAG_OVER;
-  private classNameTtrackDragoverError = CLASS_NAME_TRACK_DRAG_OVER_ERROR;
-  private classNameNewSegment = CLASS_NAME_NEW_SEGMENT;
-  private classNameSegment = CLASS_NAME_SEGMENT;
-  private classNameSegmentHandle = CLASS_NAME_SEGMENT_HANDLE;
   timeline: TimelineAxis = {} as TimelineAxis;
   dropableCheck?: DropableCheck;
   deleteableCheck?: DeleteableCheck;
@@ -126,8 +121,8 @@ export class Tracks extends EventHelper {
       return null;
     }
     // 找到事件对应的 segment 元素，如果当前不是，则冒泡往上找
-    if (!target.classList.contains(this.classNameSegment)) {
-      target = findParentElementByClassName(target, this.classNameSegment);
+    if (!target.classList.contains(CLASS_NAME_SEGMENT)) {
+      target = findParentElementByClassName(target, CLASS_NAME_SEGMENT);
     }
     if (target) {
       return target;
@@ -168,7 +163,7 @@ export class Tracks extends EventHelper {
     if (!target) {
       return;
     }
-    if (!target.classList.contains(this.classNameNewSegment)) {
+    if (!target.classList.contains(CLASS_NAME_NEW_SEGMENT)) {
       return;
     }
     this.dragStart(ev, this.scrollContainer, target, true);
@@ -196,7 +191,7 @@ export class Tracks extends EventHelper {
     });
   }
   private queryAllSegmentsDom(){
-    return Array.from(this.scrollContainer.querySelectorAll(`.${this.classNameSegment}`)) as HTMLElement[]
+    return Array.from(this.scrollContainer.querySelectorAll(`.${CLASS_NAME_SEGMENT}`)) as HTMLElement[]
   }
   private checkSegmentHandleCoordinateLine({segment, handleCode}:any):[boolean, number, number, HTMLElement | null]{
     const currentSegment: Segment|undefined = segment;
@@ -210,7 +205,7 @@ export class Tracks extends EventHelper {
       return sDom.dataset.segmentId !== currentSegment.segmentId
     })
     // 传入左|右手柄用于判断吸附位置
-    const segmentHandles = Array.from(currentSegmentDom.querySelectorAll(`.${this.classNameSegmentHandle}`)) as HTMLElement[];
+    const segmentHandles = Array.from(currentSegmentDom.querySelectorAll(`.${CLASS_NAME_SEGMENT_HANDLE}`)) as HTMLElement[];
     const dom = segmentHandles[handleCode];
       // 跨轨道检测 x 轴是否与其它 segment 有磁吸
     const result = checkCoordinateLine(dom, segmentsFiltered, this.frameWidth, segment);
@@ -347,7 +342,7 @@ export class Tracks extends EventHelper {
   keyframeMousedownHandle(ev: MouseEvent) {
     const target = ev.target as HTMLElement;
     if (!target) return;
-    const segment = findParentElementByClassName(target, this.classNameSegment);
+    const segment = findParentElementByClassName(target, CLASS_NAME_SEGMENT);
     if (segment) {
       const sks = Array.from(
         segment.querySelectorAll(".segment-keyframe")
@@ -679,15 +674,15 @@ export class Tracks extends EventHelper {
       const segmentTypeStr = segmentDom.dataset.segmentType ?? "0";
       const segmentTrackId = segmentDom.dataset.trackId ?? "";
       this.virtualTracks.forEach(async (vt) => {
-        vt.dom.classList.remove(this.classNameTrackDragOver);
-        vt.dom.classList.remove(this.classNameTtrackDragoverError);
+        vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER);
+        vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
         if (isCloseEnouphToY(vt.dom, e.clientY)) {
           const placeHolder = getSegmentPlaceholder(vt.dom);
           if (!placeHolder) {
             return;
           }
           if(this._adsorbable){
-            const [ isAdsorbing, _framestart ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll(`.${this.classNameSegment}`)) as HTMLElement[], this.frameWidth);
+            const [ isAdsorbing, _framestart ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll(`.${CLASS_NAME_SEGMENT}`)) as HTMLElement[], this.frameWidth);
             if(isAdsorbing){
               framestart = _framestart
             }
@@ -780,7 +775,7 @@ export class Tracks extends EventHelper {
   }) {
     const track = this.getTrack(segmentConstructInfo.trackId);
     if (!track) {
-      return;
+      return null;
     }
     const segment = createSegment({
       ...segmentConstructInfo,
@@ -788,6 +783,7 @@ export class Tracks extends EventHelper {
     });
     segment.setRange(segment.framestart, segment.frameend);
     track.addSegment(segment);
+    return segment
   }
   /**
    * 获取轨道内最后一个 segment 的帧范围
