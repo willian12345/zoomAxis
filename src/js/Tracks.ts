@@ -22,6 +22,7 @@ import {
   createSegment,
   createSegmentFake,
   getDragTrackCotainer,
+  removeDragTrackContainer,
   collisionCheckX,
   getLeftValue,
   trackCollisionCheckY,
@@ -903,6 +904,7 @@ export class Tracks extends EventHelper {
     return this.timeline.totalFrames * this.timeline.frameWidth;
   }
   destroy() {
+    removeDragTrackContainer();
     this.virtualTracks.forEach((vt) => vt.destroy());
     for (let { ele, eventName, listener, options } of this.bindedEventArray) {
       ele.removeEventListener(eventName, listener, options);

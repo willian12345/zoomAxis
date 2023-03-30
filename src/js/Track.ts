@@ -191,7 +191,7 @@ export class Track extends EventHelper {
     const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? "");
     if (!segment) return;
     const frameend = parseFloat(segmentDom.dataset.frameend ?? "0");
-    if (currentFrame >= frameend) {
+    if (currentFrame >= frameend - 2) {
       return;
     }
     const segments = this.getSegmentsSelf();
@@ -249,8 +249,8 @@ export class Track extends EventHelper {
     const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? "");
     const framestart = parseFloat(segmentDom.dataset.framestart ?? "0");
     if (!segment) return;
-    if (frameend <= framestart) return;
-
+    if (frameend <= framestart + 2) return;
+    //todo：判断segment可视宽度，如果过小也不能再缩小了
     const result: Segment[] = [segment];
     const segments = this.getSegmentsSelf();
     // 伸缩轨道，右侧 segment framestart 设为当前调整的 segment 的 frameend

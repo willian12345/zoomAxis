@@ -88,6 +88,9 @@ export const getDragTrackCotainer = () => {
     }) ?? createDragTrackContainer();
   return div;
 };
+export const removeDragTrackContainer = () => {
+  document.querySelectorAll(`.${CLASS_NAME_TRACK_DRAG_CONTAINER}`).forEach( h => h.parentNode?.removeChild(h));
+}
 
 // 创建 segment 点位器
 export const createSegmentPlaceHolder = () => {
