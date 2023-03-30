@@ -552,5 +552,6 @@ export class Track extends EventHelper {
   destroy() {
     this.dom.removeEventListener("mousedown", this.mousedown);
     this.dom.removeEventListener("click", this.click);
+    this.dom.parentNode?.removeChild(this.dom);
   }
 }

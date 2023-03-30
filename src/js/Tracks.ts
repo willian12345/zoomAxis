@@ -6,6 +6,7 @@ import {
   TracksArgs,
   TracksEvent,
   TrackBasicConfig,
+  TrackConfig,
 } from "./TrackType";
 
 import { TimelineAxis } from "./TimelineAxis";
@@ -36,6 +37,15 @@ import {
 import { TrackFlex } from "./TrackFlex";
 
 const DEFAULT_SEGMENT_FRAMES = 150;
+const TRACK_EVENT_TYPES_ARRAY = [
+  TRACKS_EVENT_TYPES.DRAG_END,
+  TRACKS_EVENT_TYPES.DROP_EFFECT,
+  TRACKS_EVENT_TYPES.SEGMENT_ADDED,
+  TRACKS_EVENT_TYPES.SEGMENT_DELETED,
+  TRACKS_EVENT_TYPES.SEGMENTS_SLIDED,
+  TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END,
+  TRACKS_EVENT_TYPES.SEGMENT_RIGHT_CLICK,
+]
 export interface Tracks {
   addEventListener<EventType extends TRACKS_EVENT_TYPES>(
     eventType: EventType,
@@ -193,6 +203,10 @@ export class Tracks extends EventHelper {
       this.dispatchEvent({ eventType: EventType }, filtered ?? args);
     });
   }
+  // 清空所有轨道代理事件
+  private removeDelegateEvents(){
+    TRACK_EVENT_TYPES_ARRAY.forEach( te=> this.removeEventListenerCallbacks(te))
+  }
   private queryAllSegmentsDom(){
     return Array.from(this.scrollContainer.querySelectorAll(`.${CLASS_NAME_SEGMENT}`)) as HTMLElement[]
   }
@@ -341,6 +355,32 @@ export class Tracks extends EventHelper {
       if(this.disabled) return;
       this.mouseupHandle();
     });
+  }
+  /**
+   * 添加轨道
+   * @param trackConfig 
+   */
+  addTrack(trackConfig: TrackBasicConfig){
+    this.removeDelegateEvents();
+    const vt = this.createVirtualTrack(trackConfig)
+    if(trackConfig.parentId) {
+      const parentTrack = this.virtualTracks.find( vt => vt.trackId === trackConfig.parentId);
+      if(parentTrack){
+        parentTrack.subTracks.set(trackConfig.trackId, vt);
+      }
+    }
+    this.virtualTracks.push(vt);
+    // 重新代理 Track 事件至 Tracks
+    this.delegateTrackEvents();
+  }
+  /**
+   *   
+   */
+  removeTrack(trackId: string){
+    const vt = this.getTrack(trackId);
+    vt?.destroy();
+    this.virtualTracks = this.virtualTracks.filter( vt => vt.trackId !== trackId);
+
   }
   keyframeMousedownHandle(ev: MouseEvent) {
     const target = ev.target as HTMLElement;
