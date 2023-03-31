@@ -35,7 +35,7 @@ export class Segment {
   extra = {};
   leftHandler = {} as HTMLElement
   rightHandler = {} as HTMLElement
-  keyframes = [] as Keyframe[]
+  keyframes = [] as Keyframe[] // keyframes 内存储着关键帧，帧值是“相对帧”
   disabled = false
   // 内容渲染器，可传自定义的渲染内容，用于个性化
   contentRenderer: string|HTMLElement|null = null
@@ -190,7 +190,7 @@ export class Segment {
   deleteKeyframeOutOfRange(){
     const deletedArr = this.keyframes.filter(keyframe => {
       // 不在可视范围内
-      return keyframe.frame < this.framestart || keyframe.frame > this.frameend
+      return (this.framestart + keyframe.frame) > this.frameend
     })
     deletedArr.forEach( keyframe => {
       this.deleteKeyframe(keyframe.frame);

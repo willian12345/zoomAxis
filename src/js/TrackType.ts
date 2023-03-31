@@ -3,17 +3,17 @@ import { TimelineAxis } from "./TimelineAxis";
 import { Track } from "./Track";
 import { Segment } from "./Segment";
 import { TrackFlex } from "./TrackFlex";
-export type TrackConfig = {
+export type TrackSingleConfig = {
   trackId: string;
   trackType: string | SegmentType;
   flexiable?: boolean;
   parentId?: string;
+  dom: HTMLElement;
 }
 // 轨道基本配置信息
 export type TrackBasicConfig = {
   subTracks?: TrackBasicConfig[];
-  dom: HTMLElement;
-} & TrackConfig;
+} & TrackSingleConfig;
 export enum SegmentType {
   BODY_ANIMATION,
   FACE_ANIMATION,

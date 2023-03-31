@@ -6,7 +6,7 @@ import {
   TracksArgs,
   TracksEvent,
   TrackBasicConfig,
-  TrackConfig,
+  TrackSingleConfig,
 } from "./TrackType";
 
 import { TimelineAxis } from "./TimelineAxis";
@@ -145,10 +145,11 @@ export class Tracks extends EventHelper {
   private clickHandle(e: MouseEvent) {
     const result = this.checkClickedOnSegment(e);
     if (result) {
-      e.stopPropagation();
+      // 点击 segment 时不触发向上及同级click事件
+      e.stopImmediatePropagation();
     }
   }
-  private mouseupHandle() {
+  private mouseupHandle(e: MouseEvent) {
     this.clearTimer();
   }
   private clearTimer() {
@@ -235,36 +236,40 @@ export class Tracks extends EventHelper {
     }
     return result
   }
+  private delegateTrackEvent(vt: Track){
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DRAG_END);
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DROP_EFFECT);
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_ADDED);
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_SELECTED, async ({segment}) => {
+      this.removeSegmentActivedStatus();
+      segment?.setActived(true);
+    });
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_DELETED);
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDED, async (data) => {
+      if(!this._adsorbable) return;
+      this.checkSegmentHandleCoordinateLine(data)
+    });
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END, async ({segment, segments, handleCode}) => {
+      if(!this._adsorbable) return;
+      const [isAdsorbing, _framestart, _adsorbTo, segmentDom ] = this.checkSegmentHandleCoordinateLine({segment, segments, handleCode})
+      if(isAdsorbing && segmentDom && segment){
+        // 根据拖动手柄的左右位置选择自动吸附位置
+        if(handleCode === 0){
+          segment.setRange(_framestart, segment.frameend);
+        }else if(handleCode === 1){
+          segment.setRange(segment.framestart, _framestart);
+        }
+      }
+      this.hideCoordinateLine();
+      console.log(segment, segments)
+      return {segment, segments, handleCode}
+    });
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_RIGHT_CLICK);
+  }
   // 代理转发拦截 Track 事件
   private delegateTrackEvents() {
     this.virtualTracks.forEach((vt) => {
-      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DRAG_END);
-      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DROP_EFFECT);
-      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_ADDED);
-      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_SELECTED, async ({segment}) => {
-        this.removeSegmentActivedStatus();
-        segment?.setActived(true);
-      });
-      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_DELETED);
-      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDED, async (data) => {
-        if(!this._adsorbable) return;
-        this.checkSegmentHandleCoordinateLine(data)
-      });
-      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END, async ({segment, segments, handleCode}) => {
-        if(!this._adsorbable) return;
-        const [isAdsorbing, _framestart, _adsorbTo, segmentDom ] = this.checkSegmentHandleCoordinateLine({segment, segments, handleCode})
-        if(isAdsorbing && segmentDom && segment){
-          // 根据拖动手柄的左右位置选择自动吸附位置
-          if(handleCode === 0){
-            segment.setRange(_framestart, segment.frameend);
-          }else if(handleCode === 1){
-            segment.setRange(segment.framestart, _framestart);
-          }
-        }
-        this.hideCoordinateLine();
-        return {segment, segments, handleCode}
-      });
-      this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_RIGHT_CLICK);
+      this.delegateTrackEvent(vt);
     });
   }
   private createVirtualTrack(tbc: TrackBasicConfig) {
@@ -333,7 +338,7 @@ export class Tracks extends EventHelper {
   }
   private initEvent() {
     // 关键帧点击事件
-    this.on(this.scrollContainer, "click", (ev) =>{
+    this.on(this.scrollContainer, "click", (ev) => {
       if(this.disabled) return;
       this.keyframeMousedownHandle(ev)
     });
@@ -351,27 +356,24 @@ export class Tracks extends EventHelper {
       if(this.disabled) return;
       this.mousedownHandle(ev)
     });
-    this.on(this.scrollContainer, "mouseup", () => {
+    this.on(this.scrollContainer, "mouseup", (e) => {
       if(this.disabled) return;
-      this.mouseupHandle();
+      this.mouseupHandle(e);
     });
   }
   /**
-   * 添加轨道
+   * 添加轨道,仅支持添加单条
    * @param trackConfig 
    */
-  addTrack(trackConfig: TrackBasicConfig){
-    this.removeDelegateEvents();
+  addTrack(trackConfig: TrackSingleConfig){
     const vt = this.createVirtualTrack(trackConfig)
     if(trackConfig.parentId) {
       const parentTrack = this.virtualTracks.find( vt => vt.trackId === trackConfig.parentId);
-      if(parentTrack){
-        parentTrack.subTracks.set(trackConfig.trackId, vt);
-      }
+      parentTrack?.addTrack(vt);
     }
     this.virtualTracks.push(vt);
-    // 重新代理 Track 事件至 Tracks
-    this.delegateTrackEvents();
+    // 代理 Track 事件至 Tracks
+    this.delegateTrackEvent(vt);
   }
   /**
    *   
@@ -385,20 +387,30 @@ export class Tracks extends EventHelper {
   keyframeMousedownHandle(ev: MouseEvent) {
     const target = ev.target as HTMLElement;
     if (!target) return;
-    const segment = findParentElementByClassName(target, CLASS_NAME_SEGMENT);
-    if (segment) {
-      const sks = Array.from(
-        segment.querySelectorAll(".segment-keyframe")
-      ) as HTMLElement[];
-      sks.forEach((sk) => sk.classList.remove("actived"));
+    const segmentDom = findParentElementByClassName(target, CLASS_NAME_SEGMENT);
+    if(!segmentDom){
+      return;
     }
+    // 先移除所有关键帧actived样式
+    const sks = Array.from(
+      segmentDom.querySelectorAll(".segment-keyframe")
+    ) as HTMLElement[];
+    sks.forEach((sk) => sk.classList.remove("actived"));
+    
     if (target.classList.contains("segment-keyframe")) {
       target.classList.add("actived");
-      ev.stopPropagation();
+      const segmentId = segmentDom?.dataset.segmentId;
+      if(!segmentId) return;
+      const segment = this.getSegmentById(segmentId);
+      if(!segment){
+        return;
+      }
+      const frame = parseInt(target.dataset.frame ?? '');
+      if(!frame) return;
       this.dispatchEvent(
         { eventType: TRACKS_EVENT_TYPES.KEYFRAME_CLICK },
         {
-          keyframe: target.dataset.frame,
+          keyframe: segment.framestart + frame,
         }
       );
     }
@@ -453,7 +465,7 @@ export class Tracks extends EventHelper {
       }
     }
   }
-  protected async createSegment(
+  async createSegment(
     segmentTrackId: string,
     framestart: number,
     segmentType: SegmentType
