@@ -32,11 +32,10 @@ import {
   findParentElementByClassName,
   checkCoordinateLine,
   getDatasetNumberByKey,
-  isContainSplitFromComma,
+  DEFAULT_SEGMENT_FRAMES,
 } from "./trackUtils";
 import { TrackFlex } from "./TrackFlex";
 
-const DEFAULT_SEGMENT_FRAMES = 150;
 const TRACK_EVENT_TYPES_ARRAY = [
   TRACKS_EVENT_TYPES.DRAG_END,
   TRACKS_EVENT_TYPES.DROP_EFFECT,

@@ -14,20 +14,89 @@ import {
   getLeftSideSegments,
   CLASS_NAME_TRACK_DRAG_OVER,
   CLASS_NAME_TRACK_DRAG_OVER_ERROR,
+  DEFAULT_SEGMENT_FRAMES,
 } from "./trackUtils";
 interface TrackFlexArgs {
   totalFrames: number;
 }
-const DEFAULT_SEGMENT_FRAMES = 150;
 export class TrackFlex extends Track {
   totalFrames = 0;
   isFlex = true;
   framestart = 0; // 当前轨道拖动的 segment  framestart
   frameend = 0; // 当前轨道拖动的 segment frameend
   frames = 0; // 当前轨道拖动的 segment frames
+  private lastEffectSegments: Segment[] = [];
   constructor(args: TrackArgs & TrackFlexArgs) {
     super(args);
     this.totalFrames = args.totalFrames;
+  }
+  // segment 左侧手柄拖动
+  protected leftHandleMove  ({
+    framestart,
+    segmentDom,
+  }: {
+    framestart: number,
+    segmentDom: HTMLElement,
+  }){
+    const segmentLeftSide = super.leftHandleMove({framestart, segmentDom});
+    const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? "");
+    if (!segment) return;
+    const frameend = parseFloat(segmentDom.dataset.frameend ?? "0");
+    if (framestart >= frameend - 2) {
+      return;
+    }
+    if(!this.slideable(framestart, frameend)) return;
+    const result: Segment[] = [segment];
+    // 伸缩轨道，左侧 segment frameend 设为当前调整的 segment 的 framestart
+    const track = segment.parentTrack;
+    if (track && segmentLeftSide) {
+      console.log(segmentLeftSide)
+      // 伸缩轨道
+      const _framestart = segmentLeftSide.framestart;
+      segment.setRange(framestart, frameend);
+      segmentLeftSide.setRange(_framestart, framestart);
+      result.push(segmentLeftSide);
+      this.lastEffectSegments = this.triggerSlideEvent(segment, result, 0);
+      return segmentLeftSide;
+    }
+    return;
+  };
+  // segment 右侧手柄拖动
+  protected rightHandleMove({
+    frameend,
+    segmentDom,
+  }: {
+    frameend: number,
+    segmentDom: HTMLElement,
+  }) {
+    const segmentRightSide = super.rightHandleMove({frameend, segmentDom});
+    const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? "");
+    const framestart = parseFloat(segmentDom.dataset.framestart ?? "0");
+    if (!segment) return;
+    if (frameend <= framestart + 2) return;
+    if(!this.slideable(framestart, frameend)) return;
+    const result: Segment[] = [segment];
+    // 伸缩轨道，右侧 segment framestart 设为当前调整的 segment 的 frameend
+    const track = segment.parentTrack;
+    if (track && segmentRightSide) {
+      const _frameend = segmentRightSide.frameend;
+      segmentRightSide.setRange(frameend, _frameend)
+      segment.setRange(framestart, frameend);
+      result.push(segment)
+      this.lastEffectSegments = this.triggerSlideEvent(segment, result, 1);
+      return segmentRightSide;
+    }
+    return;
+  };
+  protected triggerSlideEndEvent(segment: Segment, handleCode: number) {
+    this.dispatchEvent(
+      { eventType: TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END },
+      {
+        segment,
+        segments: this.lastEffectSegments,
+        handleCode,
+      }
+    );
   }
   getCollisionByFrame(frame: number) {
     return (
