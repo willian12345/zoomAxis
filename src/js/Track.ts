@@ -194,6 +194,7 @@ export class Track extends EventHelper {
     if (currentFrame >= frameend - 2) {
       return;
     }
+    if(!this.slideable(currentFrame, frameend)) return;
     const segments = this.getSegmentsSelf();
     const result: Segment[] = [segment];
     // 伸缩轨道，左侧 segment frameend 设为当前调整的 segment 的 framestart
@@ -234,6 +235,14 @@ export class Track extends EventHelper {
       this.lastEffectSegments = this.triggerSlideEvent(segment, result, 0);
     }
   };
+  private slideable(framestart: number, frameend: number){
+    const frames = frameend - framestart;
+    // 判断segment可视宽度，如果过小也不能再缩小了
+    if(frames * this.frameWidth < 20){
+      return false;
+    }
+    return true;
+  }
   // segment 右侧手柄拖动
   private rightHandleMove = ({
     frameWidth,
@@ -250,7 +259,7 @@ export class Track extends EventHelper {
     const framestart = parseFloat(segmentDom.dataset.framestart ?? "0");
     if (!segment) return;
     if (frameend <= framestart + 2) return;
-    //todo：判断segment可视宽度，如果过小也不能再缩小了
+    if(!this.slideable(framestart, frameend)) return;
     const result: Segment[] = [segment];
     const segments = this.getSegmentsSelf();
     // 伸缩轨道，右侧 segment framestart 设为当前调整的 segment 的 frameend

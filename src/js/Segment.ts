@@ -12,6 +12,7 @@ import {
   CLASS_NAME_SEGMENT_HANDLE,
   CLASS_NAME_SEGMENT_HANDLE_LEFT,
   CLASS_NAME_SEGMENT_HANDLE_RIGHT,
+  CLASS_NAME_SEGMENT,
 } from './trackUtils'
 
 let segmentIdIndex = 0;
@@ -24,7 +25,6 @@ export class Segment {
   left: string | number = '0';
   segmentId = '';
   segmentStyle = '';
-  segmentClass = 'segment';
   dom = {} as HTMLElement;
   trackId = '';
   segmentType = SegmentType.BODY_ANIMATION;
@@ -55,9 +55,7 @@ export class Segment {
     if (args.left !== undefined) {
       this.left = args.left;
     }
-    if(args.segmentClass){
-      this.segmentClass = args.segmentClass
-    }
+    
     if(args.segmentStyle){
       this.segmentStyle = args.segmentStyle
     }
@@ -93,7 +91,7 @@ export class Segment {
     const contentRenderer = this.contentRenderer ? this.contentRenderer : defaultContentRenderer
     div.innerHTML = `
         <div 
-          class="${this.segmentClass}" 
+          class="${CLASS_NAME_SEGMENT}" 
           data-segment-id="${this.segmentId}" 
           data-segment-type="${this.segmentType}" 
           data-track-id="${this.trackId}" 
