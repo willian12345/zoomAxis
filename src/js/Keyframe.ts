@@ -1,19 +1,15 @@
 /**
- * Segment 基础 dom 结构
- * <div class="segment segment-action actived" data-segment-id="2" data-track-id="" data-framestart="14" data-frameend="44">
- *  <div class="segment-handle segment-handle-left"></div>
- *  <div class="segment-handle segment-handle-right"></div>
- * </div>
+ * Keyframe 基础 dom 结构
+ * <div class="segment-keyframe" data-frame="0" style="left: 0px;"></div>
  */
 import { KeyframeConstructInfo, SegmentType } from "./TrackType";
-import { createNodeWidthClass } from './trackUtils'
+import { createNodeWidthClass, CLASS_NAME_SEGMENT_KEYFRAME, CLASS_NAME_SEGMENT_KEYFRAME_ACTIVED } from './trackUtils'
 import { Segment } from "./Segment";
 
 export class Keyframe {
   frame = 0
   frameWidth = 0
   segmentId = "";
-  className = "segment-keyframe";
   dom = {} as HTMLElement;
   parent: Segment | null = null;
   actived = false;
@@ -21,7 +17,7 @@ export class Keyframe {
     this.segmentId = args.segmentId;
     this.frameWidth = args.frameWidth;
     this.frame = args.frame
-    this.dom = createNodeWidthClass(this.className);
+    this.dom = createNodeWidthClass(CLASS_NAME_SEGMENT_KEYFRAME);
     this.dom.dataset.frame = String(this.frame);
     this.resize();
   }
@@ -33,10 +29,10 @@ export class Keyframe {
   setActived(bool: boolean) {
     if (bool) {
       this.actived = true;
-      this.dom.classList.add("actived");
+      this.dom.classList.add(CLASS_NAME_SEGMENT_KEYFRAME_ACTIVED);
     } else {
       this.actived = false;
-      this.dom.classList.remove("actived");
+      this.dom.classList.remove(CLASS_NAME_SEGMENT_KEYFRAME_ACTIVED);
     }
   }
   setFrameWidth(width: number){

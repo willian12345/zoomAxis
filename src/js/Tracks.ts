@@ -20,6 +20,8 @@ import {
   CLASS_NAME_TRACK_DRAG_OVER_ERROR,
   CLASS_NAME_SEGMENT,
   CLASS_NAME_SEGMENT_HANDLE,
+  CLASS_NAME_SEGMENT_KEYFRAME,
+  CLASS_NAME_SEGMENT_KEYFRAME_ACTIVED,
   createSegment,
   createSegmentFake,
   getDragTrackCotainer,
@@ -54,7 +56,7 @@ export interface Tracks {
 // 轨道
 export class Tracks extends EventHelper {
   static DEFAULT_SEGMENT_FRAMES = DEFAULT_SEGMENT_FRAMES;
-  private scrollContainer: HTMLElement = {} as HTMLElement;
+  scrollContainer!: HTMLElement;
   timeline: TimelineAxis = {} as TimelineAxis;
   dropableCheck?: DropableCheck;
   deleteableCheck?: DeleteableCheck;
@@ -375,7 +377,7 @@ export class Tracks extends EventHelper {
     this.delegateTrackEvent(vt);
   }
   /**
-   *   
+   * 移除某条轨道  
    */
   removeTrack(trackId: string){
     const vt = this.getTrack(trackId);
@@ -383,6 +385,7 @@ export class Tracks extends EventHelper {
     this.virtualTracks = this.virtualTracks.filter( vt => vt.trackId !== trackId);
 
   }
+  // ?? deprecated
   keyframeMousedownHandle(ev: MouseEvent) {
     const target = ev.target as HTMLElement;
     if (!target) return;
@@ -392,11 +395,11 @@ export class Tracks extends EventHelper {
     }
     // 先移除所有关键帧actived样式
     const sks = Array.from(
-      segmentDom.querySelectorAll(".segment-keyframe")
+      segmentDom.querySelectorAll(`.${CLASS_NAME_SEGMENT_KEYFRAME}`)
     ) as HTMLElement[];
-    sks.forEach((sk) => sk.classList.remove("actived"));
+    sks.forEach((sk) => sk.classList.remove(CLASS_NAME_SEGMENT_KEYFRAME_ACTIVED));
     
-    if (target.classList.contains("segment-keyframe")) {
+    if (target.classList.contains(CLASS_NAME_SEGMENT_KEYFRAME)) {
       target.classList.add("actived");
       const segmentId = segmentDom?.dataset.segmentId;
       if(!segmentId) return;

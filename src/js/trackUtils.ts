@@ -23,6 +23,8 @@ export const CLASS_NAME_SEGMENT_PLACEHOLDER = 'segment-placeholder'
 export const CLASS_NAME_SEGMENT_HANDLE = 'segment-handle';
 export const CLASS_NAME_SEGMENT_HANDLE_LEFT = 'segment-handle-left';
 export const CLASS_NAME_SEGMENT_HANDLE_RIGHT = 'segment-handle-right';
+export const CLASS_NAME_SEGMENT_KEYFRAME = 'segment-keyframe';
+export const CLASS_NAME_SEGMENT_KEYFRAME_ACTIVED = 'actived';
 export const DEFAULT_SEGMENT_FRAMES = 150; // 默认 150 帧
 
 export const createSegment = (segmentInfo: SegmentConstructInfo) => {

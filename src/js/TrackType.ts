@@ -142,7 +142,6 @@ export type KeyframeConstructInfo = {
   frame: number;
   segmentId: string;
   frameWidth: number;
-  className?: string;
 };
 
 export interface TrackArgs {
