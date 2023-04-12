@@ -111,7 +111,7 @@ export class TrackFlex extends Track {
       }) ?? null
     );
   }
-  sliceSegment(track: Track, framestart: number): [Segment | null, number] {
+  sliceSegment(track: TrackFlex, framestart: number): [Segment | null, number] {
     let collisionSegmentFrameend = -1;
     // 过滤出重叠的 segment (在可伸展轨道)
     let segments = track.getSegments();

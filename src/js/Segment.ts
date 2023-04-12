@@ -17,6 +17,8 @@ import {
 
 let segmentIdIndex = 0;
 export class Segment {
+  origionTrackId = '' // 跨轨道拖动原轨道 trackId
+  origionSegmentId = '' // 跨轨道拖动原轨道 segmentId
   framestart = 0;
   frameend = 0;
   frames = 0;

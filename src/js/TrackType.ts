@@ -76,13 +76,13 @@ export type ResponsedSegmentData = {
   state: number;
   trackId: string;
 };
-export type DropableArgs = {
+export type NewSegmentResponse = {
   dropable: boolean;
   segmentName: string;
   segmentData?: ResponsedSegmentData | null;
 };
-export interface DropableCheck {
-  (trackId: string, startFrame: number): Promise<DropableArgs>;
+export interface CreateNewSegmentAsync {
+  (trackId: string, startFrame: number, segmentType: SegmentType): Promise<NewSegmentResponse>;
 }
 
 export interface DeleteableCheck {
@@ -94,7 +94,7 @@ export interface TracksArgs {
   segmentDelegate: HTMLElement;
   tracks: TrackBasicConfig[];
   coordinateLines: HTMLElement[];
-  dropableCheck?: DropableCheck;
+  createNewSegmentAsync?: CreateNewSegmentAsync;
   deleteableCheck?: DeleteableCheck;
   ondragover?: any;
   ondrop?: any;
@@ -148,6 +148,7 @@ export interface TrackArgs {
   dom: HTMLElement;
   frameWidth: number;
   trackType: string;
+  createNewSegmentAsync?: CreateNewSegmentAsync;
   coordinateLines: HTMLElement[];
 }
 

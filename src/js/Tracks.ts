@@ -2,7 +2,7 @@ import {
   TRACKS_EVENT_TYPES,
   DeleteableCheck,
   SegmentType,
-  DropableCheck,
+  CreateNewSegmentAsync,
   TracksArgs,
   TracksEvent,
   TrackBasicConfig,
@@ -58,7 +58,7 @@ export class Tracks extends EventHelper {
   static DEFAULT_SEGMENT_FRAMES = DEFAULT_SEGMENT_FRAMES;
   scrollContainer!: HTMLElement;
   timeline: TimelineAxis = {} as TimelineAxis;
-  dropableCheck?: DropableCheck;
+  createNewSegmentAsync?: CreateNewSegmentAsync;
   deleteableCheck?: DeleteableCheck;
   ondragover: any = null;
   ondrop: any = null;
@@ -68,7 +68,7 @@ export class Tracks extends EventHelper {
   coordinateLines: HTMLElement[] = [];
   frameWidth = 0;
   coordinateLineLeft!: HTMLElement
-  private mousedownTimer = 0;
+  private mousedownTimer!: number;
   private bindedEventArray: {
     ele: HTMLElement;
     eventName: keyof HTMLElementEventMap;
@@ -96,7 +96,7 @@ export class Tracks extends EventHelper {
     timeline,
     segmentDelegate,
     coordinateLines,
-    dropableCheck,
+    createNewSegmentAsync,
     deleteableCheck,
     ondragover,
     ondrop,
@@ -116,8 +116,8 @@ export class Tracks extends EventHelper {
       this.coordinateLineLeft = coordinateLines[0]
     }
     this.frameWidth =  this.timeline.frameWidth;
-    if (dropableCheck) {
-      this.dropableCheck = dropableCheck;
+    if (createNewSegmentAsync) {
+      this.createNewSegmentAsync = createNewSegmentAsync;
     }
     if (deleteableCheck) {
       this.deleteableCheck = deleteableCheck;
@@ -189,6 +189,7 @@ export class Tracks extends EventHelper {
     segment: HTMLElement
   ) {
     this.clearTimer();
+    //@ts-ignore
     this.mousedownTimer = setTimeout(() => {
       this.dragStart(e, scrollContainer, segment);
     }, 300);
@@ -276,19 +277,21 @@ export class Tracks extends EventHelper {
   private createVirtualTrack(tbc: TrackBasicConfig) {
     const isFlex = tbc.flexiable;
     const trackType = String(tbc.trackType);
-    let vt: Track | null = null;
+    let vt: Track;
     if (isFlex) {
       vt = new TrackFlex({
         dom: tbc.dom,
         trackType,
+        createNewSegmentAsync: this.createNewSegmentAsync,
         coordinateLines: this.coordinateLines,
         frameWidth: this.timeline.frameWidth,
         totalFrames: this.timeline.totalFrames,
-      });
+      }) as Track;
     } else {
       vt = new Track({
         dom: tbc.dom,
         trackType,
+        createNewSegmentAsync: this.createNewSegmentAsync,
         coordinateLines: this.coordinateLines,
         frameWidth: this.timeline.frameWidth,
       });
@@ -297,7 +300,9 @@ export class Tracks extends EventHelper {
       // 递归创建虚拟轨道
       tbc.subTracks.forEach((stbc: TrackBasicConfig) => {
         const svt = this.createVirtualTrack(stbc);
-        vt?.addTrack(svt);
+        if(svt){
+          vt?.addTrack(svt);
+        }
       });
     }
     return vt;
@@ -467,49 +472,6 @@ export class Tracks extends EventHelper {
       }
     }
   }
-  async createSegment(
-    segmentTrackId: string,
-    framestart: number,
-    segmentType: SegmentType
-  ) {
-    let virtualSegment: Segment | null = null;
-    if (this.dropableCheck) {
-      const { dropable, segmentData, segmentName } = await this.dropableCheck(
-        segmentTrackId,
-        framestart
-      );
-      if (dropable && segmentData) {
-        framestart = segmentData.startFrame;
-        virtualSegment = createSegment({
-          trackId: segmentData.trackId ?? "",
-          segmentId: segmentData.sectionId,
-          framestart: framestart,
-          frameend: segmentData.endFrame,
-          name: segmentName,
-          segmentType,
-          frameWidth: this.timeline.frameWidth,
-          extra: segmentData,
-        });
-      } else {
-        this.dispatchEvent(
-          { eventType: TRACKS_EVENT_TYPES.SEGMENT_ADDED },
-          { error: { eventType: TRACKS_EVENT_TYPES.SEGMENT_ADDED } }
-        );
-        return null;
-      }
-    } else {
-      const frameend = framestart + 30;
-      virtualSegment = createSegment({
-        trackId: segmentTrackId ?? "",
-        framestart,
-        frameend,
-        name: "",
-        segmentType,
-        frameWidth: this.timeline.frameWidth,
-      });
-    }
-    return virtualSegment;
-  }
   private getFramestartByX(x: number): number {
     const frameWidth: number = this.timeline?.frameWidth ?? 0;
     let currentFrame = Math.round(x / frameWidth);
@@ -518,23 +480,7 @@ export class Tracks extends EventHelper {
     }
     return currentFrame;
   }
-  // 获取 segment 实例，如果没有则创建（从外部拖入新建）
-  private async getSegment(
-    copy: boolean,
-    segment: HTMLElement,
-    segmentTrackId: string,
-    framestart: number,
-    segmentType: SegmentType
-  ): Promise<Segment | null> {
-    if (copy) {
-      return await this.createSegment(segmentTrackId, framestart, segmentType);
-    } else {
-      return this.getVirtualSegment(
-        segment.dataset.trackId ?? "",
-        segment.dataset.segmentId ?? ""
-      );
-    }
-  }
+  
   async removeSegment(segment: HTMLElement) {
     const trackId = segment.dataset.trackId ?? "";
     const segmentId = segment.dataset.segmentId ?? "";
@@ -736,6 +682,7 @@ export class Tracks extends EventHelper {
       let framestart = this.getFramestartByX(x);
       const segmentTypeStr = segmentDom.dataset.segmentType ?? "0";
       const segmentTrackId = segmentDom.dataset.trackId ?? "";
+      const segmentId = segmentDom.dataset.segmentId ?? "";
       this.virtualTracks.forEach(async (vt) => {
         vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER);
         vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
@@ -752,20 +699,30 @@ export class Tracks extends EventHelper {
               framestart = _framestart
             }
           }
-          // !!!注意：没有 frames 的项，需要先异步添加后才能获取 frames，先试着添加
-          const virtualSegment = await this.getSegment(
-            isCopy,
-            segmentDom,
-            segmentTrackId,
-            framestart,
-            parseInt(segmentTypeStr)
-          );
-          if (!virtualSegment) return;
-          // 再次判断是否可以添加进轨道
+          
+          // 如果是新建
+          let segment: Segment | null;
+          if(!segmentId){
+            segment = await vt.createSegment(segmentTrackId, framestart, parseInt(segmentTypeStr));
+            if(!segment){
+              return;
+            }
+          }else{
+            segment = vt.getSegmentById(segmentId) ?? null;
+            // 判定是从其它轨道拖入的
+            if(!segment){
+              segment = await vt.createSegment(segmentTrackId, framestart, parseInt(segmentTypeStr));
+              if(!segment){
+                return;
+              }
+              segment.origionSegmentId = segmentId;
+              segment.origionTrackId = segmentTrackId;
+            }
+          }
           vt.pointerup({
             copy: isCopy,
             framestart,
-            segment: virtualSegment,
+            segment,
           });
         }
       });
@@ -800,7 +757,7 @@ export class Tracks extends EventHelper {
         return segment;
       }
     }
-    return null;
+    return;
   }
   addKeyframe(segmentId: string, frame: number) {
     this.getSegmentById(segmentId)?.addKeyframe(frame);
@@ -883,7 +840,7 @@ export class Tracks extends EventHelper {
     if (framestart === undefined) return;
     const virtualTrack = this.getTrack(trackId);
     if (!virtualTrack) return;
-    const segment = await this.createSegment(
+    const segment = await virtualTrack.createSegment(
       trackId,
       framestart,
       segmentType
