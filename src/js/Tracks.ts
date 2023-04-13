@@ -239,6 +239,7 @@ export class Tracks extends EventHelper {
     return result
   }
   private delegateTrackEvent(vt: Track){
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DRAG_START);
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DRAG_END);
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DROP_EFFECT);
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_ADDED);
@@ -317,6 +318,7 @@ export class Tracks extends EventHelper {
     }
     return result;
   }
+  
   private initTracks(tracks: TrackBasicConfig[]) {
     const trackTree = tracks.map((tbc: TrackBasicConfig) => {
       return this.createVirtualTrack(tbc);
@@ -388,7 +390,6 @@ export class Tracks extends EventHelper {
     const vt = this.getTrack(trackId);
     vt?.destroy();
     this.virtualTracks = this.virtualTracks.filter( vt => vt.trackId !== trackId);
-
   }
   // ?? deprecated
   keyframeMousedownHandle(ev: MouseEvent) {
@@ -711,12 +712,13 @@ export class Tracks extends EventHelper {
             segment = vt.getSegmentById(segmentId) ?? null;
             // 判定是从其它轨道拖入的
             if(!segment){
-              segment = await vt.createSegment(segmentTrackId, framestart, parseInt(segmentTypeStr));
+              segment = await vt.createSegment(vt.trackId, framestart, parseInt(segmentTypeStr));
               if(!segment){
                 return;
               }
               segment.origionSegmentId = segmentId;
               segment.origionTrackId = segmentTrackId;
+              segment.origionParentTrack = this.getTrack(segmentTrackId)
             }
           }
           vt.pointerup({
@@ -724,6 +726,10 @@ export class Tracks extends EventHelper {
             framestart,
             segment,
           });
+          // 如果有原父级轨道，说明是从原父级轨道拖过来的，需要删除原父级轨道内的 segment
+          if(segment && segment.origionSegmentId){
+            this.deleteSegment(segment.origionTrackId, segment.origionSegmentId);
+          }
         }
       });
       this.hideCoordinateLine();

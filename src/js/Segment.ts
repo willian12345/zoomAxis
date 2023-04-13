@@ -19,6 +19,7 @@ let segmentIdIndex = 0;
 export class Segment {
   origionTrackId = '' // 跨轨道拖动原轨道 trackId
   origionSegmentId = '' // 跨轨道拖动原轨道 segmentId
+  origionParentTrack:Track|null = null; // 原轨道
   framestart = 0;
   frameend = 0;
   frames = 0;

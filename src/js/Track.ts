@@ -345,6 +345,10 @@ export class Track extends EventHelper {
   pointerdown(segment: Segment) {
     this.originFramestart = segment.framestart;
     this.originFrameend = segment.frameend;
+    this.dispatchEvent(
+      { eventType: TRACKS_EVENT_TYPES.DRAG_START },
+      { segment }
+    );
   }
   // 拖动中
   pointermove({
@@ -407,10 +411,10 @@ export class Track extends EventHelper {
     copy: boolean;
     framestart: number;
     segment: Segment;
-  }): Segment|undefined {
+  }): Segment|null {
     const placeHolder = getSegmentPlaceholder(this.dom);
     if (!placeHolder) {
-      return;
+      return null;
     }
     placeHolder.style.opacity = "0";
     
@@ -418,11 +422,11 @@ export class Track extends EventHelper {
     const checkResult = this.check(copy, segment);
     if (checkResult) {
       this.removeSegment(segment);
-      return;
+      return null;
     }
     const isCollistion = collisionCheckX(placeHolder, this.dom);
     if(isCollistion){
-      return;
+      return null;
     }
     // 普通轨道
     const [fs, fd] = getFrameRange(segment.dom);
@@ -499,7 +503,6 @@ export class Track extends EventHelper {
       }, 2);
       return null;
     }
-    
     // 如果是从别的轨道拖过来的，需要从原轨道移聊
     if (segment.parentTrack) {
       segment.parentTrack.segments.delete(segment.segmentId);

@@ -26,6 +26,7 @@ export enum SegmentType {
   CAMERA_DYNAMIC,
 }
 export enum TRACKS_EVENT_TYPES {
+  DRAG_START,// 拖动开始事件
   DRAG_END, // 拖动结束事件
   DROP_EFFECT, // 伸缩轨道覆盖切割事件
   SEGMENTS_CHANGED,
