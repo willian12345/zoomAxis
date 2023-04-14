@@ -66,7 +66,7 @@ export class Tracks extends EventHelper {
   ondragover: any = null;
   ondrop: any = null;
   currentSegment: HTMLElement | null = null;
-  virtualTracks: Track[] = []; // 扁平化的虚拟轨道数据
+  tracks: Track[] = []; // 扁平化的虚拟轨道数据
   trackTree: Track[] = [];
   segmentDelegate: HTMLElement = document.body;
   coordinateLines: HTMLElement[] = [];
@@ -85,7 +85,7 @@ export class Tracks extends EventHelper {
   };
   set disabled(v){
     this._disabled = v;
-    this.virtualTracks.forEach( s => s.disabled = v)
+    this.tracks.forEach( s => s.disabled = v)
   }
   private _adsorbable = true;
   get adsorbable () {
@@ -277,7 +277,7 @@ export class Tracks extends EventHelper {
   }
   // 代理转发拦截 Track 事件
   private delegateTrackEvents() {
-    this.virtualTracks.forEach((vt) => {
+    this.tracks.forEach((vt) => {
       this.delegateTrackEvent(vt);
     });
   }
@@ -323,9 +323,8 @@ export class Tracks extends EventHelper {
     });
     // 存储扁平结构的虚拟轨道方便处理
     const plain = this.getPlainTracks(trackTree);
-    this.virtualTracks = plain;
+    this.tracks = plain;
     this.trackTree = trackTree;
-    console.log(this.trackTree);
     // 代理 Track 事件至 Tracks
     this.delegateTrackEvents();
   }
@@ -369,8 +368,15 @@ export class Tracks extends EventHelper {
       this.mouseupHandle(e);
     });
   }
-  private createTrackWithIndex(trackConfig:TrackSingleConfig, trackArr: Track[], index: number){
-    const beside = trackArr[index + 1];
+  /**
+   * 添加轨道至 第一级中相同 trackType 最后一行
+   * @param trackConfig 
+   */
+  addTrack(trackConfig: TrackSingleConfig){
+    const lastIndex = findLastIndex(this.trackTree, (vt: Track) => {
+      return vt.trackType === trackConfig.trackType
+    })
+    const prevTrack = this.trackTree[lastIndex + 1];
     const track = new Track({
       trackId: trackConfig.trackId,
       trackType: trackConfig.trackType + '',
@@ -378,28 +384,18 @@ export class Tracks extends EventHelper {
       coordinateLines: this.coordinateLines,
       frameWidth: this.timeline.frameWidth,
     });
-    this.trackListContainer.insertBefore(track.dom, beside.dom);
-    trackArr = [...trackArr.slice(0, index), track, ...trackArr.slice(index)];
-    this.virtualTracks.push(track);
+    this.trackListContainer.insertBefore(track.dom, prevTrack.dom);
+    this.trackTree = [...this.trackTree.slice(0, lastIndex), track, ...this.trackTree.slice(lastIndex)];
+    this.tracks.push(track);
     // 代理 Track 事件至 Tracks
     this.delegateTrackEvent(track);
-    return trackArr;
   }
   /**
-   * 添加轨道,仅支持添加单条
+   * 添加轨道某一轨道下，成为组
    * @param trackConfig 
    */
-  addTrack(trackConfig: TrackSingleConfig){
-    
-    // const vt = this.createVirtualTrack(trackConfig)
-    // if(trackConfig.parentId) {
-    //   const parentTrack = this.virtualTracks.find( vt => vt.trackId === trackConfig.parentId);
-    //   parentTrack?.addTrack(vt);
-    // }
-    const lastIndex = findLastIndex(this.trackTree, (vt: Track) => {
-      return vt.trackType === trackConfig.trackType
-    })
-    this.trackTree = this.createTrackWithIndex(trackConfig, this.trackTree, lastIndex);
+  addTrackTo(trackId: string, trackConfig: TrackSingleConfig,){
+    // todo
   }
   /**
    * 移除某条轨道  
@@ -407,7 +403,7 @@ export class Tracks extends EventHelper {
   removeTrack(trackId: string){
     const vt = this.getTrack(trackId);
     vt?.destroy();
-    this.virtualTracks = this.virtualTracks.filter( vt => vt.trackId !== trackId);
+    this.tracks = this.tracks.filter( vt => vt.trackId !== trackId);
   }
   // ?? deprecated
   keyframeMousedownHandle(ev: MouseEvent) {
@@ -510,11 +506,11 @@ export class Tracks extends EventHelper {
       console.warn("注意：轨道 id 为空");
       return null;
     }
-    return this.virtualTracks.find((vt) => vt.trackId === trackId) ?? null;
+    return this.tracks.find((vt) => vt.trackId === trackId) ?? null;
   }
   getVirtualSegmentAll() {
     let result: Segment[] = [];
-    for (const vt of this.virtualTracks) {
+    for (const vt of this.tracks) {
       result = [...result, ...vt.getSegments()];
     }
     return result;
@@ -523,7 +519,7 @@ export class Tracks extends EventHelper {
     if (!trackId.length || !segmentId.length) {
       console.warn("注意：轨道或片断 id 为空");
     }
-    const virtualTrack = this.virtualTracks.find(
+    const virtualTrack = this.tracks.find(
       (vt) => vt.trackId === trackId
     );
     if (!virtualTrack) {
@@ -538,7 +534,7 @@ export class Tracks extends EventHelper {
     return track.getSegments();
   }
   getTracks() {
-    return this.virtualTracks.map((vt) => vt.dom);
+    return this.tracks.map((vt) => vt.dom);
   }
   hideCoordinateLine(){
     // todo? 暂时只有一根辅助线
@@ -586,7 +582,7 @@ export class Tracks extends EventHelper {
       return;
     }
     // 获取所有轨道
-    const tracks: HTMLElement[] = this.virtualTracks.map((vt) => vt.dom);
+    const tracks: HTMLElement[] = this.tracks.map((vt) => vt.dom);
     // 全局拖动容器
     const dragTrackContainer = getDragTrackCotainer() as HTMLElement;
     // 拖动前原轨道
@@ -642,13 +638,13 @@ export class Tracks extends EventHelper {
       const scrollContainerX =
         scrollContainer.scrollLeft - scrollContainerRect.left;
       // 移除所胡轨道碰撞前的状态
-      this.virtualTracks.forEach((vt) => {
+      this.tracks.forEach((vt) => {
         vt.removeStatusClass();
       });
       this.hideCoordinateLine();
       // Y 轴碰撞
       const collisionTrack = trackCollisionCheckY(
-        this.virtualTracks,
+        this.tracks,
         e.clientY
       );
       // 轨道内 x 轴 移动判断
@@ -702,7 +698,7 @@ export class Tracks extends EventHelper {
       const segmentTypeStr = segmentDom.dataset.segmentType ?? "0";
       const segmentTrackId = segmentDom.dataset.trackId ?? "";
       const segmentId = segmentDom.dataset.segmentId ?? "";
-      this.virtualTracks.forEach(async (vt) => {
+      this.tracks.forEach(async (vt) => {
         vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER);
         vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
         if (isCloseEnouphToY(vt.dom, e.clientY)) {
@@ -775,7 +771,7 @@ export class Tracks extends EventHelper {
     document.addEventListener("mouseup", mouseup);
   }
   getSegmentById(segmentId: string) {
-    for (let track of this.virtualTracks) {
+    for (let track of this.tracks) {
       const segment = track.segments.get(segmentId);
       if (segment) {
         return segment;
@@ -891,7 +887,7 @@ export class Tracks extends EventHelper {
     }
     const frameWidth = this.timeline.frameWidth;
     this.frameWidth = frameWidth;
-    this.virtualTracks.forEach((track) => track.setFrameWidth(frameWidth));
+    this.tracks.forEach((track) => track.setFrameWidth(frameWidth));
     const segments = this.getVirtualSegmentAll();
     segments.forEach((segment) => segment.setFrameWidth(frameWidth));
   }
@@ -900,7 +896,7 @@ export class Tracks extends EventHelper {
    * @param n 
    */
   setTotalFrames(n: number) {
-    this.virtualTracks.forEach((vt) => {
+    this.tracks.forEach((vt) => {
       if (vt instanceof TrackFlex) {
         vt.setTotalFrames(n);
       }
@@ -940,7 +936,7 @@ export class Tracks extends EventHelper {
   }
   destroy() {
     removeDragTrackContainer();
-    this.virtualTracks.forEach((vt) => vt.destroy());
+    this.tracks.forEach((vt) => vt.destroy());
     for (let { ele, eventName, listener, options } of this.bindedEventArray) {
       ele.removeEventListener(eventName, listener, options);
     }
