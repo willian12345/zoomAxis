@@ -380,7 +380,9 @@ export class Tracks extends EventHelper {
     });
     this.trackListContainer.insertBefore(track.dom, beside.dom);
     trackArr = [...trackArr.slice(0, index), track, ...trackArr.slice(index)];
-    debugger
+    this.virtualTracks.push(track);
+    // 代理 Track 事件至 Tracks
+    this.delegateTrackEvent(track);
     return trackArr;
   }
   /**
@@ -397,11 +399,7 @@ export class Tracks extends EventHelper {
     const lastIndex = findLastIndex(this.trackTree, (vt: Track) => {
       return vt.trackType === trackConfig.trackType
     })
-    this.createTrackWithIndex(trackConfig, this.trackTree, lastIndex);
-    // this.virtualTracks.
-    // this.virtualTracks.push(vt);
-    // 代理 Track 事件至 Tracks
-    // this.delegateTrackEvent(vt);
+    this.trackTree = this.createTrackWithIndex(trackConfig, this.trackTree, lastIndex);
   }
   /**
    * 移除某条轨道  

@@ -117,32 +117,32 @@ const tracks: TrackBasicConfig[] = [
   {
     trackId: 'a',
     trackText: '轨道组',
-    trackType: 't1',
+    trackType: '1',
     color: '#C66136',
     subTracks: [
       {
         trackId: 'a1',
         trackText: '轨道组轨道一',
         color: '#6C4ACD',
-        trackType: 't2',
+        trackType: '2',
       },
       {
         trackId: 'a2',
         trackText: '轨道组轨道二',
         color: '#4767E8',
-        trackType: 't3',
+        trackType: '3',
       },
     ]
   },
   {
     trackId: 'b',
-    trackType: 't4',
+    trackType: '4',
     color: '#6C4ACD',
     trackText: '普通轨道一',
   },
   {
     trackId: 'c',
-    trackType: 't5',
+    trackType: '5',
     color: '#46A9CB',
     trackText: '普通轨道二',
   },
@@ -273,25 +273,25 @@ onMounted(() => {
       <button @click="handlePlay">播放</button>
     </div>
     <div class="segment-list" ref="segmentItemListRef">
-      <div class="segment-item" style="background-color: #C66136;" data-segment-type="t1">
+      <div class="segment-item" style="background-color: #C66136;" data-segment-type="1">
         拖我
-        <button class="btn" @click.stop="handleAddByClick('t1')">+</button>
+        <button class="btn" @click.stop="handleAddByClick('1')">+</button>
       </div>
-      <div class="segment-item" data-segment-type="t2">
+      <div class="segment-item" data-segment-type="2">
         拖我
-        <button @click="handleAddByClick('t1')">+</button>
+        <button @click="handleAddByClick('1')">+</button>
       </div>
-      <div class="segment-item" data-segment-type="t3">
+      <div class="segment-item" data-segment-type="3">
         拖我（一）
-        <button class="btn" @click="handleAddByClick('t3')">+</button>
+        <button class="btn" @click="handleAddByClick('3')">+</button>
       </div>
-      <div class="segment-item" data-segment-type="t4">
+      <div class="segment-item" data-segment-type="4">
         拖我
-        <button class="btn" @click="handleAddByClick('t4')">+</button>
+        <button class="btn" @click="handleAddByClick('4')">+</button>
       </div>
       <div
         class="segment-item segment-item-flex"
-        data-segment-type="1"
+        data-segment-type="5"
         data-track-id="c"
       >
         拖我
