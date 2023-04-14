@@ -15,6 +15,7 @@ import {
 } from "../../../src/js/trackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
 import { Tracks } from "../../../src/js/Tracks";
+import { Track } from "../../../src/js/Track";
 import { Segment } from "../../../src/js/Segment";
 
 let timeline: TimelineAxis | null;
@@ -29,6 +30,7 @@ const scrollContentRef = ref<HTMLElement | null>(null);
 const trackListRef = ref<HTMLElement | null>(null);
 const segmentItemListRef = ref<HTMLElement | null>(null);
 let currentSegment: Segment | null = null;
+let ctrlDown = false;
 // 左右滚动
 const handleScroll = (e: UIEvent) => {
   if (!e) {
@@ -73,11 +75,21 @@ const syncByZoom = (zoom: number) => {
 };
 // 滚轮缩放
 const handleWheel = (e: WheelEvent) => {
+  console.log(ctrlDown, 1111)
+  if(!ctrlDown){
+    return; 
+  }
+  e.stopPropagation();
   e.preventDefault();
   e.deltaY > 0 ? zoomOut() : zoomIn();
   syncByZoom(zoomRatio);
 };
-
+document.addEventListener('keydown', (e: KeyboardEvent) => {
+  ctrlDown = e.ctrlKey;
+})
+document.addEventListener('keyup', (e: KeyboardEvent) => {
+  ctrlDown = false;
+})
 const handlePlay = () => {
   if (!timeline) {
     return;
@@ -101,10 +113,45 @@ const addTrackWidth = (trackCursor: CursorPointer) => {
   }
 };
 
+const tracks: TrackBasicConfig[] = [
+  {
+    trackId: 'a',
+    trackText: '轨道组',
+    trackType: 't1',
+    color: '#C66136',
+    subTracks: [
+      {
+        trackId: 'a1',
+        trackText: '轨道组轨道一',
+        color: '#6C4ACD',
+        trackType: 't2',
+      },
+      {
+        trackId: 'a2',
+        trackText: '轨道组轨道二',
+        color: '#4767E8',
+        trackType: 't3',
+      },
+    ]
+  },
+  {
+    trackId: 'b',
+    trackType: 't4',
+    color: '#6C4ACD',
+    trackText: '普通轨道一',
+  },
+  {
+    trackId: 'c',
+    trackType: 't5',
+    color: '#46A9CB',
+    trackText: '普通轨道二',
+  },
+];
 const initApp = () => {
   if (
     !cursorRef.value?.$el ||
     !scrollContentRef.value ||
+    !trackListRef.value ||
     !scrollContainerRef.value
   ) {
     return;
@@ -142,23 +189,15 @@ const initApp = () => {
       timeline?.setCurrentFrame(frame);
     }
   );
-  const trackDoms = Array.from(
-    scrollContent.querySelectorAll(".track")
-  ) as HTMLElement[];
-  const tracks: TrackBasicConfig[] = trackDoms.map((dom: HTMLElement) => {
-    return {
-      trackType: dom.dataset.trackType ?? "",
-      trackId: dom.dataset.trackId ?? "",
-      dom,
-      flexiable: dom.classList.contains("track-flexible"),
-    };
-  });
+
+  
   const coordinateLines = Array.from(
     scrollContainer.querySelectorAll(".coordinate-line")
   ) as HTMLElement[];
   // 初始化轨道
   segmentTracks = new Tracks({
     scrollContainer,
+    trackListContainer: trackListRef.value,
     tracks,
     timeline,
     coordinateLines,
@@ -209,6 +248,18 @@ const splitHandler = () => {
 const toggleMagnet = () => {
   segmentTracks.adsorbable = !segmentTracks.adsorbable;
 };
+const handleClick = (track: TrackBasicConfig) => {
+
+}
+const handleAddByClick = (trackType: string) => {
+  const trackId = Math.random() + 'newTrack';
+  const newTrack = {
+    trackId: trackId,
+    trackText: Math.random() + '',
+    trackType,
+  };
+  segmentTracks?.addTrack(newTrack);
+}
 onMounted(() => {
   initApp();
 });
@@ -222,11 +273,21 @@ onMounted(() => {
       <button @click="handlePlay">播放</button>
     </div>
     <div class="segment-list" ref="segmentItemListRef">
-      <div class="segment-item" data-segment-type="0">拖我</div>
-      <div class="segment-item" data-segment-type="0">拖我</div>
-      <div class="segment-item" data-segment-type="0">拖我</div>
-      <div class="segment-item" data-segment-type="0" data-track-type="1">
+      <div class="segment-item" style="background-color: #C66136;" data-segment-type="t1">
         拖我
+        <button class="btn" @click.stop="handleAddByClick('t1')">+</button>
+      </div>
+      <div class="segment-item" data-segment-type="t2">
+        拖我
+        <button @click="handleAddByClick('t1')">+</button>
+      </div>
+      <div class="segment-item" data-segment-type="t3">
+        拖我（一）
+        <button class="btn" @click="handleAddByClick('t3')">+</button>
+      </div>
+      <div class="segment-item" data-segment-type="t4">
+        拖我
+        <button class="btn" @click="handleAddByClick('t4')">+</button>
       </div>
       <div
         class="segment-item segment-item-flex"
@@ -239,9 +300,33 @@ onMounted(() => {
     </div>
     <div class="timeline-container" @wheel="handleWheel">
       <div class="track-operation">
-        <div class="track-operation-item">普通轨道</div>
-        <div class="track-operation-item">普通轨道</div>
-        <div class="track-operation-item">伸缩轨道</div>
+        <template v-for="track in tracks">
+          <div
+            class="track-operation-item-group cursor-pointer"
+            @click="handleClick(track)"
+            v-if="track.subTracks"
+          >
+            <div class="track-operation-item flex items-center">
+              <div
+                class="mr-2"
+              >
+                <svg class="text-white" fill="rgba(255,255,255, 0.5)" width="12" height="12" viewBox="0 0 12 12" data-v-f2ec87fa="" style="transform: rotate(0deg);"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.57574 8.4247L1.57574 4.4247L2.42427 3.57617L6 7.15191L9.57574 3.57617L10.4243 4.4247L6.42426 8.4247L6 8.84896L5.57574 8.4247Z"></path></svg>
+              </div>
+              {{ track.trackText }}
+            </div>
+            <div
+                class="track-operation-item"
+                v-for="(subTrack, index) in track.subTracks"
+                :key="index"
+              >
+                {{ subTrack.trackText }}
+            </div>
+            <div class="track-gutter"></div>
+          </div>
+          <div class="track-operation-item" v-else>
+            {{ track.trackText }}
+          </div>
+        </template>
       </div>
       <div
         class="webkit-scrollbar scroll-container"
@@ -261,7 +346,7 @@ onMounted(() => {
             ref="trackListRef"
             :style="{ width: `${trackWidth}px` }"
           >
-            <div class="track" data-track-id="a" data-track-type="0">
+            <!-- <div class="track" data-track-id="a" data-track-type="0">
               <div class="track-placeholder"></div>
             </div>
             <div class="track" data-track-id="b" data-track-type="0">
@@ -273,7 +358,7 @@ onMounted(() => {
               data-track-type="1"
             >
               <div class="track-placeholder"></div>
-            </div>
+            </div> -->
           </div>
           <div className="coordinate-line"></div>
         </div>
@@ -286,7 +371,11 @@ onMounted(() => {
 <style lang="less">
 @markHeight: 24px;
 @trackHeight: 28px;
-
+.btn{
+  width: 20px;
+  height: 10px;
+  background-color: aliceblue;
+}
 .track-drag-container {
   pointer-events: none;
   position: fixed;
@@ -307,7 +396,8 @@ onMounted(() => {
   position: relative;
   margin: 180px 40px;
   width: 100vh;
-  height: 180px;
+  height: 200px;
+  overflow-y: auto;
   background-color: #0f0c0c;
 }
 
@@ -344,7 +434,7 @@ onMounted(() => {
   padding-top: @markHeight;
   flex-basis: 120px;
   border-right: 1px solid black;
-  background-color: rgba(white, 0.01);
+  background-color: rgba(white, 0);
   .track-operation-item {
     margin-bottom: 2px;
     padding-left: 6px;
@@ -352,7 +442,12 @@ onMounted(() => {
     height: @trackHeight;
     line-height: @trackHeight;
     color: rgba(255, 255, 255, 0.5);
-    background-color: rgba(white, 0.05);
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+  .track-operation-item-group{
+    .track-operation-item{
+      padding-left: 2em;
+    }
   }
 }
 
@@ -365,6 +460,8 @@ onMounted(() => {
 .track-list {
   padding-top: @markHeight;
   width: 100%;
+  height: 200px;
+  overflow-y: auto;
   .track {
     pointer-events: none;
     position: relative;
@@ -511,5 +608,13 @@ onMounted(() => {
 }
 button {
   padding: 4px 6px;
+}
+
+.track-gutter{
+  margin: 8px 0 10px;
+  height: 1px;
+  width: 100%;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.04);
 }
 </style>

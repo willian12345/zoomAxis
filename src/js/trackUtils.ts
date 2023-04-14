@@ -352,3 +352,15 @@ export const getLeftSideSegments = (segments: Segment[], leftValue: number) => {
     })
     .sort(sortByLeftValue);
 };
+
+export const findLastIndex = (arr: any[], fn: CallableFunction) => {
+  let index = -1;
+  console.log(arr);
+  for(let i=0, l=arr.length; i<l;i++){
+    if(fn(arr[i])){
+      index = i;
+    }
+  }
+  console.log(index,'eeee')
+  return index;
+}

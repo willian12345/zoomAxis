@@ -1,14 +1,13 @@
-import { CursorPointer } from "./CursorPointer";
 import { TimelineAxis } from "./TimelineAxis";
 import { Track } from "./Track";
 import { Segment } from "./Segment";
-import { TrackFlex } from "./TrackFlex";
 export type TrackSingleConfig = {
   trackId: string;
+  color?: string;
+  trackText?: string;
   trackType: string | SegmentType;
   flexiable?: boolean;
   parentId?: string;
-  dom: HTMLElement;
 }
 // 轨道基本配置信息
 export type TrackBasicConfig = {
@@ -91,6 +90,7 @@ export interface DeleteableCheck {
 }
 export interface TracksArgs {
   scrollContainer: HTMLElement;
+  trackListContainer: HTMLElement;
   timeline: TimelineAxis;
   segmentDelegate: HTMLElement;
   tracks: TrackBasicConfig[];
@@ -146,7 +146,7 @@ export type KeyframeConstructInfo = {
 };
 
 export interface TrackArgs {
-  dom: HTMLElement;
+  trackId: string;
   frameWidth: number;
   trackType: string;
   createNewSegmentAsync?: CreateNewSegmentAsync;

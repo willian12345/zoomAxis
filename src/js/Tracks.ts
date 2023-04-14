@@ -12,6 +12,7 @@ import {
 import { TimelineAxis } from "./TimelineAxis";
 import { Track } from "./Track";
 import { Segment } from "./Segment";
+import { TrackGroup } from "./Group";
 import { EventHelper } from "./EventHelper";
 
 import {
@@ -35,6 +36,7 @@ import {
   checkCoordinateLine,
   getDatasetNumberByKey,
   DEFAULT_SEGMENT_FRAMES,
+  findLastIndex,
 } from "./trackUtils";
 import { TrackFlex } from "./TrackFlex";
 
@@ -57,6 +59,7 @@ export interface Tracks {
 export class Tracks extends EventHelper {
   static DEFAULT_SEGMENT_FRAMES = DEFAULT_SEGMENT_FRAMES;
   scrollContainer!: HTMLElement;
+  trackListContainer!:HTMLElement;
   timeline: TimelineAxis = {} as TimelineAxis;
   createNewSegmentAsync?: CreateNewSegmentAsync;
   deleteableCheck?: DeleteableCheck;
@@ -64,6 +67,7 @@ export class Tracks extends EventHelper {
   ondrop: any = null;
   currentSegment: HTMLElement | null = null;
   virtualTracks: Track[] = []; // 扁平化的虚拟轨道数据
+  trackTree: Track[] = [];
   segmentDelegate: HTMLElement = document.body;
   coordinateLines: HTMLElement[] = [];
   frameWidth = 0;
@@ -93,6 +97,7 @@ export class Tracks extends EventHelper {
   constructor({
     tracks,
     scrollContainer,
+    trackListContainer,
     timeline,
     segmentDelegate,
     coordinateLines,
@@ -107,6 +112,7 @@ export class Tracks extends EventHelper {
     }
     this.timeline = timeline;
     this.scrollContainer = scrollContainer;
+    this.trackListContainer = trackListContainer;
     if (segmentDelegate) {
       this.segmentDelegate = segmentDelegate;
     }
@@ -276,36 +282,28 @@ export class Tracks extends EventHelper {
     });
   }
   private createVirtualTrack(tbc: TrackBasicConfig) {
-    const isFlex = tbc.flexiable;
     const trackType = String(tbc.trackType);
-    let vt: Track;
-    if (isFlex) {
-      vt = new TrackFlex({
-        dom: tbc.dom,
-        trackType,
-        createNewSegmentAsync: this.createNewSegmentAsync,
-        coordinateLines: this.coordinateLines,
-        frameWidth: this.timeline.frameWidth,
-        totalFrames: this.timeline.totalFrames,
-      }) as Track;
-    } else {
-      vt = new Track({
-        dom: tbc.dom,
-        trackType,
-        createNewSegmentAsync: this.createNewSegmentAsync,
-        coordinateLines: this.coordinateLines,
-        frameWidth: this.timeline.frameWidth,
-      });
-    }
-    if (tbc.subTracks) {
+    let vt = new Track({
+      trackId: tbc.trackId,
+      trackType,
+      createNewSegmentAsync: this.createNewSegmentAsync,
+      coordinateLines: this.coordinateLines,
+      frameWidth: this.timeline.frameWidth,
+    });
+    if(tbc.subTracks){
+      vt.group = new TrackGroup(vt);
       // 递归创建虚拟轨道
       tbc.subTracks.forEach((stbc: TrackBasicConfig) => {
         const svt = this.createVirtualTrack(stbc);
         if(svt){
-          vt?.addTrack(svt);
+          vt.group?.addChild(svt);
         }
       });
+      this.trackListContainer.appendChild(vt.group.dom);
+    }else{
+      this.trackListContainer.appendChild(vt.dom);  
     }
+    
     return vt;
   }
   private getPlainTracks(tracks: Track[], result: Track[] = []) {
@@ -326,6 +324,8 @@ export class Tracks extends EventHelper {
     // 存储扁平结构的虚拟轨道方便处理
     const plain = this.getPlainTracks(trackTree);
     this.virtualTracks = plain;
+    this.trackTree = trackTree;
+    console.log(this.trackTree);
     // 代理 Track 事件至 Tracks
     this.delegateTrackEvents();
   }
@@ -369,19 +369,39 @@ export class Tracks extends EventHelper {
       this.mouseupHandle(e);
     });
   }
+  private createTrackWithIndex(trackConfig:TrackSingleConfig, trackArr: Track[], index: number){
+    const beside = trackArr[index + 1];
+    const track = new Track({
+      trackId: trackConfig.trackId,
+      trackType: trackConfig.trackType + '',
+      createNewSegmentAsync: this.createNewSegmentAsync,
+      coordinateLines: this.coordinateLines,
+      frameWidth: this.timeline.frameWidth,
+    });
+    this.trackListContainer.insertBefore(track.dom, beside.dom);
+    trackArr = [...trackArr.slice(0, index), track, ...trackArr.slice(index)];
+    debugger
+    return trackArr;
+  }
   /**
    * 添加轨道,仅支持添加单条
    * @param trackConfig 
    */
   addTrack(trackConfig: TrackSingleConfig){
-    const vt = this.createVirtualTrack(trackConfig)
-    if(trackConfig.parentId) {
-      const parentTrack = this.virtualTracks.find( vt => vt.trackId === trackConfig.parentId);
-      parentTrack?.addTrack(vt);
-    }
-    this.virtualTracks.push(vt);
+    
+    // const vt = this.createVirtualTrack(trackConfig)
+    // if(trackConfig.parentId) {
+    //   const parentTrack = this.virtualTracks.find( vt => vt.trackId === trackConfig.parentId);
+    //   parentTrack?.addTrack(vt);
+    // }
+    const lastIndex = findLastIndex(this.trackTree, (vt: Track) => {
+      return vt.trackType === trackConfig.trackType
+    })
+    this.createTrackWithIndex(trackConfig, this.trackTree, lastIndex);
+    // this.virtualTracks.
+    // this.virtualTracks.push(vt);
     // 代理 Track 事件至 Tracks
-    this.delegateTrackEvent(vt);
+    // this.delegateTrackEvent(vt);
   }
   /**
    * 移除某条轨道  

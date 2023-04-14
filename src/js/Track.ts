@@ -31,6 +31,7 @@ import {
   CreateNewSegmentAsync,
 } from "./TrackType";
 import { EventHelper } from "./EventHelper";
+import { TrackGroup } from "./Group";
 
 type MoveFunctionArgs = {
   frameWidth: number;
@@ -43,6 +44,7 @@ export class Track extends EventHelper {
   dom!: HTMLElement;
   trackId = "";
   trackType = "";
+  group:TrackGroup|null = null;
   visibility = true;
   segments: Map<string, Segment> = new Map(); // 轨道内的 segment
   subTracks: Map<string, Track> = new Map(); // 子轨道
@@ -56,12 +58,12 @@ export class Track extends EventHelper {
   collapsed = false;
   subTracksCollapsed = false;
   createNewSegmentAsync?:CreateNewSegmentAsync; // 外部 UE 真正添加新 segment 逻辑
-  constructor({ dom, trackType, coordinateLines, frameWidth, createNewSegmentAsync }: TrackArgs) {
+  constructor({ trackId, trackType, coordinateLines, frameWidth, createNewSegmentAsync }: TrackArgs) {
     super();
     this.frameWidth = frameWidth;
-    this.dom = dom;
+    this.trackId = trackId;
     this.trackType = trackType;
-    this.trackId = dom.dataset.trackId ?? "";
+    this.dom = this.createDom()
     // 辅助线
     if (coordinateLines) {
       this.coordinateLines = coordinateLines;
@@ -71,6 +73,15 @@ export class Track extends EventHelper {
       this.createNewSegmentAsync = createNewSegmentAsync;
     }
     this.initEvent();
+  }
+  createDom(){
+    const div = document.createElement("div");
+    div.innerHTML = `
+        <div class="track" data-track-id="${this.trackId}" data-track-type="${this.trackType}">
+          <div class="track-placeholder"></div>
+        </div>
+      `;
+    return div.firstElementChild as HTMLElement;
   }
   initEvent() {
     this.dom.addEventListener("mousedown", this.mousedown);
