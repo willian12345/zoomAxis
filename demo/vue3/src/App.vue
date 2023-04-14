@@ -11,7 +11,7 @@ import {
 } from "../../../src/js/cursorPointer";
 import {
   TRACKS_EVENT_TYPES,
-  TrackBasicConfig,
+  TrackConfig,
 } from "../../../src/js/trackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
 import { Tracks } from "../../../src/js/Tracks";
@@ -113,7 +113,7 @@ const addTrackWidth = (trackCursor: CursorPointer) => {
   }
 };
 
-const tracks: TrackBasicConfig[] = [
+const tracks: TrackConfig[] = [
   {
     trackId: 'a',
     trackText: '轨道组',
@@ -248,7 +248,7 @@ const splitHandler = () => {
 const toggleMagnet = () => {
   segmentTracks.adsorbable = !segmentTracks.adsorbable;
 };
-const handleClick = (track: TrackBasicConfig) => {
+const handleClick = (track: TrackConfig) => {
 
 }
 const handleAddByClick = (trackType: string) => {

@@ -6,7 +6,7 @@ import {
   TracksArgs,
   TracksEvent,
   TrackBasicConfig,
-  TrackSingleConfig,
+  TrackConfig,
 } from "./TrackType";
 
 import { TimelineAxis } from "./TimelineAxis";
@@ -372,7 +372,7 @@ export class Tracks extends EventHelper {
    * 添加轨道至 第一级中相同 trackType 最后一行
    * @param trackConfig 
    */
-  addTrack(trackConfig: TrackSingleConfig){
+  addTrack(trackConfig: TrackConfig){
     const lastIndex = findLastIndex(this.trackTree, (vt: Track) => {
       return vt.trackType === trackConfig.trackType
     })
@@ -394,7 +394,7 @@ export class Tracks extends EventHelper {
    * 添加轨道某一轨道下，成为组
    * @param trackConfig 
    */
-  addTrackTo(trackId: string, trackConfig: TrackSingleConfig,){
+  addTrackTo(trackId: string, trackConfig: TrackConfig,){
     // todo
   }
   /**

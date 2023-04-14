@@ -1,18 +1,16 @@
 import { TimelineAxis } from "./TimelineAxis";
 import { Track } from "./Track";
 import { Segment } from "./Segment";
-export type TrackSingleConfig = {
+// 轨道基本配置信息
+export type TrackConfig = {
   trackId: string;
   color?: string;
   trackText?: string;
   trackType: string | SegmentType;
   flexiable?: boolean;
   parentId?: string;
+  subTracks?: TrackConfig[];
 }
-// 轨道基本配置信息
-export type TrackBasicConfig = {
-  subTracks?: TrackBasicConfig[];
-} & TrackSingleConfig;
 export enum SegmentType {
   BODY_ANIMATION,
   FACE_ANIMATION,
@@ -93,7 +91,7 @@ export interface TracksArgs {
   trackListContainer: HTMLElement;
   timeline: TimelineAxis;
   segmentDelegate: HTMLElement;
-  tracks: TrackBasicConfig[];
+  tracks: TrackConfig[];
   coordinateLines: HTMLElement[];
   createNewSegmentAsync?: CreateNewSegmentAsync;
   deleteableCheck?: DeleteableCheck;
