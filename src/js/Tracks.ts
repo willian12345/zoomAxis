@@ -5,7 +5,6 @@ import {
   CreateNewSegmentAsync,
   TracksArgs,
   TracksEvent,
-  TrackBasicConfig,
   TrackConfig,
 } from "./TrackType";
 
@@ -67,7 +66,7 @@ export class Tracks extends EventHelper {
   ondrop: any = null;
   currentSegment: HTMLElement | null = null;
   tracks: Track[] = []; // 扁平化的虚拟轨道数据
-  trackTree: Track[] = [];
+  tracksConfig: TrackConfig[] = [];
   segmentDelegate: HTMLElement = document.body;
   coordinateLines: HTMLElement[] = [];
   frameWidth = 0;
@@ -128,6 +127,7 @@ export class Tracks extends EventHelper {
     if (deleteableCheck) {
       this.deleteableCheck = deleteableCheck;
     }
+    this.tracksConfig = tracks;
     this.initTracks(tracks);
     this.ondragover = ondragover;
     this.ondrop = ondrop;
@@ -281,7 +281,7 @@ export class Tracks extends EventHelper {
       this.delegateTrackEvent(vt);
     });
   }
-  private createVirtualTrack(tbc: TrackBasicConfig) {
+  private createVirtualTrack(tbc: TrackConfig) {
     const trackType = String(tbc.trackType);
     let vt = new Track({
       trackId: tbc.trackId,
@@ -293,7 +293,7 @@ export class Tracks extends EventHelper {
     if(tbc.subTracks){
       vt.group = new TrackGroup(vt);
       // 递归创建虚拟轨道
-      tbc.subTracks.forEach((stbc: TrackBasicConfig) => {
+      tbc.subTracks.forEach((stbc: TrackConfig) => {
         const svt = this.createVirtualTrack(stbc);
         if(svt){
           vt.group?.addChild(svt);
@@ -317,14 +317,13 @@ export class Tracks extends EventHelper {
     return result;
   }
   
-  private initTracks(tracks: TrackBasicConfig[]) {
-    const trackTree = tracks.map((tbc: TrackBasicConfig) => {
+  private initTracks(tracks: Trackconfi[]) {
+    const tracksArr = tracks.map((tbc: TrackConfig) => {
       return this.createVirtualTrack(tbc);
     });
     // 存储扁平结构的虚拟轨道方便处理
-    const plain = this.getPlainTracks(trackTree);
+    const plain = this.getPlainTracks(tracksArr);
     this.tracks = plain;
-    this.trackTree = trackTree;
     // 代理 Track 事件至 Tracks
     this.delegateTrackEvents();
   }
@@ -368,15 +367,13 @@ export class Tracks extends EventHelper {
       this.mouseupHandle(e);
     });
   }
-  /**
-   * 添加轨道至 第一级中相同 trackType 最后一行
-   * @param trackConfig 
-   */
-  addTrack(trackConfig: TrackConfig){
-    const lastIndex = findLastIndex(this.trackTree, (vt: Track) => {
+  private addNewTrackToDom(trackConfig: TrackConfig, list: TrackConfig[], parentElement: HTMLElement){
+    const lastIndex = findLastIndex(list, (vt: Track) => {
       return vt.trackType === trackConfig.trackType
     })
-    const prevTrack = this.trackTree[lastIndex + 1];
+    const prevTrackConfig = list[lastIndex + 1];
+    const prevTrack = this.getTrack(prevTrackConfig.trackId)
+    
     const track = new Track({
       trackId: trackConfig.trackId,
       trackType: trackConfig.trackType + '',
@@ -384,18 +381,39 @@ export class Tracks extends EventHelper {
       coordinateLines: this.coordinateLines,
       frameWidth: this.timeline.frameWidth,
     });
-    this.trackListContainer.insertBefore(track.dom, prevTrack.dom);
-    this.trackTree = [...this.trackTree.slice(0, lastIndex), track, ...this.trackTree.slice(lastIndex)];
+    if(prevTrack){
+      prevTrack.dom.parentElement?.insertBefore(track.dom, prevTrack.dom);
+      list = [...list.slice(0, lastIndex), trackConfig, ...list.slice(lastIndex)];
+    }else{
+      parentElement.append(track.dom);
+      list = [...list, trackConfig];
+    }
     this.tracks.push(track);
     // 代理 Track 事件至 Tracks
     this.delegateTrackEvent(track);
+    return list;
   }
   /**
-   * 添加轨道某一轨道下，成为组
+   * 添加轨道至一级
    * @param trackConfig 
    */
-  addTrackTo(trackId: string, trackConfig: TrackConfig,){
-    // todo
+  addTrack(trackConfig: TrackConfig){
+    const newList = this.addNewTrackToDom(trackConfig, this.tracksConfig, this.trackListContainer)
+    this.tracksConfig = newList;
+  }
+  /**
+   * 添加轨道至某一轨道组下
+   * @param trackConfig 
+   */
+  addToTrackGroup(trackId: string, trackConfig: TrackConfig,){
+    const toTrackConfig = this.tracksConfig.find( (tcg: TrackConfig) => {
+      return tcg.trackId === trackId
+    })
+    if(!toTrackConfig?.subTracks) return;
+    const toTrack = this.getTrack(toTrackConfig.trackId);
+    if(!toTrack?.group?.subTracksDom) return;
+    const newList = this.addNewTrackToDom(trackConfig, toTrackConfig.subTracks, toTrack.group.subTracksDom)
+    toTrackConfig.subTracks = newList;
   }
   /**
    * 移除某条轨道  

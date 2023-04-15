@@ -260,6 +260,15 @@ const handleAddByClick = (trackType: string) => {
   };
   segmentTracks?.addTrack(newTrack);
 }
+const testAddToTrack = () => {
+  const trackId = Math.random() + 'newTrack';
+  const newTrack = {
+    trackId: trackId,
+    trackText: Math.random() + '',
+    trackType: '2',
+  };
+  segmentTracks?.addToTrackGroup('a', newTrack);
+}
 onMounted(() => {
   initApp();
 });
@@ -271,6 +280,7 @@ onMounted(() => {
       <button @click="splitHandler">分割</button>
       <button @click="toggleMagnet">辅助线吸附</button>
       <button @click="handlePlay">播放</button>
+      <button @click="testAddToTrack">往某个组内添加轨道</button>
     </div>
     <div class="segment-list" ref="segmentItemListRef">
       <div class="segment-item" style="background-color: #C66136;" data-segment-type="1">
@@ -303,7 +313,6 @@ onMounted(() => {
         <template v-for="track in tracks">
           <div
             class="track-operation-item-group cursor-pointer"
-            @click="handleClick(track)"
             v-if="track.subTracks"
           >
             <div class="track-operation-item flex items-center">
