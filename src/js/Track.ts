@@ -28,7 +28,7 @@ import {
   DragingArgs,
   TRACKS_EVENT_TYPES,
   SegmentType,
-  CreateNewSegmentAsync,
+  CreateSegmentCheck,
 } from "./TrackType";
 import { EventHelper } from "./EventHelper";
 import { TrackGroup } from "./Group";
@@ -57,8 +57,8 @@ export class Track extends EventHelper {
   coordinateLineLeft!: HTMLElement; // segment 左侧辅助线
   collapsed = false;
   subTracksCollapsed = false;
-  createNewSegmentAsync?:CreateNewSegmentAsync; // 外部 UE 真正添加新 segment 逻辑
-  constructor({ trackId, trackType, coordinateLines, frameWidth, createNewSegmentAsync }: TrackArgs) {
+  createSegmentCheck?:CreateSegmentCheck; // 外部 UE 真正添加新 segment 逻辑
+  constructor({ trackId, trackType, coordinateLines, frameWidth, createSegmentCheck }: TrackArgs) {
     super();
     this.frameWidth = frameWidth;
     this.trackId = trackId;
@@ -69,8 +69,8 @@ export class Track extends EventHelper {
       this.coordinateLines = coordinateLines;
       this.coordinateLineLeft = coordinateLines[0];
     }
-    if(createNewSegmentAsync){
-      this.createNewSegmentAsync = createNewSegmentAsync;
+    if(createSegmentCheck){
+      this.createSegmentCheck = createSegmentCheck;
     }
     this.initEvent();
   }
@@ -452,9 +452,9 @@ export class Track extends EventHelper {
     segmentType: SegmentType
   ) {
     let virtualSegment: Segment;
-    if (this.createNewSegmentAsync) {
+    if (this.CreateSegmentCheck) {
       // 外部 UE 创建逻辑完成后 UI 上再创建
-      const { dropable, segmentData, segmentName } = await this.createNewSegmentAsync(
+      const { dropable, segmentData, segmentName } = await this.CreateSegmentCheck(
         segmentTrackId,
         framestart,
         segmentType,

@@ -79,7 +79,7 @@ export type NewSegmentResponse = {
   segmentName: string;
   segmentData?: ResponsedSegmentData | null;
 };
-export interface CreateNewSegmentAsync {
+export interface CreateSegmentCheck {
   (trackId: string, startFrame: number, segmentType: SegmentType): Promise<NewSegmentResponse>;
 }
 
@@ -93,7 +93,7 @@ export interface TracksArgs {
   segmentDelegate: HTMLElement;
   tracks: TrackConfig[];
   coordinateLines: HTMLElement[];
-  createNewSegmentAsync?: CreateNewSegmentAsync;
+  createSegmentCheck?: CreateSegmentCheck;
   deleteableCheck?: DeleteableCheck;
   ondragover?: any;
   ondrop?: any;
@@ -147,7 +147,7 @@ export interface TrackArgs {
   trackId: string;
   frameWidth: number;
   trackType: string;
-  createNewSegmentAsync?: CreateNewSegmentAsync;
+  createSegmentCheck?: CreateSegmentCheck;
   coordinateLines: HTMLElement[];
 }
 

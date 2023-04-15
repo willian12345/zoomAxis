@@ -2,7 +2,7 @@ import {
   TRACKS_EVENT_TYPES,
   DeleteableCheck,
   SegmentType,
-  CreateNewSegmentAsync,
+  CreateSegmentCheck,
   TracksArgs,
   TracksEvent,
   TrackConfig,
@@ -60,7 +60,7 @@ export class Tracks extends EventHelper {
   scrollContainer!: HTMLElement;
   trackListContainer!:HTMLElement;
   timeline: TimelineAxis = {} as TimelineAxis;
-  createNewSegmentAsync?: CreateNewSegmentAsync;
+  createSegmentCheck?: CreateSegmentCheck;
   deleteableCheck?: DeleteableCheck;
   ondragover: any = null;
   ondrop: any = null;
@@ -100,7 +100,7 @@ export class Tracks extends EventHelper {
     timeline,
     segmentDelegate,
     coordinateLines,
-    createNewSegmentAsync,
+    createSegmentCheck,
     deleteableCheck,
     ondragover,
     ondrop,
@@ -121,8 +121,8 @@ export class Tracks extends EventHelper {
       this.coordinateLineLeft = coordinateLines[0]
     }
     this.frameWidth =  this.timeline.frameWidth;
-    if (createNewSegmentAsync) {
-      this.createNewSegmentAsync = createNewSegmentAsync;
+    if (createSegmentCheck) {
+      this.createSegmentCheck = createSegmentCheck;
     }
     if (deleteableCheck) {
       this.deleteableCheck = deleteableCheck;
@@ -286,7 +286,7 @@ export class Tracks extends EventHelper {
     let vt = new Track({
       trackId: tbc.trackId,
       trackType,
-      createNewSegmentAsync: this.createNewSegmentAsync,
+      createSegmentCheck: this.createSegmentCheck,
       coordinateLines: this.coordinateLines,
       frameWidth: this.timeline.frameWidth,
     });
@@ -317,7 +317,7 @@ export class Tracks extends EventHelper {
     return result;
   }
   
-  private initTracks(tracks: Trackconfi[]) {
+  private initTracks(tracks: TrackConfig[]) {
     const tracksArr = tracks.map((tbc: TrackConfig) => {
       return this.createVirtualTrack(tbc);
     });
@@ -377,7 +377,7 @@ export class Tracks extends EventHelper {
     const track = new Track({
       trackId: trackConfig.trackId,
       trackType: trackConfig.trackType + '',
-      createNewSegmentAsync: this.createNewSegmentAsync,
+      createSegmentCheck: this.createSegmentCheck,
       coordinateLines: this.coordinateLines,
       frameWidth: this.timeline.frameWidth,
     });
