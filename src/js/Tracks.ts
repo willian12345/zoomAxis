@@ -386,10 +386,14 @@ export class Tracks extends EventHelper {
     }
     if(prevTrack){
       prevTrack.dom.parentElement?.insertBefore(track.dom, prevTrack.dom);
-      list = [...list.slice(0, lastIndex + 1), trackConfig, ...list.slice(lastIndex + 1)];
+      // list = [...list.slice(0, lastIndex + 1), trackConfig, ...list.slice(lastIndex + 1)];
+      // 相同最后一个TrackType相同元素位置后添加
+      list.splice(lastIndex+1, 0, trackConfig);
     }else{
       parentElement.append(track.dom);
-      list = [...list, trackConfig];
+      // 最后位置添加
+      list.splice(list.length, 0, trackConfig);
+      // list = [...list, trackConfig];
     }
     this.tracks.push(track);
     // 代理 Track 事件至 Tracks
@@ -401,8 +405,8 @@ export class Tracks extends EventHelper {
    * @param trackConfig 
    */
   addTrack(trackConfig: TrackConfig){
-    const newList = this.addNewTrackToDom(trackConfig, this.tracksConfig, this.trackListContainer)
-    this.tracksConfig = newList;
+    this.addNewTrackToDom(trackConfig, this.tracksConfig, this.trackListContainer)
+    console.log(this.tracksConfig)
   }
   /**
    * 添加轨道至某一轨道组下
@@ -415,8 +419,8 @@ export class Tracks extends EventHelper {
     if(!toTrackConfig?.subTracks) return;
     const toTrack = this.getTrack(toTrackConfig.trackId);
     if(!toTrack?.group?.subTracksDom) return;
-    const newList = this.addNewTrackToDom(trackConfig, toTrackConfig.subTracks, toTrack.group.subTracksDom, toTrack)
-    toTrackConfig.subTracks = newList;
+    this.addNewTrackToDom(trackConfig, toTrackConfig.subTracks, toTrack.group.subTracksDom, toTrack)
+    console.log(this.tracksConfig)
   }
   private removeTrackInConfigs(trackId: string, list: TrackConfig[]){
     const parentTrackConfig = list.find( tc => tc.trackId === trackId);
@@ -447,6 +451,9 @@ export class Tracks extends EventHelper {
     this.tracks = this.tracks.filter( vt => vt.trackId !== trackId);
     vt.destroy();
     console.log(this.tracksConfig)
+  }
+  getTracksConfig(){
+    return this.tracksConfig;
   }
   // ?? deprecated
   keyframeMousedownHandle(ev: MouseEvent) {
