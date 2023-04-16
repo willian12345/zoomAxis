@@ -367,7 +367,7 @@ export class Tracks extends EventHelper {
       this.mouseupHandle(e);
     });
   }
-  private addNewTrackToDom(trackConfig: TrackConfig, list: TrackConfig[], parentElement: HTMLElement){
+  private addNewTrackToDom(trackConfig: TrackConfig, list: TrackConfig[], parentElement: HTMLElement, parentTrack?: Track){
     const lastIndex = findLastIndex(list, (vt: Track) => {
       return vt.trackType === trackConfig.trackType
     })
@@ -381,9 +381,12 @@ export class Tracks extends EventHelper {
       coordinateLines: this.coordinateLines,
       frameWidth: this.timeline.frameWidth,
     });
+    if(parentTrack){
+      track.parent = parentTrack;
+    }
     if(prevTrack){
       prevTrack.dom.parentElement?.insertBefore(track.dom, prevTrack.dom);
-      list = [...list.slice(0, lastIndex), trackConfig, ...list.slice(lastIndex)];
+      list = [...list.slice(0, lastIndex + 1), trackConfig, ...list.slice(lastIndex + 1)];
     }else{
       parentElement.append(track.dom);
       list = [...list, trackConfig];
@@ -412,16 +415,38 @@ export class Tracks extends EventHelper {
     if(!toTrackConfig?.subTracks) return;
     const toTrack = this.getTrack(toTrackConfig.trackId);
     if(!toTrack?.group?.subTracksDom) return;
-    const newList = this.addNewTrackToDom(trackConfig, toTrackConfig.subTracks, toTrack.group.subTracksDom)
+    const newList = this.addNewTrackToDom(trackConfig, toTrackConfig.subTracks, toTrack.group.subTracksDom, toTrack)
     toTrackConfig.subTracks = newList;
+  }
+  private removeTrackInConfigs(trackId: string, list: TrackConfig[]){
+    const parentTrackConfig = list.find( tc => tc.trackId === trackId);
+      if(!parentTrackConfig){
+        return;
+      }
+      const index = list.findIndex((tc) => tc.trackId === trackId) ?? -1;
+      if(index !== -1){
+        list.splice(index, 1);
+      }
   }
   /**
    * 移除某条轨道  
    */
   removeTrack(trackId: string){
     const vt = this.getTrack(trackId);
-    vt?.destroy();
+    if(!vt) return;
+    const parentTrack = vt.parent
+    if(parentTrack){
+      const parentTrackConfig = this.tracksConfig.find( tc => tc.trackId === parentTrack.trackId);
+      if(!parentTrackConfig?.subTracks){
+        return;
+      }
+      this.removeTrackInConfigs(trackId, parentTrackConfig.subTracks)
+    }else{
+      this.removeTrackInConfigs(trackId, this.tracksConfig)
+    }
     this.tracks = this.tracks.filter( vt => vt.trackId !== trackId);
+    vt.destroy();
+    console.log(this.tracksConfig)
   }
   // ?? deprecated
   keyframeMousedownHandle(ev: MouseEvent) {
