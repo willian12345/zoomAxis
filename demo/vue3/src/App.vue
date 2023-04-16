@@ -75,7 +75,6 @@ const syncByZoom = (zoom: number) => {
 };
 // 滚轮缩放
 const handleWheel = (e: WheelEvent) => {
-  console.log(ctrlDown, 1111)
   if(!ctrlDown){
     return; 
   }
@@ -251,8 +250,10 @@ const toggleMagnet = () => {
 const handleClick = (track: TrackConfig) => {
 
 }
+let tempTrackId: string;
 const handleAddByClick = (trackType: string) => {
   const trackId = Math.random() + 'newTrack';
+  tempTrackId = trackId
   const newTrack = {
     trackId: trackId,
     trackText: Math.random() + '',
@@ -262,12 +263,16 @@ const handleAddByClick = (trackType: string) => {
 }
 const testAddToTrack = () => {
   const trackId = Math.random() + 'newTrack';
+  tempTrackId = trackId;
   const newTrack = {
     trackId: trackId,
     trackText: Math.random() + '',
     trackType: '2',
   };
   segmentTracks?.addToTrackGroup('a', newTrack);
+}
+const testRemoveTrack = () => {
+  segmentTracks?.removeTrack(tempTrackId);
 }
 onMounted(() => {
   initApp();
@@ -281,6 +286,7 @@ onMounted(() => {
       <button @click="toggleMagnet">辅助线吸附</button>
       <button @click="handlePlay">播放</button>
       <button @click="testAddToTrack">往某个组内添加轨道</button>
+      <button @click="testRemoveTrack">删除组内添加的轨道</button>
     </div>
     <div class="segment-list" ref="segmentItemListRef">
       <div class="segment-item" style="background-color: #C66136;" data-segment-type="1">
@@ -310,9 +316,10 @@ onMounted(() => {
     </div>
     <div class="timeline-container" @wheel="handleWheel">
       <div class="track-operation">
-        <template v-for="track in tracks">
+        <div v-for="track in tracks" :key="track.trackId">
           <div
             class="track-operation-item-group cursor-pointer"
+            :key="track.trackId"
             v-if="track.subTracks"
           >
             <div class="track-operation-item flex items-center">
@@ -332,10 +339,13 @@ onMounted(() => {
             </div>
             <div class="track-gutter"></div>
           </div>
-          <div class="track-operation-item" v-else>
+          <div 
+            class="track-operation-item"
+            v-else
+          >
             {{ track.trackText }}
           </div>
-        </template>
+        </div>
       </div>
       <div
         class="webkit-scrollbar scroll-container"
