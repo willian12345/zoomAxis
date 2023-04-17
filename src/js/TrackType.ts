@@ -10,6 +10,7 @@ export type TrackConfig = {
   flexiable?: boolean;
   parentId?: string;
   subTracks?: TrackConfig[];
+  collapsed?: boolean;
 }
 export enum SegmentType {
   BODY_ANIMATION,

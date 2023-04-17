@@ -371,8 +371,9 @@ export class Tracks extends EventHelper {
     const lastIndex = findLastIndex(list, (vt: Track) => {
       return vt.trackType === trackConfig.trackType
     })
+    // 获取插入位置后的轨道用于insertBefore
     const prevTrackConfig = list[lastIndex + 1];
-    const prevTrack = this.getTrack(prevTrackConfig.trackId)
+    const prevTrack = this.getTrack(prevTrackConfig?.trackId ?? '');
     
     const track = new Track({
       trackId: trackConfig.trackId,
@@ -768,7 +769,7 @@ export class Tracks extends EventHelper {
           // 如果是新建
           let segment: Segment | null;
           if(!segmentId){
-            segment = await vt.createSegment(segmentTrackId, framestart, parseInt(segmentTypeStr));
+            segment = await vt.createSegment(vt.trackId, framestart, parseInt(segmentTypeStr));
             if(!segment){
               return;
             }

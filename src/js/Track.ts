@@ -56,7 +56,6 @@ export class Track extends EventHelper {
   coordinateLines: HTMLElement[] = []; // 轨道所有辅助线
   coordinateLineLeft!: HTMLElement; // segment 左侧辅助线
   collapsed = false;
-  subTracksCollapsed = false;
   createSegmentCheck?:CreateSegmentCheck; // 外部 UE 真正添加新 segment 逻辑
   constructor({ trackId, trackType, coordinateLines, frameWidth, createSegmentCheck }: TrackArgs) {
     super();
@@ -452,9 +451,9 @@ export class Track extends EventHelper {
     segmentType: SegmentType
   ) {
     let virtualSegment: Segment;
-    if (this.CreateSegmentCheck) {
+    if (this.createSegmentCheck) {
       // 外部 UE 创建逻辑完成后 UI 上再创建
-      const { dropable, segmentData, segmentName } = await this.CreateSegmentCheck(
+      const { dropable, segmentData, segmentName } = await this.createSegmentCheck(
         segmentTrackId,
         framestart,
         segmentType,
@@ -479,7 +478,7 @@ export class Track extends EventHelper {
         return null;
       }
     } else {
-      // 纯 UI 上创建, 没有 UE 状态
+      // 用于UI调式、演示 没有 UE 状态
       const frameend = framestart + 30;
       virtualSegment = createSegment({
         trackId: segmentTrackId ?? "",
@@ -604,7 +603,6 @@ export class Track extends EventHelper {
   }
   // 折叠子轨道
   collapseSubTracks(collapse: boolean) {
-    this.subTracksCollapsed = collapse;
     this.subTracks.forEach((v) => v.collapse(collapse));
   }
   destroy() {

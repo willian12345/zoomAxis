@@ -183,7 +183,7 @@ export const getSegmentStyle = ({ segmentType }: SegmentConstructInfo ): string 
     return 'background: #4767E8;';
   }
   if(segmentType === SegmentType.BGM){
-    return 'background: #46A9CB;';
+    return 'background: #139F5C;';
   }
   return ''
 }
