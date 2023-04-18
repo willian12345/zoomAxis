@@ -372,7 +372,7 @@ export class Tracks extends EventHelper {
       return vt.trackType === trackConfig.trackType
     })
     // 获取插入位置后的轨道用于insertBefore
-    const prevTrackConfig = list[lastIndex + 1];
+    const prevTrackConfig = lastIndex === -1 ? null: list[lastIndex + 1];
     const prevTrack = this.getTrack(prevTrackConfig?.trackId ?? '');
     
     const track = new Track({
