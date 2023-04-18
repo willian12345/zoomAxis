@@ -746,75 +746,86 @@ export class Tracks extends EventHelper {
       // x = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
       const x = left - scrollContainerRect.left + scrollContainerScrollLeft;
       let framestart = this.getFramestartByX(x);
-      const segmentTypeStr = segmentDom.dataset.segmentType ?? "0";
-      const segmentTrackId = segmentDom.dataset.trackId ?? "";
-      const segmentId = segmentDom.dataset.segmentId ?? "";
-      this.tracks.forEach(async (vt) => {
-        vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER);
-        vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
-        if (isCloseEnouphToY(vt.dom, e.clientY)) {
-          // 预先检测是否是相同轨道，以及有没有发生碰撞
-          const r = vt.precheck(segmentTypeStr);
-          vt.hidePlaceHolder();
-          if(!r){ 
-            return;
-          }
-          if(this._adsorbable){
-            const [ isAdsorbing, _framestart ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll(`.${CLASS_NAME_SEGMENT}`)) as HTMLElement[], this.frameWidth);
-            if(isAdsorbing){
-              framestart = _framestart
-            }
-          }
-          
-          // 如果是新建
-          let segment: Segment | null;
-          if(!segmentId){
-            segment = await vt.createSegment(vt.trackId, framestart, parseInt(segmentTypeStr));
-            if(!segment){
-              return;
-            }
-          }else{
-            segment = vt.getSegmentById(segmentId) ?? null;
-            // 判定是从其它轨道拖入的
-            if(!segment){
-              segment = await vt.createSegment(vt.trackId, framestart, parseInt(segmentTypeStr));
-              if(!segment){
-                return;
-              }
-              segment.origionSegmentId = segmentId;
-              segment.origionTrackId = segmentTrackId;
-              segment.origionParentTrack = this.getTrack(segmentTrackId)
-            }
-          }
-          vt.pointerup({
-            copy: isCopy,
-            framestart,
-            segment,
-          });
-          // 如果有原父级轨道，说明是从原父级轨道拖过来的，需要删除原父级轨道内的 segment
-          if(segment && segment.origionSegmentId){
-            this.deleteSegment(segment.origionTrackId, segment.origionSegmentId);
-          }
-        }
-      });
-      this.hideCoordinateLine();
+      const segmentTypeStr = segmentDom.dataset.segmentType ?? '0';
+      const segmentTrackId = segmentDom.dataset.trackId ?? '';
+      const segmentId = segmentDom.dataset.segmentId ?? '';
       // 如果没有跨轨道拖动成功，则 x 轴移动
       setTimeout(() => {
-        if (dragTrackContainer.children.length) {
+        if (dragTrackContainer.children.length && isCopy) {
           // 如果是复制
-          if (isCopy) {
-            dragTrackContainer.removeChild(segmentCopy);
-          }
-          if (originTrack) {
-            this.putSegmentBack(
-              segmentDom,
-              getLeftValue(segmentDom),
-              originTrack
-            );
-          }
+          dragTrackContainer.removeChild(segmentCopy);
         }
+        
       }, 0);
-
+      // 新建 segment
+      let newSegment: Segment | null = null;
+      // 等待所有轨道异步判断新建完毕
+      await Promise.all(
+        this.tracks.map(async (vt) => {
+          vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER);
+          vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
+          if (isCloseEnouphToY(vt.dom, e.clientY)) {
+            // 预先检测是否是相同轨道，以及有没有发生碰撞
+            const r = vt.precheck(segmentTypeStr);
+            vt.hidePlaceHolder();
+            if(!r){ 
+              return;
+            }
+            if(this._adsorbable){
+              const [ isAdsorbing, _framestart ] = checkCoordinateLine(dragTrackContainer, Array.from(this.scrollContainer.querySelectorAll(`.${CLASS_NAME_SEGMENT}`)) as HTMLElement[], this.frameWidth);
+              if(isAdsorbing){
+                framestart = _framestart
+              }
+            }
+            
+            if(!segmentId){
+              newSegment = await vt.createSegment(vt.trackId, framestart, parseInt(segmentTypeStr));
+              if(!newSegment){
+                return;
+              }
+            }else{
+              newSegment = vt.getSegmentById(segmentId) ?? null;
+              // 判定是从其它轨道拖入的
+              if(!newSegment){
+                newSegment = await vt.createSegment(vt.trackId, framestart, parseInt(segmentTypeStr));
+                if(!newSegment){
+                  return;
+                }
+                newSegment.origionSegmentId = segmentId;
+                newSegment.origionTrackId = segmentTrackId;
+                newSegment.origionParentTrack = this.getTrack(segmentTrackId)
+              }
+            }
+            vt.pointerup({
+              copy: isCopy,
+              framestart,
+              segment: newSegment,
+            });
+            // 如果有原父级轨道，说明是从原父级轨道拖过来的，需要删除原父级轨道内的 segment
+            if(newSegment?.origionSegmentId){
+              this.deleteSegment(newSegment.origionTrackId, newSegment.origionSegmentId);
+              newSegment.origionParentTrack = null;
+              newSegment.origionSegmentId = '';
+              newSegment.origionTrackId = '';
+            }
+          }
+        })
+      )
+      this.hideCoordinateLine();
+      if (originTrack) {
+        this.putSegmentBack(
+          segmentDom,
+          getLeftValue(segmentDom),
+          originTrack
+        );
+      }
+      // 没有 segmentId 且没有新建成功，说明是从外部拖入创建且未成功创建，需要触发 DRAG_END
+      if(!segmentId && !newSegment){
+        // 拖完后触发回调
+        this.dispatchEvent(
+          { eventType: TRACKS_EVENT_TYPES.DRAG_END }
+        );
+      }
       document.removeEventListener("mouseup", mouseup);
       document.removeEventListener("mousemove", mousemove);
     };

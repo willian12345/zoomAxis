@@ -14,7 +14,7 @@ export class EventHelper{
     }
     this.eventCallbackMap.get(eventType)?.add(callback);
   }
-  dispatchEvent(event: DispatchEvent, data: any){
+  dispatchEvent(event: DispatchEvent, data?: any){
     this.eventCallbackMap.get(event.eventType)?.forEach((cb) => {
       cb({
         ...data,
