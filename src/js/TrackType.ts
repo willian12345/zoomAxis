@@ -2,14 +2,14 @@ import { TimelineAxis } from "./TimelineAxis";
 import { Track } from "./Track";
 import { Segment } from "./Segment";
 // 轨道基本配置信息
-export type TrackConfig = {
+export type TTrackConfig = {
   trackId: string;
   color?: string;
   trackText?: string;
   trackType: string | SegmentType;
   flexiable?: boolean;
   parentId?: string;
-  subTracks?: TrackConfig[];
+  subTracks?: TTrackConfig[];
   collapsed?: boolean;
 }
 export enum SegmentType {
@@ -59,7 +59,7 @@ export type CallbackArgs = {
   pointerEvent?: MouseEvent;
   [propsName: string]:any;
 };
-export interface TracksEvent {
+export interface ITracksEvent {
   (e: CallbackArgs): any;
 }
 export interface TrackEventMap {
@@ -81,27 +81,27 @@ export type NewSegmentResponse = {
   segmentName: string;
   segmentData?: ResponsedSegmentData | null;
 };
-export interface CreateSegmentCheck {
+export interface ICreateSegmentCheck {
   (trackId: string, startFrame: number, segmentType: SegmentType): Promise<NewSegmentResponse>;
 }
 
-export interface DeleteableCheck {
+export interface IDeleteSegmentCheck {
   (trackId: string, sectionId: string): Promise<boolean>;
 }
-export interface TracksArgs {
+export interface ITracksArgs {
   scrollContainer: HTMLElement;
   trackListContainer: HTMLElement;
   timeline: TimelineAxis;
   segmentDelegate: HTMLElement;
-  tracks: TrackConfig[];
+  tracks: TTrackConfig[];
   coordinateLines: HTMLElement[];
-  createSegmentCheck?: CreateSegmentCheck;
-  deleteableCheck?: DeleteableCheck;
+  createSegmentCheck?: ICreateSegmentCheck;
+  deleteSegmentCheck?: IDeleteSegmentCheck;
   ondragover?: any;
   ondrop?: any;
 }
 export interface SegmentTracksArgs extends TracksArgs {
-  deleteableCheck?: DeleteableCheck;
+  deleteSegmentCheck?: IDeleteSegmentCheck;
 }
 export interface SegmentTracksOutArgs extends TracksArgs {}
 
@@ -145,11 +145,11 @@ export type KeyframeConstructInfo = {
   frameWidth: number;
 };
 
-export interface TrackArgs {
+export interface ITrackArgs {
   trackId: string;
   frameWidth: number;
   trackType: string;
-  createSegmentCheck?: CreateSegmentCheck;
+  createSegmentCheck?: ICreateSegmentCheck;
   coordinateLines: HTMLElement[];
 }
 

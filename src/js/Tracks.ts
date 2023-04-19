@@ -1,11 +1,11 @@
 import {
   TRACKS_EVENT_TYPES,
-  DeleteableCheck,
+  IDeleteSegmentCheck,
   SegmentType,
-  CreateSegmentCheck,
-  TracksArgs,
-  TracksEvent,
-  TrackConfig,
+  ICreateSegmentCheck,
+  ITracksArgs,
+  ITracksEvent,
+  TTrackConfig,
 } from "./TrackType";
 
 import { TimelineAxis } from "./TimelineAxis";
@@ -51,7 +51,7 @@ const TRACK_EVENT_TYPES_ARRAY = [
 export interface Tracks {
   addEventListener<EventType extends TRACKS_EVENT_TYPES>(
     eventType: EventType,
-    callback: TracksEvent
+    callback: ITracksEvent
   ): void;
 }
 // 轨道
@@ -60,8 +60,8 @@ export class Tracks extends EventHelper {
   scrollContainer!: HTMLElement;
   trackListContainer!:HTMLElement;
   timeline: TimelineAxis = {} as TimelineAxis;
-  createSegmentCheck?: CreateSegmentCheck;
-  deleteableCheck?: DeleteableCheck;
+  createSegmentCheck?: ICreateSegmentCheck;
+  deleteSegmentCheck?: IDeleteSegmentCheck;
   ondragover: any = null;
   ondrop: any = null;
   currentSegment: HTMLElement | null = null;
@@ -101,10 +101,10 @@ export class Tracks extends EventHelper {
     segmentDelegate,
     coordinateLines,
     createSegmentCheck,
-    deleteableCheck,
+    deleteSegmentCheck,
     ondragover,
     ondrop,
-  }: TracksArgs) {
+  }: ITracksArgs) {
     super();
     if (!timeline || !scrollContainer) {
       return;
@@ -124,8 +124,8 @@ export class Tracks extends EventHelper {
     if (createSegmentCheck) {
       this.createSegmentCheck = createSegmentCheck;
     }
-    if (deleteableCheck) {
-      this.deleteableCheck = deleteableCheck;
+    if (deleteSegmentCheck) {
+      this.deleteSegmentCheck = deleteSegmentCheck;
     }
     this.tracksConfig = tracks;
     this.initTracks(tracks);
@@ -204,7 +204,7 @@ export class Tracks extends EventHelper {
   private delegateDispatchEvent<T extends TRACKS_EVENT_TYPES>(
     vt: Track,
     EventType: T,
-    interceptor?: TracksEvent
+    interceptor?: ITracksEvent
   ) {
     vt.addEventListener(EventType, async (args) => {
       // 如有需要事件发出前可以拦一道
@@ -281,7 +281,7 @@ export class Tracks extends EventHelper {
       this.delegateTrackEvent(vt);
     });
   }
-  private createVirtualTrack(tbc: TrackConfig) {
+  private createVirtualTrack(tbc: TTrackConfig) {
     const trackType = String(tbc.trackType);
     let vt = new Track({
       trackId: tbc.trackId,
@@ -293,7 +293,7 @@ export class Tracks extends EventHelper {
     if(tbc.subTracks){
       vt.group = new TrackGroup(vt);
       // 递归创建虚拟轨道
-      tbc.subTracks.forEach((stbc: TrackConfig) => {
+      tbc.subTracks.forEach((stbc: TTrackConfig) => {
         const svt = this.createVirtualTrack(stbc);
         if(svt){
           vt.group?.addChild(svt);
@@ -317,8 +317,8 @@ export class Tracks extends EventHelper {
     return result;
   }
   
-  private initTracks(tracks: TrackConfig[]) {
-    const tracksArr = tracks.map((tbc: TrackConfig) => {
+  private initTracks(tracks: TTrackConfig[]) {
+    const tracksArr = tracks.map((tbc: TTrackConfig) => {
       return this.createVirtualTrack(tbc);
     });
     // 存储扁平结构的虚拟轨道方便处理
@@ -367,7 +367,7 @@ export class Tracks extends EventHelper {
       this.mouseupHandle(e);
     });
   }
-  private addNewTrackToDom(trackConfig: TrackConfig, list: TrackConfig[], parentElement: HTMLElement, parentTrack?: Track){
+  private addNewTrackToDom(trackConfig: TTrackConfig, list: TTrackConfig[], parentElement: HTMLElement, parentTrack?: Track){
     const lastIndex = findLastIndex(list, (vt: Track) => {
       return vt.trackType === trackConfig.trackType
     })
@@ -405,7 +405,7 @@ export class Tracks extends EventHelper {
    * 添加轨道至一级
    * @param trackConfig 
    */
-  addTrack(trackConfig: TrackConfig){
+  addTrack(trackConfig: TTrackConfig){
     this.addNewTrackToDom(trackConfig, this.tracksConfig, this.trackListContainer)
     console.log(this.tracksConfig)
   }
@@ -413,8 +413,8 @@ export class Tracks extends EventHelper {
    * 添加轨道至某一轨道组下
    * @param trackConfig 
    */
-  addToTrackGroup(trackId: string, trackConfig: TrackConfig,){
-    const toTrackConfig = this.tracksConfig.find( (tcg: TrackConfig) => {
+  addToTrackGroup(trackId: string, trackConfig: TTrackConfig,){
+    const toTrackConfig = this.tracksConfig.find( (tcg: TTrackConfig) => {
       return tcg.trackId === trackId
     })
     if(!toTrackConfig?.subTracks) return;
@@ -423,7 +423,7 @@ export class Tracks extends EventHelper {
     this.addNewTrackToDom(trackConfig, toTrackConfig.subTracks, toTrack.group.subTracksDom, toTrack)
     console.log(this.tracksConfig)
   }
-  private removeTrackInConfigs(trackId: string, list: TrackConfig[]){
+  private removeTrackInConfigs(trackId: string, list: TTrackConfig[]){
     const parentTrackConfig = list.find( tc => tc.trackId === trackId);
       if(!parentTrackConfig){
         return;
@@ -492,8 +492,8 @@ export class Tracks extends EventHelper {
     let result = true;
     const virtualSegment = this.getVirtualSegment(trackId, segmentId);
     if (!virtualSegment) return;
-    if (this.deleteableCheck) {
-      result = await this.deleteableCheck(trackId, segmentId);
+    if (this.deleteSegmentCheck) {
+      result = await this.deleteSegmentCheck(trackId, segmentId);
       if (!result) {
         console.warn("删除失败");
         return result;

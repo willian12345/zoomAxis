@@ -2,7 +2,7 @@ type EventType = string|number;
 type DispatchEvent = {
   eventType: EventType
 }
-type Callback = (args:any) => void
+type Callback = (...args:any[]) => void
 export class EventHelper{
   private eventCallbackMap:Map<EventType, Set<Callback>> = new Map()
   addEventListener(

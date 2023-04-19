@@ -4,7 +4,7 @@
 
 import { Segment } from "./Segment";
 import { Track } from "./Track";
-import { TRACKS_EVENT_TYPES, TrackArgs, DragingArgs } from "./TrackType";
+import { TRACKS_EVENT_TYPES, ITrackArgs, DragingArgs } from "./TrackType";
 import {
   isContainSplitFromComma,
   getSegmentPlaceholder,
@@ -16,9 +16,10 @@ import {
   CLASS_NAME_TRACK_DRAG_OVER_ERROR,
   DEFAULT_SEGMENT_FRAMES,
 } from "./trackUtils";
-interface TrackFlexArgs {
+export interface ITrackFlexArgs extends ITrackArgs {
   totalFrames: number;
 }
+
 export class TrackFlex extends Track {
   totalFrames = 0;
   isFlex = true;
@@ -26,7 +27,7 @@ export class TrackFlex extends Track {
   frameend = 0; // 当前轨道拖动的 segment frameend
   frames = 0; // 当前轨道拖动的 segment frames
   private lastEffectSegments: Segment[] = [];
-  constructor(args: TrackArgs & TrackFlexArgs) {
+  constructor(args: ITrackFlexArgs) {
     super(args);
     this.totalFrames = args.totalFrames;
   }

@@ -24,16 +24,16 @@ import {
   createSegment,
 } from "./trackUtils";
 import {
-  TrackArgs,
+  ITrackArgs,
   DragingArgs,
   TRACKS_EVENT_TYPES,
   SegmentType,
-  CreateSegmentCheck,
+  ICreateSegmentCheck,
 } from "./TrackType";
 import { EventHelper } from "./EventHelper";
 import { TrackGroup } from "./Group";
 
-type MoveFunctionArgs = {
+export type TMoveFunctionArgs = {
   frameWidth: number;
   segmentDom: HTMLElement;
   framestart: number;
@@ -56,8 +56,8 @@ export class Track extends EventHelper {
   coordinateLines: HTMLElement[] = []; // 轨道所有辅助线
   coordinateLineLeft!: HTMLElement; // segment 左侧辅助线
   collapsed = false;
-  createSegmentCheck?:CreateSegmentCheck; // 外部 UE 真正添加新 segment 逻辑
-  constructor({ trackId, trackType, coordinateLines, frameWidth, createSegmentCheck }: TrackArgs) {
+  createSegmentCheck?:ICreateSegmentCheck; // 外部 UE 真正添加新 segment 逻辑
+  constructor({ trackId, trackType, coordinateLines, frameWidth, createSegmentCheck }: ITrackArgs) {
     super();
     this.frameWidth = frameWidth;
     this.trackId = trackId;
@@ -159,7 +159,7 @@ export class Track extends EventHelper {
   private dragHandleStart = (
     e: MouseEvent,
     handle: HTMLElement,
-    move: (args: MoveFunctionArgs) => void,
+    move: (args: TMoveFunctionArgs) => void,
     handleCode: number
   ) => {
     const segmentDom: HTMLElement = findParentElementByClassName(

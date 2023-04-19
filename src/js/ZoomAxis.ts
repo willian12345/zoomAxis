@@ -10,7 +10,7 @@ const DEFAULT_RATIO_STEP: number[][] = [
   [0.9, 1],
 ];
 
-export interface ZoomAxisArgs {
+export interface IZoomAxis {
   el: string | HTMLElement
   totalMarks: number
   vertical?: boolean
@@ -66,7 +66,7 @@ export class ZoomAxis extends EventHelper{
   zoomRatio = 1; // 缩放比例
   width = 600; // 标尺总宽度
 
-  constructor({ el, totalMarks, ratio, ratioMap, stageWidth, vertical = false }: ZoomAxisArgs) {
+  constructor({ el, totalMarks, ratio, ratioMap, stageWidth, vertical = false }: IZoomAxis) {
     super();
     if (!el) {
       console.warn("挂载对象 id 必传");
