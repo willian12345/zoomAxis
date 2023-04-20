@@ -1,5 +1,5 @@
-import { ZoomAxis, ZoomAxisArgs } from "./ZoomAxis";
-export interface TimelineAxisArgs extends ZoomAxisArgs {
+import { ZoomAxis, IZoomAxis } from "./ZoomAxis";
+export interface TimelineAxisArgs extends IZoomAxis {
   totalFrames: number;
   frameRate?: number;
 }

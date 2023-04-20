@@ -519,8 +519,8 @@ export class Tracks extends EventHelper {
     }
   }
   removeSegmentActivedStatus() {
-    const virtualSegments = this.getVirtualSegmentAll();
-    virtualSegments.forEach((vs) => vs.setActived(false));
+    const segments = this.getSegments();
+    segments.forEach((segment) => segment.setActived(false));
   }
 
   private putSegmentBack(
@@ -562,7 +562,7 @@ export class Tracks extends EventHelper {
     }
     return this.tracks.find((vt) => vt.trackId === trackId) ?? null;
   }
-  getVirtualSegmentAll() {
+  getSegments() {
     let result: Segment[] = [];
     for (const vt of this.tracks) {
       result = [...result, ...vt.getSegments()];
@@ -855,8 +855,7 @@ export class Tracks extends EventHelper {
   deleteKeyframeOutOfRange(segmentId: string) {
     return this.getSegmentById(segmentId)?.deleteKeyframeOutOfRange();
   }
-  // 主动选中 segment
-  selectSegment(segmentId: string) {
+  setSegmentActived(segmentId: string){
     const segment = this.getSegmentById(segmentId);
     if (!segment) {
       return;
@@ -866,6 +865,14 @@ export class Tracks extends EventHelper {
     }
     this.removeSegmentActivedStatus();
     segment.setActived(true);
+    return segment;
+  }
+  // 主动选中 segment
+  selectSegment(segmentId: string) {
+    const segment = this.setSegmentActived(segmentId);
+    if(!segment){
+      return;
+    }
     this.dispatchEvent(
       { eventType: TRACKS_EVENT_TYPES.SEGMENT_SELECTED },
       {
@@ -952,7 +959,7 @@ export class Tracks extends EventHelper {
     const frameWidth = this.timeline.frameWidth;
     this.frameWidth = frameWidth;
     this.tracks.forEach((track) => track.setFrameWidth(frameWidth));
-    const segments = this.getVirtualSegmentAll();
+    const segments = this.getSegments();
     segments.forEach((segment) => segment.setFrameWidth(frameWidth));
   }
   /**
