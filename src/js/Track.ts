@@ -53,21 +53,15 @@ export class Track extends EventHelper {
   originFramestart = 0; // 拖动前 framestart
   originFrameend = 0; // 拖动前 frameend
   disabled = false;
-  coordinateLines: HTMLElement[] = []; // 轨道所有辅助线
   coordinateLineLeft!: HTMLElement; // segment 左侧辅助线
   collapsed = false;
   createSegmentCheck?:ICreateSegmentCheck; // 外部 UE 真正添加新 segment 逻辑
-  constructor({ trackId, trackType, coordinateLines, frameWidth, createSegmentCheck }: ITrackArgs) {
+  constructor({ trackId, trackType, frameWidth, createSegmentCheck }: ITrackArgs) {
     super();
     this.frameWidth = frameWidth;
     this.trackId = trackId;
     this.trackType = trackType;
     this.dom = this.createDom()
-    // 辅助线
-    if (coordinateLines) {
-      this.coordinateLines = coordinateLines;
-      this.coordinateLineLeft = coordinateLines[0];
-    }
     if(createSegmentCheck){
       this.createSegmentCheck = createSegmentCheck;
     }
@@ -493,8 +487,9 @@ export class Track extends EventHelper {
   }
   addSegment(segment: Segment) {
     const isAdded = this.segments.get(segment.segmentId);
-    // 如果拖动前与拖动后位置没有发生变化，则什么都不做
+    // 非从其它轨道拖入且拖动前与拖动后位置没有发生变化则什么都不做
     if (
+      !segment.origionParentTrack && 
       this.originFramestart === segment.framestart &&
       this.originFrameend === segment.frameend
     ) {
@@ -514,10 +509,7 @@ export class Track extends EventHelper {
       return null;
     }
     // 如果是从别的轨道拖过来的，需要从原轨道移聊
-    if (segment.parentTrack) {
-      segment.parentTrack.segments.delete(segment.segmentId);
-      // 原segment trackId 指定为当前 trackId
-      segment.trackId = this.trackId;
+    if (segment.origionParentTrack) {
       this.dispatchEvent(
         { eventType: TRACKS_EVENT_TYPES.SEGMENT_DELETED },
         { segment }

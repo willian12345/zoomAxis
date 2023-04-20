@@ -94,11 +94,8 @@ export interface ITracksArgs {
   timeline: TimelineAxis;
   segmentDelegate: HTMLElement;
   tracks: TTrackConfig[];
-  coordinateLines: HTMLElement[];
   createSegmentCheck?: ICreateSegmentCheck;
   deleteSegmentCheck?: IDeleteSegmentCheck;
-  ondragover?: any;
-  ondrop?: any;
 }
 export interface SegmentTracksArgs extends TracksArgs {
   deleteSegmentCheck?: IDeleteSegmentCheck;
@@ -150,7 +147,6 @@ export interface ITrackArgs {
   frameWidth: number;
   trackType: string;
   createSegmentCheck?: ICreateSegmentCheck;
-  coordinateLines: HTMLElement[];
 }
 
 export type EventListenerType<T extends keyof HTMLElementEventMap> = (

@@ -66,11 +66,11 @@ export class Tracks extends EventHelper {
   ondrop: any = null;
   currentSegment: HTMLElement | null = null;
   tracks: Track[] = []; // 扁平化的虚拟轨道数据
-  tracksConfig: TrackConfig[] = [];
+  tracksConfig: TTrackConfig[] = [];
   segmentDelegate: HTMLElement = document.body;
   coordinateLines: HTMLElement[] = [];
   frameWidth = 0;
-  coordinateLineLeft!: HTMLElement
+  coordinateLineVerical!: HTMLElement
   private mousedownTimer!: number;
   private bindedEventArray: {
     ele: HTMLElement;
@@ -99,11 +99,8 @@ export class Tracks extends EventHelper {
     trackListContainer,
     timeline,
     segmentDelegate,
-    coordinateLines,
     createSegmentCheck,
     deleteSegmentCheck,
-    ondragover,
-    ondrop,
   }: ITracksArgs) {
     super();
     if (!timeline || !scrollContainer) {
@@ -116,24 +113,32 @@ export class Tracks extends EventHelper {
       this.segmentDelegate = segmentDelegate;
     }
     // 辅助线
-    if(coordinateLines) {
-      this.coordinateLines = coordinateLines;
-      this.coordinateLineLeft = coordinateLines[0]
-    }
+    this.initCoordinateLines();
+    // 帧宽
     this.frameWidth =  this.timeline.frameWidth;
+    // segment 添加检测
     if (createSegmentCheck) {
       this.createSegmentCheck = createSegmentCheck;
     }
+    // segment 删除检测
     if (deleteSegmentCheck) {
       this.deleteSegmentCheck = deleteSegmentCheck;
     }
+    // tracks 轨道配置参数
     this.tracksConfig = tracks;
+    // 生成轨道
     this.initTracks(tracks);
-    this.ondragover = ondragover;
-    this.ondrop = ondrop;
-
+    // 事件初始化
     this.initEvent();
+
     return this;
+  }
+  private initCoordinateLines(){
+    const div = document.createElement('div');
+    div.className = 'coordinate-line';
+    this.trackListContainer.parentNode?.appendChild(div);
+    //
+    this.coordinateLineVerical = div;
   }
   private checkClickedOnSegment(e: MouseEvent) {
     let target = e.target as HTMLElement | null;
@@ -287,7 +292,6 @@ export class Tracks extends EventHelper {
       trackId: tbc.trackId,
       trackType,
       createSegmentCheck: this.createSegmentCheck,
-      coordinateLines: this.coordinateLines,
       frameWidth: this.timeline.frameWidth,
     });
     if(tbc.subTracks){
@@ -379,7 +383,6 @@ export class Tracks extends EventHelper {
       trackId: trackConfig.trackId,
       trackType: trackConfig.trackType + '',
       createSegmentCheck: this.createSegmentCheck,
-      coordinateLines: this.coordinateLines,
       frameWidth: this.timeline.frameWidth,
     });
     if(parentTrack){
@@ -590,8 +593,8 @@ export class Tracks extends EventHelper {
   hideCoordinateLine(){
     // todo? 暂时只有一根辅助线
     // 后期增加横向辅助线
-    this.coordinateLineLeft.style.display = 'none';  
-    this.coordinateLineLeft.style.left = '0';  
+    this.coordinateLineVerical.style.display = 'none';  
+    this.coordinateLineVerical.style.left = '0';  
   }
    /**
    * 
@@ -603,8 +606,8 @@ export class Tracks extends EventHelper {
     if(!isAdsorbing){
       this.hideCoordinateLine();
     }else{
-      this.coordinateLineLeft.style.left = `${adsorbTo}px`;
-      this.coordinateLineLeft.style.display = `block`;  
+      this.coordinateLineVerical.style.left = `${adsorbTo}px`;
+      this.coordinateLineVerical.style.display = `block`;  
     }
     
   }
@@ -662,11 +665,11 @@ export class Tracks extends EventHelper {
     }
 
     if (!isCopy) {
-      const virtualSegment = this.getSegmentById(
+      const segment = this.getSegmentById(
         segmentDom.dataset.segmentId ?? ""
       );
-      const track = virtualSegment?.parentTrack;
-      virtualSegment && track?.pointerdown(virtualSegment);
+      const track = segment?.parentTrack;
+      segment && track?.pointerdown(segment);
     }
 
     // 高度变为正在拖动的 segment 高度
@@ -749,13 +752,12 @@ export class Tracks extends EventHelper {
       const segmentTypeStr = segmentDom.dataset.segmentType ?? '0';
       const segmentTrackId = segmentDom.dataset.trackId ?? '';
       const segmentId = segmentDom.dataset.segmentId ?? '';
-      // 如果没有跨轨道拖动成功，则 x 轴移动
+      
       setTimeout(() => {
         if (dragTrackContainer.children.length && isCopy) {
           // 如果是复制
           dragTrackContainer.removeChild(segmentCopy);
-        }
-        
+        }  
       }, 0);
       // 新建 segment
       let newSegment: Segment | null = null;
