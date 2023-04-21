@@ -216,7 +216,7 @@ export class Segment {
     });
     sr.appendChild(div);
   }
-  updateName(name: string){
+  updateText(name: string){
     const sr = this.dom.querySelector('.segment-name');
     if(sr){
       sr.innerHTML = name;
