@@ -11,7 +11,7 @@ import {
 } from "../../../src/js/cursorPointer";
 import {
   TRACKS_EVENT_TYPES,
-  TrackConfig,
+  TTrackConfig,
 } from "../../../src/js/trackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
 import { Tracks } from "../../../src/js/Tracks";
@@ -25,6 +25,7 @@ let stageWidth = ref(920);
 const scrollContentWidth = ref(920);
 let trackWidth = ref(920);
 const scrollContainerRef = ref<HTMLElement | null>(null);
+const trackHeaderListRef = ref<HTMLElement | null>(null);
 const cursorRef = ref<InstanceType<typeof Cursor> | null>(null);
 const scrollContentRef = ref<HTMLElement | null>(null);
 const trackListRef = ref<HTMLElement | null>(null);
@@ -38,6 +39,9 @@ const handleScroll = (e: UIEvent) => {
   }
   const dom = e.target as HTMLElement;
   timeline?.scrollLeft(-dom.scrollLeft);
+  if(trackHeaderListRef.value){
+    trackHeaderListRef.value.scrollTop = dom.scrollTop;
+  }
 };
 
 let zoomRatio = 1;
@@ -100,19 +104,9 @@ const handlePlay = () => {
   timeline?.play();
 };
 
-// 增加轨道内容宽度
-const addTrackWidth = (trackCursor: CursorPointer) => {
-  const [segment, right] = findEndestSegment();
-  if (!segment) {
-    return;
-  }
-  if (scrollContentWidth.value < right) {
-    scrollContentWidth.value = right + 800;
-    trackCursor.refresh();
-  }
-};
 
-const tracks: TrackConfig[] = [
+
+const tracks: Ref<TTrackConfig[]> = ref([
   {
     trackId: 'a',
     trackText: '轨道组',
@@ -145,7 +139,7 @@ const tracks: TrackConfig[] = [
     color: '#46A9CB',
     trackText: '普通轨道二',
   },
-];
+]);
 const initApp = () => {
   if (
     !cursorRef.value?.$el ||
@@ -189,21 +183,16 @@ const initApp = () => {
     }
   );
 
-  
-  const coordinateLines = Array.from(
-    scrollContainer.querySelectorAll(".coordinate-line")
-  ) as HTMLElement[];
   // 初始化轨道
   segmentTracks = new Tracks({
     scrollContainer,
     trackListContainer: trackListRef.value,
-    tracks,
+    tracks: tracks.value,
     timeline,
-    coordinateLines,
     segmentDelegate: segmentItemList,
   });
-  segmentTracks.addEventListener(TRACKS_EVENT_TYPES.DRAG_END, () => {
-    // addTrackWidth(trackCursor);
+  segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_ADDED, () => {
+    syncTrackWidth();
   });
   // 滚动 timeline  x 轴
   const scrollTimelineX = (pointerX: number) => {
@@ -247,7 +236,7 @@ const splitHandler = () => {
 const toggleMagnet = () => {
   segmentTracks.adsorbable = !segmentTracks.adsorbable;
 };
-const handleClick = (track: TrackConfig) => {
+const handleClick = (track: TTrackConfig) => {
 
 }
 let tempTrackId: string;
@@ -260,6 +249,7 @@ const handleAddByClick = (trackType: string) => {
     trackType,
   };
   segmentTracks?.addTrack(newTrack);
+  tracks.value = segmentTracks.tracksConfig;
 }
 const testAddToTrack = () => {
   const trackId = Math.random() + 'newTrack';
@@ -270,9 +260,11 @@ const testAddToTrack = () => {
     trackType: '2',
   };
   segmentTracks?.addToTrackGroup('a', newTrack);
+  tracks.value = segmentTracks.tracksConfig;
 }
 const testRemoveTrack = () => {
   segmentTracks?.removeTrack(tempTrackId);
+  tracks.value = segmentTracks.tracksConfig;
 }
 onMounted(() => {
   initApp();
@@ -315,35 +307,37 @@ onMounted(() => {
       </div>
     </div>
     <div class="timeline-container" @wheel="handleWheel">
-      <div class="track-operation">
-        <div v-for="track in tracks" :key="track.trackId">
-          <div
-            class="track-operation-item-group cursor-pointer"
-            :key="track.trackId"
-            v-if="track.subTracks"
-          >
-            <div class="track-operation-item flex items-center">
-              <div
-                class="mr-2"
-              >
-                <svg class="text-white" fill="rgba(255,255,255, 0.5)" width="12" height="12" viewBox="0 0 12 12" data-v-f2ec87fa="" style="transform: rotate(0deg);"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.57574 8.4247L1.57574 4.4247L2.42427 3.57617L6 7.15191L9.57574 3.57617L10.4243 4.4247L6.42426 8.4247L6 8.84896L5.57574 8.4247Z"></path></svg>
+      <div class="track-header-list" ref="trackHeaderListRef">
+        <div class="track-operation">
+          <div v-for="track in tracks" :key="track.trackId">
+            <div
+              class="track-operation-item-group cursor-pointer"
+              :key="track.trackId"
+              v-if="track.subTracks"
+            >
+              <div class="track-operation-item flex items-center">
+                <div
+                  class="mr-2"
+                >
+                  <svg class="text-white" fill="rgba(255,255,255, 0.5)" width="12" height="12" viewBox="0 0 12 12" data-v-f2ec87fa="" style="transform: rotate(0deg);"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.57574 8.4247L1.57574 4.4247L2.42427 3.57617L6 7.15191L9.57574 3.57617L10.4243 4.4247L6.42426 8.4247L6 8.84896L5.57574 8.4247Z"></path></svg>
+                </div>
+                {{ track.trackText }}
               </div>
+              <div
+                  class="track-operation-item"
+                  v-for="(subTrack, index) in track.subTracks"
+                  :key="index"
+                >
+                  {{ subTrack.trackText }}
+              </div>
+              <div class="track-gutter"></div>
+            </div>
+            <div 
+              class="track-operation-item"
+              v-else
+            >
               {{ track.trackText }}
             </div>
-            <div
-                class="track-operation-item"
-                v-for="(subTrack, index) in track.subTracks"
-                :key="index"
-              >
-                {{ subTrack.trackText }}
-            </div>
-            <div class="track-gutter"></div>
-          </div>
-          <div 
-            class="track-operation-item"
-            v-else
-          >
-            {{ track.trackText }}
           </div>
         </div>
       </div>
@@ -351,6 +345,7 @@ onMounted(() => {
         class="webkit-scrollbar scroll-container"
         @scroll="handleScroll"
         ref="scrollContainerRef"
+        :style="{ width: `${scrollContentWidth}px` }"
       >
         <div class="timeline-markers" :style="{ width: `${stageWidth}px` }">
           <div id="canvasStage"></div>
@@ -358,30 +353,17 @@ onMounted(() => {
         <div
           class="scroll-content"
           ref="scrollContentRef"
-          :style="{ width: `${scrollContentWidth}px` }"
         >
+        <!-- :style="{ width: `${scrollContentWidth}px` }" -->
           <div
             class="track-list"
             ref="trackListRef"
             :style="{ width: `${trackWidth}px` }"
           >
-            <!-- <div class="track" data-track-id="a" data-track-type="0">
-              <div class="track-placeholder"></div>
-            </div>
-            <div class="track" data-track-id="b" data-track-type="0">
-              <div class="track-placeholder"></div>
-            </div>
-            <div
-              class="track track-flexible"
-              data-track-id="c"
-              data-track-type="1"
-            >
-              <div class="track-placeholder"></div>
-            </div> -->
           </div>
           <div className="coordinate-line"></div>
+          <Cursor ref="cursorRef" />
         </div>
-        <Cursor ref="cursorRef" />
       </div>
     </div>
   </div>
@@ -390,6 +372,7 @@ onMounted(() => {
 <style lang="less">
 @markHeight: 24px;
 @trackHeight: 28px;
+@timelineContainerHeight: 200px;
 .btn{
   width: 20px;
   height: 10px;
@@ -416,7 +399,7 @@ onMounted(() => {
   margin: 180px 40px;
   width: 100vh;
   height: 200px;
-  overflow-y: auto;
+  overflow: hidden;
   background-color: #0f0c0c;
 }
 
@@ -434,10 +417,8 @@ onMounted(() => {
 .scroll-container {
   position: relative;
   flex: 1;
-  height: 100%;
-  overflow-y: hidden;
-  overflow-x: auto;
-  overflow-x: overlay;
+  overflow: overlay;
+  min-height: @timelineContainerHeight;
 }
 
 .scroll-content {
@@ -445,15 +426,18 @@ onMounted(() => {
   left: 0;
   top: 0;
   width: 100%;
-  height: 100%;
-  // background: rgba(255, 255, 255, 0.5);
 }
 
+.track-header-list{
+  height: 200px;
+  overflow: hidden;
+}
 .track-operation {
   padding-top: @markHeight;
   flex-basis: 120px;
   border-right: 1px solid black;
   background-color: rgba(white, 0);
+  height: 400px;
   .track-operation-item {
     margin-bottom: 2px;
     padding-left: 6px;
@@ -479,8 +463,6 @@ onMounted(() => {
 .track-list {
   padding-top: @markHeight;
   width: 100%;
-  height: 200px;
-  overflow-y: auto;
   .track {
     pointer-events: none;
     position: relative;
@@ -635,5 +617,10 @@ button {
   width: 100%;
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.04);
+}
+.segment-renderer{
+  display: flex;
+  height: 24px;
+  align-items: center;
 }
 </style>

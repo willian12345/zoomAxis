@@ -3,35 +3,38 @@
 </script>
 <template>
   <div class="cursor-pointer">
-    <IconCursor class="icon-cursor" />
+    <div class="cursor-pointer-hd"><IconCursor class="icon-cursor" /></div> 
     <div class="cursor-pointer-line"></div>
   </div>
 </template>
 <style scoped>
   .cursor-pointer{
     position: absolute;
-    top: 0px;
+    top: -24px;
+    bottom: 0;
     left: -9px;
     z-index: 3;
     width: 20px;
-    height: 180px;
     background-color: rgba(255, 255, 255, 0);
-    overflow-y: hidden;
+  }
+  .cursor-pointer-hd{
+    position: sticky;
+    top: 0px;
+    left: 0;
   }
   .icon-cursor{
-    position: absolute;
-    top: 0px;
-    left: 50%;
-    margin-left: -8px;
+    display: block;
+    margin-left: 1px;
     width: 12px;
     height: 16px;
   }
   .cursor-pointer-line{
     position: absolute;
     left: 50%;
-    top: 16px;
+    top: 12px;
+    bottom: 0;
     margin-left: -1px;
-    height: 100%;
+    /* height: 100%; */
     width: 1px;
     font-size: 0;
     background-color: white;
