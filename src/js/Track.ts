@@ -100,12 +100,14 @@ export class Track extends EventHelper {
       let segmentDom = findParentElementByClassName(target, CLASS_NAME_SEGMENT);
       if (segmentDom) {
         const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? "");
-        this.dispatchEvent(
-          { eventType: TRACKS_EVENT_TYPES.SEGMENT_SELECTED },
-          {
-            segment,
-          }
-        );
+        if(!segment?.actived){
+          this.dispatchEvent(
+            { eventType: TRACKS_EVENT_TYPES.SEGMENT_SELECTED },
+            {
+              segment,
+            }
+          );
+        }
         return;
       }
     }
