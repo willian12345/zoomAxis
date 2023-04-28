@@ -263,14 +263,18 @@ export class Tracks extends EventHelper {
       if(!this._adsorbable) return;
       this.checkSegmentHandleCoordinateLine(data)
     });
+    // 手柄拖动判断吸附
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END, async ({segment, segments, handleCode}) => {
       if(!this._adsorbable) return;
       const [isAdsorbing, _framestart, _adsorbTo, segmentDom ] = this.checkSegmentHandleCoordinateLine({segment, segments, handleCode})
       if(isAdsorbing && segmentDom && segment){
         // 根据拖动手柄的左右位置选择自动吸附位置
-        if(handleCode === 0){
+        // 可能存在拖动左手柄吸附到右侧 segment 的 framestart帧，导致总帧数为 0 
+        // 可能存在拖动右手柄吸附到左侧 segment 的 frameend 帧, 导致总帧数为 0
+        // 所以拖柄吸附后需要判断总帧数大于 1 ，否则不吸附
+        if(handleCode === 0 && (segment.frameend - _framestart) > 1){
           segment.setRange(_framestart, segment.frameend);
-        }else if(handleCode === 1){
+        }else if(handleCode === 1 && (_framestart - segment.framestart) > 1){
           segment.setRange(segment.framestart, _framestart);
         }
       }
