@@ -29,8 +29,9 @@ export enum TRACKS_EVENT_TYPES {
   DRAG_END, // 拖动结束事件
   DROP_EFFECT, // 伸缩轨道覆盖切割事件
   SEGMENTS_CHANGED,
-  SEGMENTS_SLIDED, // segment 拖动调节宽度事件
-  SEGMENTS_SLIDE_END, // segment 拖动调节完毕后影响到的其它segment
+  SEGMENTS_SLIDING, // segment 拖动调节宽度事件
+  SEGMENTS_SLID_END, // segment 拖动调节完毕后影响到的其它segment
+  SEGMENTS_SET_RANGE, // 设置宽度范围事件
   SEGMENT_SELECTED, // 选中
   SEGMENT_DELETED, // 删除
   SEGMENT_ADDED, // 添加
@@ -63,7 +64,7 @@ export interface ITracksEvent {
   (e: CallbackArgs): any;
 }
 export interface TrackEventMap {
-  [TRACKS_EVENT_TYPES.SEGMENTS_SLIDED]: CallbackArgs & {handleCode: number}
+  [TRACKS_EVENT_TYPES.SEGMENTS_SLIDING]: CallbackArgs & {handleCode: number}
 }
 // 添加成功至轨道后标准的回复格式
 export type ResponsedSegmentData = {

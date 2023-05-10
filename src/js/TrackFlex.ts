@@ -91,7 +91,7 @@ export class TrackFlex extends Track {
   };
   protected triggerSlideEndEvent(segment: Segment, handleCode: number) {
     this.dispatchEvent(
-      { eventType: TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END },
+      { eventType: TRACKS_EVENT_TYPES.SEGMENTS_SET_RANGE },
       {
         segment,
         segments: this.lastEffectSegments,

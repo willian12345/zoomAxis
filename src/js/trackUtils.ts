@@ -198,7 +198,6 @@ export const checkCoordinateLine = (
     ) {
       // console.log("adsorb!!!吸至左侧", framestart);
       const frames =  getframes(dragingDomRect, frameWidth, dragingSegment);
-      console.log(frames, 2222)
       return [
         true,
         framestart - frames,
@@ -209,7 +208,6 @@ export const checkCoordinateLine = (
     if(Math.abs(dragingDomRect.right - rect.right) <= CLOSE_ENOUPH_SEGMENT_X){
       // console.log("adsorb!!!吸至同右侧", framestart);
       const frames =  getframes(dragingDomRect, frameWidth, dragingSegment);
-      console.log(frames, 3333)
       return [
         true,
         frameend - frames,

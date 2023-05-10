@@ -184,7 +184,7 @@ export class Track extends EventHelper {
       startX = e.clientX;
       const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? "");
       if (segment) {
-        //注意： 宽度调节完毕后，影响到的相关 segment 不能同时调整需要另外再调用，所以使用了新的 SEGMENTS_SLIDE_END 事件
+        //注意： 宽度调节完毕后，影响到的相关 segment 不能同时调整需要另外再调用，所以使用了新的 SEGMENTS_SET_RANGE 事件
         this.triggerSlideEndEvent(segment, handleCode);
       }
       document.body.removeEventListener("mousemove", mousemove);
@@ -306,7 +306,7 @@ export class Track extends EventHelper {
     handleCode: number
   ) {
     this.dispatchEvent(
-      { eventType: TRACKS_EVENT_TYPES.SEGMENTS_SLIDED },
+      { eventType: TRACKS_EVENT_TYPES.SEGMENTS_SLIDING },
       {
         segment,
         segments,
@@ -317,7 +317,7 @@ export class Track extends EventHelper {
   }
   protected triggerSlideEndEvent(segment: Segment, handleCode: number) {
     this.dispatchEvent(
-      { eventType: TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END },
+      { eventType: TRACKS_EVENT_TYPES.SEGMENTS_SET_RANGE },
       {
         segment,
         handleCode,

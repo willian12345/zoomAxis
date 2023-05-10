@@ -44,8 +44,9 @@ const TRACK_EVENT_TYPES_ARRAY = [
   TRACKS_EVENT_TYPES.DROP_EFFECT,
   TRACKS_EVENT_TYPES.SEGMENT_ADDED,
   TRACKS_EVENT_TYPES.SEGMENT_DELETED,
-  TRACKS_EVENT_TYPES.SEGMENTS_SLIDED,
-  TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END,
+  TRACKS_EVENT_TYPES.SEGMENTS_SLIDING,
+  TRACKS_EVENT_TYPES.SEGMENTS_SLID_END,
+  TRACKS_EVENT_TYPES.SEGMENTS_SET_RANGE,
   TRACKS_EVENT_TYPES.SEGMENT_RIGHT_CLICK,
 ]
 export interface Tracks {
@@ -259,12 +260,12 @@ export class Tracks extends EventHelper {
       segment?.setActived(true);
     });
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_DELETED);
-    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDED, async (data) => {
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDING, async (data) => {
       if(!this._adsorbable) return;
       this.checkSegmentHandleCoordinateLine(data)
     });
     // 手柄拖动判断吸附
-    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END, async ({segment, segments, handleCode}) => {
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SLID_END, async ({segment, segments, handleCode}) => {
       if(!this._adsorbable) return;
       const [isAdsorbing, _framestart, _adsorbTo, segmentDom ] = this.checkSegmentHandleCoordinateLine({segment, segments, handleCode})
       if(isAdsorbing && segmentDom && segment){
@@ -282,6 +283,7 @@ export class Tracks extends EventHelper {
       console.log(segment, segments)
       return {segment, segments, handleCode}
     });
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SET_RANGE);
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_RIGHT_CLICK);
   }
   // 代理转发拦截 Track 事件
@@ -983,27 +985,33 @@ export class Tracks extends EventHelper {
    * @param newSegmentId 如果不传,自动创建一个
    * @returns 
    */
-  split(segment: Segment, newSegmentId?: string) {
+  split(segmentFrom: Segment, newSegmentId?: string, extra?: any) {
     const currentFrame = this.timeline.currentFrame;
-    const framestart = segment.framestart;
-    const frameend = segment.frameend;
+    const framestart = segmentFrom.framestart;
+    const frameend = segmentFrom.frameend;
     // 当前帧必须在进行分割的 segment 内
     if(currentFrame <= framestart || currentFrame >= frameend){
       return false;
     }
     const newSegment = createSegment({
-      trackId: segment.trackId,
+      trackId: segmentFrom.trackId,
       segmentId: newSegmentId,
       framestart: currentFrame,
-      frameend: segment.frameend,
-      name: segment.name,
-      segmentType: segment.segmentType,
-      extra: segment.extra,
+      frameend: segmentFrom.frameend,
+      name: segmentFrom.name,
+      segmentType: segmentFrom.segmentType,
+      extra,
       frameWidth: this.timeline.frameWidth,
     });
     // 将新分割出的 segment 添加至轨道
-    segment.parentTrack?.addSegment(newSegment);
-    segment.setRange(framestart, currentFrame);
+    segmentFrom.parentTrack?.addSegment(newSegment);
+    segmentFrom.setRange(framestart, currentFrame);
+    segmentFrom.parentTrack?.dispatchEvent(
+      { eventType: TRACKS_EVENT_TYPES.SEGMENTS_SET_RANGE },
+      {
+        segment: segmentFrom,
+      }
+    );
     return true;
   }
   width() {
