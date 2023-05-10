@@ -317,7 +317,7 @@ export class Track extends EventHelper {
   }
   protected triggerSlideEndEvent(segment: Segment, handleCode: number) {
     this.dispatchEvent(
-      { eventType: TRACKS_EVENT_TYPES.SEGMENTS_SET_RANGE },
+      { eventType: TRACKS_EVENT_TYPES.SEGMENTS_SLID_END },
       {
         segment,
         handleCode,
