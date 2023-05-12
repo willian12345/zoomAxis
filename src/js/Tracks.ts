@@ -302,6 +302,9 @@ export class Tracks extends EventHelper {
     });
     if(tbc.subTracks){
       vt.group = new TrackGroup(vt);
+      if(tbc.collapsed){
+        vt.group.collapse(true);
+      }
       // 递归创建虚拟轨道
       tbc.subTracks.forEach((stbc: TTrackConfig) => {
         const svt = this.createVirtualTrack(stbc);
@@ -416,7 +419,6 @@ export class Tracks extends EventHelper {
    */
   addTrack(trackConfig: TTrackConfig){
     this.addNewTrackToDom(trackConfig, this.tracksConfig, this.trackListContainer)
-    console.log(this.tracksConfig)
   }
   /**
    * 添加轨道至某一轨道组下

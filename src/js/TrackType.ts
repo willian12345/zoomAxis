@@ -23,6 +23,7 @@ export enum SegmentType {
   AVATAR,
   CAMERA_DYNAMIC,
   TEXT_WIDGET,
+  DECORATION,
 }
 export enum TRACKS_EVENT_TYPES {
   DRAG_START,// 拖动开始事件

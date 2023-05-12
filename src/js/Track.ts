@@ -61,7 +61,7 @@ export class Track extends EventHelper {
     this.frameWidth = frameWidth;
     this.trackId = trackId;
     this.trackType = trackType;
-    this.dom = this.createDom()
+    this.dom = this.createDom();
     if(createSegmentCheck){
       this.createSegmentCheck = createSegmentCheck;
     }
@@ -597,6 +597,7 @@ export class Track extends EventHelper {
   }
   // 折叠子轨道
   collapseSubTracks(collapse: boolean) {
+    this.group?.collapse(collapse);
     this.subTracks.forEach((v) => v.collapse(collapse));
   }
   destroy() {
