@@ -27,6 +27,9 @@ const getLastSegment = (track: HTMLElement) => {
 // 获取系数 a
 const getAratioByDistanceX = (distanceX: number) => {
   distanceX = Math.abs(distanceX);
+  if (distanceX < 300) {
+    return 0.16;
+  }
   if (distanceX < 400) {
     return 0.4;
   }
