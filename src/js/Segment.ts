@@ -198,6 +198,15 @@ export class Segment {
     });
     return deletedArr;
   }
+  getActivedKeyframe(){
+    return this.keyframes.find(keyframe => {
+      return keyframe.actived
+    })
+  }
+  getNextKeyframe(){
+    const actived = this.getActivedKeyframe();
+    
+  }
   // 更新 自定义渲染器 renderer 用于渲染不同UI
   updateContentRenderer(renderer: string|HTMLElement){
     let div: HTMLElement;

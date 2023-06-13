@@ -564,8 +564,7 @@ export class Tracks extends EventHelper {
     this.deleteSegment(trackId, segmentId);
   }
   getTrack(trackId: string): Track | TrackFlex | null {
-    if (!trackId.length) {
-      console.warn("注意：轨道 id 为空");
+    if (!trackId?.length) {
       return null;
     }
     return this.tracks.find((vt) => vt.trackId === trackId) ?? null;

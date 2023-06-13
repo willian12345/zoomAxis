@@ -39,6 +39,10 @@ export enum TRACKS_EVENT_TYPES {
   KEYFRAME_CLICK, // 关键帧被点击
   DRAGING_OVER, // 在容器上方拖动事件
   SEGMENT_RIGHT_CLICK, // 右健
+  KEYFRAME_SKIP,// 关键帧之间跳动
+  KEYFRAME_MOVE_START,// 关键帧移动结束
+  KEYFRAME_MOVING,// 关键帧移动结束
+  KEYFRAME_MOVE_END,// 关键帧移动结束
 }
 export type ERROR_DATA = {
   eventType: TRACKS_EVENT_TYPES;
