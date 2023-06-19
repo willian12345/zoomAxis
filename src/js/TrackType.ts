@@ -43,6 +43,7 @@ export enum TRACKS_EVENT_TYPES {
   KEYFRAME_MOVE_START,// 关键帧移动结束
   KEYFRAME_MOVING,// 关键帧移动结束
   KEYFRAME_MOVE_END,// 关键帧移动结束
+  FRAME_JUMP, // 帧跳动
 }
 export type ERROR_DATA = {
   eventType: TRACKS_EVENT_TYPES;

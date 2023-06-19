@@ -324,6 +324,9 @@ export class Track extends EventHelper {
       }
     );
   }
+  triggerEvent(eventType: TRACKS_EVENT_TYPES, data: any){
+    this.dispatchEvent({eventType}, data);
+  }
   setFrameWidth(w: number) {
     this.frameWidth = w;
   }

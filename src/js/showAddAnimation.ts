@@ -86,14 +86,14 @@ export const showAnimation = async (
     let endTime = 0;
     let beginTime: number;
     function start() {
-      beginTime = +new Date();
+      beginTime = Date.now();
       endTime = beginTime + duration;
       timer = requestAnimationFrame(step);
     }
     function step() {
       let x = 0;
       let y = 0;
-      const now: number = +new Date();
+      const now: number = Date.now();
       if (now > endTime) {
         x = distanceX;
         y = distanceY;
@@ -106,7 +106,7 @@ export const showAnimation = async (
       }
       current.style.left = `${elX + x}px`;
       current.style.top = `${elY + y}px`;
-      requestAnimationFrame(step);
+      timer = requestAnimationFrame(step);
     }
     start();
   });

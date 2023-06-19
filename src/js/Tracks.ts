@@ -48,6 +48,12 @@ const TRACK_EVENT_TYPES_ARRAY = [
   TRACKS_EVENT_TYPES.SEGMENTS_SLID_END,
   TRACKS_EVENT_TYPES.SEGMENTS_SET_RANGE,
   TRACKS_EVENT_TYPES.SEGMENT_RIGHT_CLICK,
+  TRACKS_EVENT_TYPES.KEYFRAME_MOVE_END,
+  TRACKS_EVENT_TYPES.KEYFRAME_CLICK,
+  TRACKS_EVENT_TYPES.KEYFRAME_MOVE_START,
+  TRACKS_EVENT_TYPES.KEYFRAME_MOVING,
+  TRACKS_EVENT_TYPES.KEYFRAME_SKIP,
+  TRACKS_EVENT_TYPES.FRAME_JUMP,
 ]
 export interface Tracks {
   addEventListener<EventType extends TRACKS_EVENT_TYPES>(
@@ -94,6 +100,7 @@ export class Tracks extends EventHelper {
   set adsorbable(v){
     this._adsorbable = v;
   }
+  keyframeMoving = false;
   constructor({
     tracks,
     scrollContainer,
@@ -157,10 +164,19 @@ export class Tracks extends EventHelper {
   }
   private clickHandle(e: MouseEvent) {
     const result = this.checkClickedOnSegment(e);
+    // 点击 segment 时不触发向上及同级click事件
     if (result) {
-      // 点击 segment 时不触发向上及同级click事件
       e.stopImmediatePropagation();
+      return;
     }
+    // 正在拖动关键帧
+    if(this.keyframeMoving){
+      return;
+    }
+    
+    // const x =  this.getX(e.clientX, this.scrollContainer)
+    // let frame = Math.round(x / this.frameWidth);
+    // this.dispatchEvent({ eventType: TRACKS_EVENT_TYPES.FRAME_JUMP }, { frame });
   }
   private mouseupHandle(e: MouseEvent) {
     this.clearTimer();
@@ -285,6 +301,17 @@ export class Tracks extends EventHelper {
     });
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SET_RANGE);
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_RIGHT_CLICK);
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.KEYFRAME_MOVING, () => {
+      this.keyframeMoving = true;
+    });
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.KEYFRAME_MOVE_END, (e) => {
+      setTimeout(()=> {
+        this.keyframeMoving = false;
+      }, 200)
+    
+      return e
+    });
+    this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.KEYFRAME_CLICK);
   }
   // 代理转发拦截 Track 事件
   private delegateTrackEvents() {
@@ -356,11 +383,6 @@ export class Tracks extends EventHelper {
     });
   }
   private initEvent() {
-    // 关键帧点击事件
-    this.on(this.scrollContainer, "click", (ev) => {
-      if(this.disabled) return;
-      this.keyframeMousedownHandle(ev)
-    });
     // 滚动区域 click 击事件
     this.on(this.scrollContainer, "click", (ev) => {
       this.clickHandle(ev);
@@ -380,6 +402,21 @@ export class Tracks extends EventHelper {
       this.mouseupHandle(e);
     });
   }
+  private getX(clientX: number, scrollContentDom: HTMLElement) {
+    let x =
+      clientX -
+      scrollContentDom.getBoundingClientRect().left +
+      scrollContentDom.scrollLeft;
+    const rightBoundary = scrollContentDom.scrollLeft + scrollContentDom.scrollWidth;
+    const leftBoundary = 0;
+    if (x < leftBoundary) {
+      x = leftBoundary;
+    } else if (x > rightBoundary) {
+      x = rightBoundary;
+    }
+    return x;
+  }
+  private
   private addNewTrackToDom(trackConfig: TTrackConfig, list: TTrackConfig[], parentElement: HTMLElement, parentTrack?: Track){
     const lastIndex = findLastIndex(list, (vt: Track) => {
       return vt.trackType === trackConfig.trackType
@@ -467,38 +504,7 @@ export class Tracks extends EventHelper {
   getTracksConfig(){
     return this.tracksConfig;
   }
-  // ?? deprecated
-  keyframeMousedownHandle(ev: MouseEvent) {
-    const target = ev.target as HTMLElement;
-    if (!target) return;
-    const segmentDom = findParentElementByClassName(target, CLASS_NAME_SEGMENT);
-    if(!segmentDom){
-      return;
-    }
-    // 先移除所有关键帧actived样式
-    const sks = Array.from(
-      segmentDom.querySelectorAll(`.${CLASS_NAME_SEGMENT_KEYFRAME}`)
-    ) as HTMLElement[];
-    sks.forEach((sk) => sk.classList.remove(CLASS_NAME_SEGMENT_KEYFRAME_ACTIVED));
-    
-    if (target.classList.contains(CLASS_NAME_SEGMENT_KEYFRAME)) {
-      target.classList.add("actived");
-      const segmentId = segmentDom?.dataset.segmentId;
-      if(!segmentId) return;
-      const segment = this.getSegmentById(segmentId);
-      if(!segment){
-        return;
-      }
-      const frame = parseInt(target.dataset.frame ?? '');
-      if(!frame) return;
-      this.dispatchEvent(
-        { eventType: TRACKS_EVENT_TYPES.KEYFRAME_CLICK },
-        {
-          keyframe: segment.framestart + frame,
-        }
-      );
-    }
-  }
+
   async deleteSegment(trackId: string, segmentId: string) {
     let result = true;
     const virtualSegment = this.getVirtualSegment(trackId, segmentId);

@@ -75,7 +75,7 @@ export class CursorPointer extends EventHelper{
 
     cursorEl.addEventListener('click', this.clickHandle);
     // 滚动区域 mouseup 移动游标
-    scrollContentDom.addEventListener("click", this.scrollContentDomHandle);
+    // scrollContentDom.addEventListener("click", this.scrollContentDomHandle);
   }
   private clickHandle = (e: MouseEvent) => {
     e.stopPropagation();

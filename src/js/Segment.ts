@@ -5,6 +5,7 @@
  *  <div class="segment-handle segment-handle-right"></div>
  * </div>
  */
+import { EventHelper } from "./EventHelper";
 import { SegmentConstructInfo, SegmentType } from "./TrackType";
 import { Track } from "./Track";
 import { Keyframe } from "./Keyframe";
@@ -16,7 +17,7 @@ import {
 } from './trackUtils'
 
 let segmentIdIndex = 0;
-export class Segment {
+export class Segment extends EventHelper{
   origionTrackId = '' // 跨轨道拖动原轨道 trackId
   origionSegmentId = '' // 跨轨道拖动原轨道 segmentId
   origionParentTrack:Track|null = null; // 原轨道
@@ -43,6 +44,7 @@ export class Segment {
   // 内容渲染器，可传自定义的渲染内容，用于个性化
   contentRenderer: string|HTMLElement|null = null
   constructor(args: SegmentConstructInfo) {
+    super();
     this.trackId = args.trackId;
     this.segmentId = args.segmentId ?? this.createSegmentId();
     this.framestart = args.framestart;
@@ -149,6 +151,7 @@ export class Segment {
   ) {
     const segmentLeft = this.getSegmentLeft(this.framestart);
     const frames = this.frameend - this.framestart;
+    this.frames = frames;
     this.dom.style.left = `${segmentLeft}px`;
     this.dom.style.width = `${this.frameWidth * frames}px`;
   }
@@ -234,5 +237,8 @@ export class Segment {
   }
   destroy(){
     this.dom.removeEventListener('click', this.handleClick);
+    this.keyframes.forEach((keyframe)=> {
+      keyframe.destroy();
+    })
   }
 }
