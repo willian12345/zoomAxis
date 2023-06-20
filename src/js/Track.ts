@@ -50,8 +50,8 @@ export class Track extends EventHelper {
   subTracks: Map<string, Track> = new Map(); // 子轨道
   parent: Track | null = null; // 父轨道
   frameWidth: number = 0;
-  originFramestart = 0; // 拖动前 framestart
-  originFrameend = 0; // 拖动前 frameend
+  originFrameStart = 0; // 拖动前 framestart
+  originFrameEnd = 0; // 拖动前 frameend
   disabled = false;
   coordinateLineLeft!: HTMLElement; // segment 左侧辅助线
   collapsed = false;
@@ -352,8 +352,8 @@ export class Track extends EventHelper {
   }
   // 拖动开始
   pointerdown(segment: Segment) {
-    this.originFramestart = segment.framestart;
-    this.originFrameend = segment.frameend;
+    this.originFrameStart = segment.framestart;
+    this.originFrameEnd = segment.frameend;
     this.dispatchEvent(
       { eventType: TRACKS_EVENT_TYPES.DRAG_START },
       { segment }
@@ -495,22 +495,25 @@ export class Track extends EventHelper {
     // 非从其它轨道拖入且拖动前与拖动后位置没有发生变化则什么都不做
     if (
       !segment.origionParentTrack && 
-      this.originFramestart === segment.framestart &&
-      this.originFrameend === segment.frameend
+      this.originFrameStart === segment.framestart &&
+      this.originFrameEnd === segment.frameend
     ) {
       return null;
     }
-    // 如果添加过了，则无需再添加
+    segment.prevFrameStart = this.originFrameStart
+    segment.prevFrameEnd = this.originFrameEnd
+    
+    // 如果添加过了，则无需再添加, 但要触发 DRAG_END
     if (isAdded) {
-      // 拖动放回原处是异步，拖完也要延时
-      setTimeout(() => {
-        this.updateSegmentHandler();
-        // 拖完后触发回调
-        this.dispatchEvent(
-          { eventType: TRACKS_EVENT_TYPES.DRAG_END },
-          { segment }
-        );
-      }, 2);
+      // // 拖动放回原处是异步，拖完也要延时
+      // setTimeout(() => {
+      //   this.updateSegmentHandler();
+      //   // 拖完后触发回调
+      //   this.dispatchEvent(
+      //     { eventType: TRACKS_EVENT_TYPES.DRAG_END },
+      //     { segment }
+      //   );
+      // }, 2);
       return null;
     }
     // 如果是从别的轨道拖过来的，需要从原轨道移聊

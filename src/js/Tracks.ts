@@ -174,9 +174,9 @@ export class Tracks extends EventHelper {
       return;
     }
     
-    // const x =  this.getX(e.clientX, this.scrollContainer)
-    // let frame = Math.round(x / this.frameWidth);
-    // this.dispatchEvent({ eventType: TRACKS_EVENT_TYPES.FRAME_JUMP }, { frame });
+    const x =  this.getX(e.clientX, this.scrollContainer)
+    let frame = Math.round(x / this.frameWidth);
+    this.dispatchEvent({ eventType: TRACKS_EVENT_TYPES.FRAME_JUMP }, { frame });
   }
   private mouseupHandle(e: MouseEvent) {
     this.clearTimer();
@@ -792,16 +792,17 @@ export class Tracks extends EventHelper {
                 framestart = _framestart
               }
             }
-            
+            // 纯新建
             if(!segmentId){
               newSegment = await vt.createSegment(vt.trackId, framestart, parseInt(segmentTypeStr));
               if(!newSegment){
                 return;
               }
             }else{
+              // 非新建
               newSegment = vt.getSegmentById(segmentId) ?? null;
-              // 判定是从其它轨道拖入的
               if(!newSegment){
+                // 判定是从其它轨道拖入的
                 newSegment = await vt.createSegment(vt.trackId, framestart, parseInt(segmentTypeStr));
                 if(!newSegment){
                   return;
@@ -827,11 +828,18 @@ export class Tracks extends EventHelper {
         })
       )
       this.hideCoordinateLine();
+      // 如果没有跨轨道拖放成功
       if (originTrack) {
+        // 放回原轨道
         this.putSegmentBack(
           segmentDom,
           getLeftValue(segmentDom),
           originTrack
+        );
+         // 拖完后触发回调
+         this.dispatchEvent(
+          { eventType: TRACKS_EVENT_TYPES.DRAG_END },
+          { segment: this.getSegmentById(segmentId)}
         );
       }
       // 没有 segmentId 且没有新建成功，说明是从外部拖入创建且未成功创建，需要触发 DRAG_END

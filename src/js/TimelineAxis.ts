@@ -35,10 +35,13 @@ export class TimelineAxis extends ZoomAxis {
   raf = 0
   // 每一帧所占宽度
   get frameWidth() {
+    if(this.spaceCycle === this.frameRate){
+      return this.markWidth
+    }
     // 每个标尺宽度/ (帧频 / (标尺周期值/标尺周期值代表的时间秒数))
     return (
       this.markWidth /
-      (this.frameRate / (this.spacecycle / this.spaceTimeSecond))
+      (this.frameRate / (this.spaceCycle / this.spaceTimeSecond))
     );
   }
   constructor({
@@ -49,7 +52,8 @@ export class TimelineAxis extends ZoomAxis {
     ratio,
     ratioMap,
   }: TimelineAxisArgs) {
-    super({ el, totalMarks, ratio, ratioMap });
+    super({ el, totalMarks: totalFrames, ratio, ratioMap });
+    // this.setTotalMarks(totalFrames)
     this.totalFrames = totalFrames;
     this.frameRate = frameRate ?? FRAME_RATE;
     this.setFrameIntervalTime();
@@ -120,7 +124,19 @@ export class TimelineAxis extends ZoomAxis {
     this.currentFrame = currentFrame;
   }
   setTotalFrames(frames: number) {
+    if(this.totalFrames > frames){
+      return;
+    }
     this.totalFrames = frames;
+    this.setTotalMarks(frames)
+  }
+  zoom(ratio: number): void {
+    if(ratio >= 1.4){
+      this.setSpaceCycle(30);
+    }else{
+      this.setSpaceCycle(10);
+    }
+    super.zoom(ratio);
   }
   destroy(){
     this.stoped = true;

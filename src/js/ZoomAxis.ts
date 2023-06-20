@@ -1,78 +1,86 @@
-import { EventHelper } from './EventHelper';
+import { EventHelper } from "./EventHelper";
 const SPACE_FRAME_WIDTH = 80; // 刻度间距
 
-// 默认
+// 缩放值与对应的时间刻度周期
 const DEFAULT_RATIO_STEP: number[][] = [
-  [0.1, 100],
-  [0.2, 20],
-  [0.7, 3],
-  [0.8, 2],
+  [0.1, 5], // 刻度周期 5 秒
+  [0.2, 4], // 刻度周期 4 秒
+  [0.7, 3], // 刻度周期 3 秒
+  [0.8, 2], // etc...
   [0.9, 1],
 ];
 
 export interface IZoomAxis {
-  el: string | HTMLElement
-  totalMarks: number
-  vertical?: boolean
-  stageWidth?: number
-  ratio?: number
-  ratioMap?: number[][]
+  el: string | HTMLElement;
+  totalMarks: number;
+  vertical?: boolean;
+  stageWidth?: number;
+  ratio?: number;
+  ratioMap?: number[][];
 }
 
 function toFixedToN(num: string, n = 2) {
   let len = num.length;
   while (len < n) {
-    num = '0' + num;
+    num = "0" + num;
     len++;
   }
   return num;
 }
 //秒转化成 分秒
-export function millisecondToSecond(interval: number) {//格式化时间
+export function millisecondToSecond(interval: number) {
+  //格式化时间
   interval = interval >> 0;
-  const minute = interval / 60 >> 0;
+  const minute = (interval / 60) >> 0;
   const second = toFixedToN(String(interval % 60));
-  return `${minute}:${second}`
+  return `${minute}:${second}`;
 }
 //保留n位小数
 export function roundFun(value: number, n: number) {
   return Math.round(value * Math.pow(10, n)) / Math.pow(10, n);
 }
-export class ZoomAxis extends EventHelper{
-  private canvas?: HTMLCanvasElement = {} as HTMLCanvasElement
-  private ctx?: CanvasRenderingContext2D = {} as CanvasRenderingContext2D
-  vertical = false
-  private stageWidth = 600 // 最小宽度 600px
-  private stageHeightOut = 24
-  private stageHeight = this.stageHeightOut * 2
-  private lineColor = 'rgba(255, 255, 255, 0.12)'
-  private lineColorPrimary = 'rgba(255, 255, 255, 0.2)'
-  private textColor = 'rgba(255, 255, 255, 0.35)'
-  private lineWidth = 2 // 刻度线宽度
-  private lineHeight = 24 // 刻度线高度
-  private lineShortHeight = 16 // 短刻度线高度
-  spacecycle = 10 // 每 10 个最小刻度为一组分割
-  private spaceCycleIndex = 0 // 刻度大间隔周期累计
-  spaceTimeSecond = 1 // 刻度间隔秒数单位（一个周期时间单位）
-  private markIndex = 0 // 刻度表帧数数计
-  private lineX = 0
-  private lineY = 0
-  private ratioMap = new Map()
-  protected _markWidth = SPACE_FRAME_WIDTH // 刻度间距
-  totalMarks = 0
-  get markWidth(): number{
-    return this._markWidth * .5 // 刻度实际显示像素
+export class ZoomAxis extends EventHelper {
+  private canvas?: HTMLCanvasElement = {} as HTMLCanvasElement;
+  private ctx?: CanvasRenderingContext2D = {} as CanvasRenderingContext2D;
+  vertical = false;
+  private stageWidth = 600; // 最小宽度 600px
+  private stageHeightOut = 24;
+  private stageHeight = this.stageHeightOut * 2;
+  private lineColor = "rgba(255, 255, 255, 0.12)";
+  private lineColorPrimary = "rgba(255, 255, 255, 0.2)";
+  private textColor = "rgba(255, 255, 255, 0.35)";
+  private lineWidth = 2; // 刻度线宽度
+  private lineHeight = 24; // 刻度线高度
+  private lineShortHeight = 16; // 短刻度线高度
+  spaceCycle = 10; // 每 10 个最小刻度为一组分割
+  private spaceCycleIndex = 0; // 刻度大间隔周期累计
+  spaceTimeSecond = 1; // 刻度间隔秒数单位（一个周期时间单位）
+  private markIndex = 0; // 刻度表帧数数计
+  private lineX = 0;
+  private lineY = 0;
+  private ratioMap = new Map();
+  protected _markWidth = SPACE_FRAME_WIDTH; // 刻度间距
+  totalMarks = 0;
+  get markWidth(): number {
+    return this._markWidth * 0.5; // 刻度实际显示像素
   }
   zoomRatio = 1; // 缩放比例
   width = 600; // 标尺总宽度
 
-  constructor({ el, totalMarks, ratio, ratioMap, stageWidth, vertical = false }: IZoomAxis) {
+  constructor({
+    el,
+    totalMarks,
+    ratio,
+    ratioMap,
+    stageWidth,
+    vertical = false,
+  }: IZoomAxis) {
     super();
     if (!el) {
       console.warn("挂载对象 id 必传");
       return;
     }
-    this.vertical = vertical
+    this.vertical = vertical;
     this.canvas = this.createStage(el);
     if (!this.canvas) {
       console.warn("创建canvas失败");
@@ -82,21 +90,24 @@ export class ZoomAxis extends EventHelper{
     this.setStageWidth(stageWidth);
 
     this.initCanvas();
-    this.totalMarks = totalMarks
-    if(ratio !== undefined){
-      this.zoomRatio = ratio
+    this.totalMarks = totalMarks;
+    if (ratio !== undefined) {
+      this.zoomRatio = ratio;
     }
     this.zoomByRatio();
 
     this.drawLine();
   }
-  initCanvas(){
-    if(!this.canvas){
-      return
+  initCanvas() {
+    if (!this.canvas) {
+      return;
     }
     this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
     this.ctx.font = "22px PingFang SC";
     this.ctx.textBaseline = "top";
+  }
+  setSpaceCycle(cycle: number) {
+    this.spaceCycle = cycle;
   }
   // 设置缩放等级对应缩放显示时间
   setRatioStep(ratioMap: number[][] = DEFAULT_RATIO_STEP) {
@@ -127,11 +138,11 @@ export class ZoomAxis extends EventHelper{
   // 设置舞台宽度
   private setStageWidth(stageWidth?: number) {
     // 获取父级宽度
-    if(stageWidth === undefined){
+    if (stageWidth === undefined) {
       const parentDomRect = this.canvas?.parentElement?.getBoundingClientRect();
       stageWidth = this.vertical ? parentDomRect?.height : parentDomRect?.width;
     }
-    
+
     if (stageWidth) {
       this.stageWidth = stageWidth * 2;
     }
@@ -140,7 +151,7 @@ export class ZoomAxis extends EventHelper{
   }
   private setWidth() {
     // 总宽度 = 总秒数/时间间隔 * 每刻度宽度 * 多少个周期 + 额外加一个周期的宽度用于显示尾部
-    this.width = this.totalMarks * this._markWidth
+    this.width = this.totalMarks * this._markWidth;
   }
   // 转换显示分:秒
   private getTimeText(sec: number): string {
@@ -154,12 +165,12 @@ export class ZoomAxis extends EventHelper{
     // 同时设置文本白色透明度
     this.ctx.fillStyle = this.textColor;
     const timeText = this.getTimeText(this.spaceCycleIndex);
-    this.ctx.textAlign = 'left';
-    this.ctx.fillText(timeText, this.lineX+6, 0);
+    this.ctx.textAlign = "left";
+    this.ctx.fillText(timeText, this.lineX + 6, 0);
   }
   // 是否处于周期值
   private checkIsCyclePoint() {
-    return this.markIndex % this.spacecycle === 0;
+    return this.markIndex % this.spaceCycle === 0;
   }
   // 绘制刻度线
   private drawLine() {
@@ -167,11 +178,11 @@ export class ZoomAxis extends EventHelper{
       return;
     }
     if (this.markIndex > this.totalMarks) {
-      return
+      return;
     }
     // !!此处不能用递归数量超过 8000 后会 RangeError: Maximum call stack size exceeded
     // 直接用简单的 for 循环
-    for(let i=0; i <= this.totalMarks; i++){
+    for (let i = 0; i <= this.totalMarks; i++) {
       const isCyclePoint = this.checkIsCyclePoint();
       const lineHeight = isCyclePoint ? this.lineHeight : this.lineShortHeight;
 
@@ -204,13 +215,14 @@ export class ZoomAxis extends EventHelper{
     this._markWidth = SPACE_FRAME_WIDTH * this.zoomRatio;
     this.setWidth();
     const ratio = roundFun(this.zoomRatio, 1);
-    // 时间显示单位 分成好几档
+    // 每个刻度周期时间显示单位分成几档
     const spaceTimeSecond = this.ratioMap.get(ratio);
+    // 如果没有对应预设的值，则周期不变
     if (spaceTimeSecond) {
       this.spaceTimeSecond = spaceTimeSecond;
     }
   }
-  private resetToDraw(){
+  private resetToDraw() {
     this.lineX = 0;
     this.spaceCycleIndex = 0;
     this.markIndex = 0;
@@ -224,7 +236,7 @@ export class ZoomAxis extends EventHelper{
     this.resetToDraw();
     this.redraw();
   }
-  scrollLeft(left: number){
+  scrollLeft(left: number) {
     this.resetToDraw();
     this.lineX = left * 2; // canvas 内所有物体都是1倍，所以 left 需要被放大一倍
     this.redraw();
@@ -263,13 +275,13 @@ export class ZoomAxis extends EventHelper{
     this.zoomByRatio();
     this.redraw();
   }
-  zoom(ratio: number){
-    this.zoomRatio = ratio
+  zoom(ratio: number) {
+    this.zoomRatio = ratio;
     this.resetToDraw();
     this.zoomByRatio();
     this.redraw();
   }
-  resizeStage(stageWidth: number){
+  resizeStage(stageWidth: number) {
     this.setStageWidth(stageWidth);
     // 由于修改了canvas width
     // 必须重新获取 ctx 否则文本可能会渲染不出来

@@ -21,6 +21,8 @@ export class Segment extends EventHelper{
   origionTrackId = '' // 跨轨道拖动原轨道 trackId
   origionSegmentId = '' // 跨轨道拖动原轨道 segmentId
   origionParentTrack:Track|null = null; // 原轨道
+  prevFrameStart = 0 // 上一次拖动
+  prevFrameEnd = 0 // 上一次拖动
   framestart = 0;
   frameend = 0;
   frames = 0;
@@ -49,8 +51,9 @@ export class Segment extends EventHelper{
     this.segmentId = args.segmentId ?? this.createSegmentId();
     this.framestart = args.framestart;
     this.frameend = args.frameend;
+    this.prevFrameStart = this.framestart;
+    this.prevFrameEnd = this.frameend;
     this.frameWidth = args.frameWidth;
-    
     if (args.width !== undefined) {
       this.width = args.width;
     }
