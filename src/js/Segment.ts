@@ -18,9 +18,9 @@ import {
 
 let segmentIdIndex = 0;
 export class Segment extends EventHelper{
-  origionTrackId = '' // 跨轨道拖动原轨道 trackId
-  origionSegmentId = '' // 跨轨道拖动原轨道 segmentId
-  origionParentTrack:Track|null = null; // 原轨道
+  originTrackId = '' // 跨轨道拖动原轨道 trackId
+  originSegmentId = '' // 跨轨道拖动原轨道 segmentId
+  originParentTrack:Track|null = null; // 原轨道
   prevFrameStart = 0 // 上一次拖动
   prevFrameEnd = 0 // 上一次拖动
   framestart = 0;

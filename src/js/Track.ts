@@ -494,7 +494,7 @@ export class Track extends EventHelper {
     const isAdded = this.segments.get(segment.segmentId);
     // 非从其它轨道拖入且拖动前与拖动后位置没有发生变化则什么都不做
     if (
-      !segment.origionParentTrack && 
+      !segment.originParentTrack && 
       this.originFrameStart === segment.framestart &&
       this.originFrameEnd === segment.frameend
     ) {
@@ -517,7 +517,7 @@ export class Track extends EventHelper {
       return null;
     }
     // 如果是从别的轨道拖过来的，需要从原轨道移聊
-    if (segment.origionParentTrack) {
+    if (segment.originParentTrack) {
       this.dispatchEvent(
         { eventType: TRACKS_EVENT_TYPES.SEGMENT_DELETED },
         { segment }

@@ -1,5 +1,5 @@
 import { EventHelper } from "./EventHelper";
-const SPACE_FRAME_WIDTH = 80; // 刻度间距
+const SCALE_FRAME_WIDTH = 80; // 刻度间距
 
 // 缩放值与对应的时间刻度周期
 const DEFAULT_RATIO_STEP: number[][] = [
@@ -12,7 +12,7 @@ const DEFAULT_RATIO_STEP: number[][] = [
 
 export interface IZoomAxis {
   el: string | HTMLElement;
-  totalMarks: number;
+  tickMarks: number;
   vertical?: boolean;
   stageWidth?: number;
   ratio?: number;
@@ -52,15 +52,15 @@ export class ZoomAxis extends EventHelper {
   private lineWidth = 2; // 刻度线宽度
   private lineHeight = 24; // 刻度线高度
   private lineShortHeight = 16; // 短刻度线高度
-  spaceCycle = 10; // 每 10 个最小刻度为一组分割
-  private spaceCycleIndex = 0; // 刻度大间隔周期累计
-  spaceTimeSecond = 1; // 刻度间隔秒数单位（一个周期时间单位）
+  scaleCycle = 10; // 默认每 10 个最小刻度为一组分割
+  private scaleCycleIndex = 0; // 刻度大间隔周期累计
+  scaleTimeSecond = 1; // 刻度间隔秒数单位（一个周期时间单位）
   private markIndex = 0; // 刻度表帧数数计
   private lineX = 0;
   private lineY = 0;
   private ratioMap = new Map();
-  protected _markWidth = SPACE_FRAME_WIDTH; // 刻度间距
-  totalMarks = 0;
+  protected _markWidth = SCALE_FRAME_WIDTH; // 刻度间距
+  tickMarks = 0;
   get markWidth(): number {
     return this._markWidth * 0.5; // 刻度实际显示像素
   }
@@ -69,7 +69,7 @@ export class ZoomAxis extends EventHelper {
 
   constructor({
     el,
-    totalMarks,
+    tickMarks,
     ratio,
     ratioMap,
     stageWidth,
@@ -90,7 +90,7 @@ export class ZoomAxis extends EventHelper {
     this.setStageWidth(stageWidth);
 
     this.initCanvas();
-    this.totalMarks = totalMarks;
+    this.tickMarks = tickMarks;
     if (ratio !== undefined) {
       this.zoomRatio = ratio;
     }
@@ -106,8 +106,8 @@ export class ZoomAxis extends EventHelper {
     this.ctx.font = "22px PingFang SC";
     this.ctx.textBaseline = "top";
   }
-  setSpaceCycle(cycle: number) {
-    this.spaceCycle = cycle;
+  setScaleCycle(cycle: number) {
+    this.scaleCycle = cycle;
   }
   // 设置缩放等级对应缩放显示时间
   setRatioStep(ratioMap: number[][] = DEFAULT_RATIO_STEP) {
@@ -151,7 +151,7 @@ export class ZoomAxis extends EventHelper {
   }
   private setWidth() {
     // 总宽度 = 总秒数/时间间隔 * 每刻度宽度 * 多少个周期 + 额外加一个周期的宽度用于显示尾部
-    this.width = this.totalMarks * this._markWidth;
+    this.width = this.tickMarks * this._markWidth;
   }
   // 转换显示分:秒
   private getTimeText(sec: number): string {
@@ -164,25 +164,25 @@ export class ZoomAxis extends EventHelper {
     }
     // 同时设置文本白色透明度
     this.ctx.fillStyle = this.textColor;
-    const timeText = this.getTimeText(this.spaceCycleIndex);
+    const timeText = this.getTimeText(this.scaleCycleIndex);
     this.ctx.textAlign = "left";
     this.ctx.fillText(timeText, this.lineX + 6, 0);
   }
   // 是否处于周期值
   private checkIsCyclePoint() {
-    return this.markIndex % this.spaceCycle === 0;
+    return this.markIndex % this.scaleCycle === 0;
   }
   // 绘制刻度线
   private drawLine() {
     if (!this.ctx) {
       return;
     }
-    if (this.markIndex > this.totalMarks) {
+    if (this.markIndex > this.tickMarks) {
       return;
     }
     // !!此处不能用递归数量超过 8000 后会 RangeError: Maximum call stack size exceeded
     // 直接用简单的 for 循环
-    for (let i = 0; i <= this.totalMarks; i++) {
+    for (let i = 0; i <= this.tickMarks; i++) {
       const isCyclePoint = this.checkIsCyclePoint();
       const lineHeight = isCyclePoint ? this.lineHeight : this.lineShortHeight;
 
@@ -194,7 +194,7 @@ export class ZoomAxis extends EventHelper {
       if (isCyclePoint) {
         this.drawCyclePointText();
         // 大间隔计数加 1
-        this.spaceCycleIndex += this.spaceTimeSecond;
+        this.scaleCycleIndex += this.scaleTimeSecond;
       }
 
       // 刻度线 x 轴增加
@@ -212,27 +212,27 @@ export class ZoomAxis extends EventHelper {
   }
   // 按比例缩放刻度
   private zoomByRatio() {
-    this._markWidth = SPACE_FRAME_WIDTH * this.zoomRatio;
+    this._markWidth = SCALE_FRAME_WIDTH * this.zoomRatio;
     this.setWidth();
     const ratio = roundFun(this.zoomRatio, 1);
     // 每个刻度周期时间显示单位分成几档
-    const spaceTimeSecond = this.ratioMap.get(ratio);
+    const scaleTimeSecond = this.ratioMap.get(ratio);
     // 如果没有对应预设的值，则周期不变
-    if (spaceTimeSecond) {
-      this.spaceTimeSecond = spaceTimeSecond;
+    if (scaleTimeSecond) {
+      this.scaleTimeSecond = scaleTimeSecond;
     }
   }
   private resetToDraw() {
     this.lineX = 0;
-    this.spaceCycleIndex = 0;
+    this.scaleCycleIndex = 0;
     this.markIndex = 0;
   }
   /**
    * 设置总刻度数
    * @param marksNum
    */
-  setTotalMarks(marksNum: number) {
-    this.totalMarks = marksNum;
+  setTickMarks(marksNum: number) {
+    this.tickMarks = marksNum;
     this.resetToDraw();
     this.redraw();
   }

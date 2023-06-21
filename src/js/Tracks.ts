@@ -807,9 +807,9 @@ export class Tracks extends EventHelper {
                 if(!newSegment){
                   return;
                 }
-                newSegment.origionSegmentId = segmentId;
-                newSegment.origionTrackId = segmentTrackId;
-                newSegment.origionParentTrack = this.getTrack(segmentTrackId)
+                newSegment.originSegmentId = segmentId;
+                newSegment.originTrackId = segmentTrackId;
+                newSegment.originParentTrack = this.getTrack(segmentTrackId)
               }
             }
             vt.pointerup({
@@ -818,11 +818,11 @@ export class Tracks extends EventHelper {
               segment: newSegment,
             });
             // 如果有原父级轨道，说明是从原父级轨道拖过来的，需要删除原父级轨道内的 segment
-            if(newSegment?.origionSegmentId){
-              this.deleteSegment(newSegment.origionTrackId, newSegment.origionSegmentId);
-              newSegment.origionParentTrack = null;
-              newSegment.origionSegmentId = '';
-              newSegment.origionTrackId = '';
+            if(newSegment?.originSegmentId){
+              this.deleteSegment(newSegment.originTrackId, newSegment.originSegmentId);
+              newSegment.originParentTrack = null;
+              newSegment.originSegmentId = '';
+              newSegment.originTrackId = '';
             }
           }
         })
