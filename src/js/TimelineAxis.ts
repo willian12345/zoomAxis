@@ -127,7 +127,7 @@ export class TimelineAxis extends ZoomAxis {
       return;
     }
     this.totalFrames = frames;
-    this.setTickMarks(frames)
+    this.setTickMarks(frames * 2);
   }
   zoom(ratio: number): void {
     const scale = ratio >= 1.4 ? 30 : 10;
