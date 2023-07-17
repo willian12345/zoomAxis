@@ -118,6 +118,7 @@ const tracks: Ref<TTrackConfig[]> = ref([
         trackText: '轨道组轨道一',
         color: '#6C4ACD',
         trackType: '2',
+        mergeable: true,
       },
       {
         trackId: 'a2',
@@ -165,7 +166,7 @@ const initApp = () => {
   // 初始化时间轴
   timeline = new TimelineAxis({
     el: "canvasStage",
-    totalMarks: 500,
+    tickMarks: 500,
     totalFrames: 1220,
     stageWidth: stageWidth.value,
   });

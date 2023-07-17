@@ -38,6 +38,7 @@ import {
   findLastIndex,
 } from "./trackUtils";
 import { TrackFlex } from "./TrackFlex";
+import { TrackChildOverlap } from "./TrackChildOverlap";
 
 const TRACK_EVENT_TYPES_ARRAY = [
   TRACKS_EVENT_TYPES.DRAG_END,
@@ -321,7 +322,8 @@ export class Tracks extends EventHelper {
   }
   private createVirtualTrack(tbc: TTrackConfig) {
     const trackType = String(tbc.trackType);
-    let vt = new Track({
+    const TrackClass = tbc.childOverlapable ? TrackChildOverlap : Track;
+    let vt = new TrackClass({
       trackId: tbc.trackId,
       trackType,
       createSegmentCheck: this.createSegmentCheck,
@@ -416,7 +418,6 @@ export class Tracks extends EventHelper {
     }
     return x;
   }
-  private
   private addNewTrackToDom(trackConfig: TTrackConfig, list: TTrackConfig[], parentElement: HTMLElement, parentTrack?: Track){
     const lastIndex = findLastIndex(list, (vt: Track) => {
       return vt.trackType === trackConfig.trackType

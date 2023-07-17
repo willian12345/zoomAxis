@@ -4,6 +4,7 @@ import { Segment } from "./Segment";
 // 轨道基本配置信息
 export type TTrackConfig = {
   trackId: string;
+  childOverlapable?: boolean;
   color?: string;
   trackText?: string;
   trackType: string | SegmentType;
