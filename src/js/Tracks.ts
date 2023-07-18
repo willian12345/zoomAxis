@@ -247,14 +247,15 @@ export class Tracks extends EventHelper {
     if(!currentSegment){
       return [false, 0, 0, null];
     }
-    const currentSegmentDom = currentSegment.dom;
+    // const currentSegmentDom = currentSegment.dom;
     const allsegments = this.queryAllSegmentsDom();
     // 过滤掉自已，只对比其它
     const segmentsFiltered = allsegments.filter((sDom)=> {
       return sDom.dataset.segmentId !== currentSegment.segmentId
     })
+    
     // 传入左|右手柄用于判断吸附位置
-    const segmentHandles = Array.from(currentSegmentDom.querySelectorAll(`.${CLASS_NAME_SEGMENT_HANDLE}`)) as HTMLElement[];
+    const segmentHandles = [currentSegment.leftHandler, currentSegment.rightHandler] as HTMLElement[];
     const dom = segmentHandles[handleCode];
       // 跨轨道检测 x 轴是否与其它 segment 有磁吸
     const result = checkCoordinateLine(dom, segmentsFiltered, this.frameWidth, segment);

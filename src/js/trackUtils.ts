@@ -79,8 +79,7 @@ export const getLeftValue = (dom: HTMLElement | undefined) => {
   return parseFloat(dom.style.left) ?? 0;
 };
 export const createDragTrackContainer = () => {
-  const div = document.createElement("div");
-  div.className = CLASS_NAME_TRACK_DRAG_CONTAINER;
+  const div = createContainer(CLASS_NAME_TRACK_DRAG_CONTAINER)
   document.body.appendChild(div);
   return div;
 };
@@ -361,6 +360,14 @@ export const findLastIndex = (arr: any[], fn: CallableFunction) => {
       index = i;
     }
   }
-  console.log(index,'eeee')
   return index;
 }
+
+export const createContainer = (className: string, cssText?: string) => {
+  const div = document.createElement("div");
+  div.className = className;
+  if(cssText){
+    div.style.cssText = cssText
+  }
+  return div;
+};

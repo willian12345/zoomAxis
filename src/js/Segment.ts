@@ -106,8 +106,8 @@ export class Segment extends EventHelper{
           data-framestart="${this.framestart}" 
           data-frameend="${this.frameend}"
           style="width: ${this.width}; height: ${this.height}; left: ${this.left}; ${this.segmentStyle}">
-          <div class="${CLASS_NAME_SEGMENT_HANDLE} ${CLASS_NAME_SEGMENT_HANDLE_LEFT}"></div>
-          <div class="${CLASS_NAME_SEGMENT_HANDLE} ${CLASS_NAME_SEGMENT_HANDLE_RIGHT}"></div>
+          <div class="${CLASS_NAME_SEGMENT_HANDLE} ${CLASS_NAME_SEGMENT_HANDLE_LEFT}" data-segment-id="${this.segmentId}"></div>
+          <div class="${CLASS_NAME_SEGMENT_HANDLE} ${CLASS_NAME_SEGMENT_HANDLE_RIGHT}" data-segment-id="${this.segmentId}"></div>
           <div class="segment-renderer">
             ${contentRenderer}
           </div>
@@ -121,7 +121,11 @@ export class Segment extends EventHelper{
   private setHandleEnableStatus(dom: HTMLElement, enable: boolean){
     dom.style.pointerEvents = enable ? 'initial' : 'none';
   }
-  
+  setHandleVisible(b: boolean){
+    const bgColor = b ? 'white' : 'rgba(255,255,255, 0)';
+    this.leftHandler.style.backgroundColor = bgColor;
+    this.rightHandler.style.backgroundColor = bgColor;
+  }
   // 设置帧范围
   setRange(framestart: number, frameend: number) {
     this.framestart = framestart;

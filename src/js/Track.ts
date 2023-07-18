@@ -152,16 +152,15 @@ export class Track extends EventHelper {
     }
   };
   // 拖动手柄拖动开始
-  private dragHandleStart = (
+  dragHandleStart = (
     e: MouseEvent,
     handle: HTMLElement,
     move: (args: TMoveFunctionArgs) => void,
     handleCode: number
   ) => {
-    const segmentDom: HTMLElement = findParentElementByClassName(
-      handle,
-      "segment"
-    ) as HTMLElement;
+    const segment = this.getSegmentById(handle.dataset.segmentId ?? '')
+    if(!segment) return;
+    const segmentDom = segment.dom
     e.preventDefault();
     const left: number = getLeftValue(segmentDom) as number;
     const width = segmentDom.getBoundingClientRect().width;

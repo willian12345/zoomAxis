@@ -13,6 +13,7 @@ import {
   isContainSplitFromComma,
   getSegmentPlaceholder,
   getFrameRange,
+  createContainer,
 } from "./trackUtils";
 import { Segment } from './Segment'
 import {
@@ -27,8 +28,12 @@ export type TMoveFunctionArgs = {
   frameend: number;
 };
 export class TrackChildOverlap extends Track {
+  segmentHandleContainer: HTMLElement
   constructor({ trackId, trackType, frameWidth, createSegmentCheck }: ITrackArgs) {
     super( {trackId, trackType, frameWidth, createSegmentCheck} );
+    const div = createContainer('segment-handle-container', 'height:100%; z-index: 100;');
+    this.dom.appendChild(div);
+    this.segmentHandleContainer = div;
   }
   precheck(segmentType: string) {
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
@@ -103,6 +108,7 @@ export class TrackChildOverlap extends Track {
       framestart = 0;
     }
     segment.setRange(framestart, frameend);
+    this.updateSegmentHandlerPos(segment);
     return;
   }
   // segment 右侧手柄拖动
@@ -120,6 +126,31 @@ export class TrackChildOverlap extends Track {
     if (!this.slideable(framestart, frameend)) return;
     this.triggerSlideEvent(segment, [], 1);
     segment.setRange(framestart, frameend);
+    this.updateSegmentHandlerPos(segment);
     return;
+  }
+  addSegment(segment: Segment): Segment | null {
+    const result = super.addSegment(segment)
+    result && this.updateSegmentHandlerFloat(result);
+    this.updateSegmentHandlerPos(segment)
+    return result
+  }
+  updateSegmentHandlerPos(segment: Segment){
+    segment.leftHandler.style.left = `${segment.framestart * this.frameWidth}px`;
+    segment.rightHandler.style.left = `${(segment.framestart + (segment.frameend - segment.framestart)) * this.frameWidth}px`;
+  }
+  // 让拖动手柄脱离 segment 浮在轨道上
+  updateSegmentHandlerFloat(segment: Segment): void {
+    segment.setHandleVisible(true);
+    this.segmentHandleContainer.append(segment.leftHandler);
+    segment.leftHandler.addEventListener('mousedown', (e)=> {
+      this.dragHandleStart(e, segment.leftHandler, this.leftHandleMove.bind(this), 0);
+    }, true);
+    this.segmentHandleContainer.append(segment.rightHandler);
+    segment.rightHandler.addEventListener('mousedown', (e)=> {
+      this.dragHandleStart(e, segment.rightHandler, this.rightHandleMove.bind(this), 0);
+    }, true);
+
+    console.log(segment.rightHandler)
   }
 }

@@ -118,7 +118,7 @@ const tracks: Ref<TTrackConfig[]> = ref([
         trackText: '轨道组轨道一',
         color: '#6C4ACD',
         trackType: '2',
-        mergeable: true,
+        childOverlapable: true,
       },
       {
         trackId: 'a2',
@@ -465,7 +465,7 @@ onMounted(() => {
   padding-top: @markHeight;
   width: 100%;
   .track {
-    pointer-events: none;
+    // pointer-events: none;
     position: relative;
     width: 100%;
     height: @trackHeight;
@@ -585,9 +585,11 @@ onMounted(() => {
 }
 .segment-handle-left {
   left: 0;
+  border-radius: 4px 0 0 4px;
 }
 .segment-handle-right {
   right: 0;
+  border-radius: 0 4px 4px 0;
 }
 .coordinate-line {
   display: none;
