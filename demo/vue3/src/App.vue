@@ -13,9 +13,7 @@ import {
   TRACKS_EVENT_TYPES,
   TTrackConfig,
 } from "../../../src/js/trackType";
-import { findEndestSegment } from "../../../src/js/trackUtils";
 import { Tracks } from "../../../src/js/Tracks";
-import { Track } from "../../../src/js/Track";
 import { Segment } from "../../../src/js/Segment";
 
 let timeline: TimelineAxis | null;
@@ -591,6 +589,11 @@ onMounted(() => {
   right: 0;
   border-radius: 0 4px 4px 0;
 }
+.segment:hover, .segment.actived, .segment.sliding {
+  .segment-handle{
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+}
 .coordinate-line {
   display: none;
   position: absolute;
@@ -603,6 +606,16 @@ onMounted(() => {
   font-size: 0;
   background-color: #00b6c2;
 }
+
+.segment-handle-container{
+  position: relative;
+  top: 1px;
+  height: 24px;
+  .segment-handle.actived{
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+}
+
 
 // 工具按钮
 .btns {
@@ -624,6 +637,7 @@ button {
 .segment-renderer{
   display: flex;
   height: 24px;
+  overflow: hidden;
   align-items: center;
 }
 </style>

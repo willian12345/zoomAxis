@@ -39,8 +39,8 @@ export class Segment extends EventHelper{
   actived = false;
   frameWidth = 0;
   extra = {};
-  leftHandler = {} as HTMLElement
-  rightHandler = {} as HTMLElement
+  leftHandler!: HTMLElement
+  rightHandler!: HTMLElement
   keyframes = [] as Keyframe[] // keyframes 内存储着关键帧，帧值是“相对帧”
   disabled = false
   // 内容渲染器，可传自定义的渲染内容，用于个性化
@@ -74,8 +74,6 @@ export class Segment extends EventHelper{
     this.segmentType = args.segmentType;
     this.name = args.name ?? "";
     this.dom = this.createDom();
-    this.leftHandler = this.dom.querySelector(`.${CLASS_NAME_SEGMENT_HANDLE_LEFT}`) as HTMLElement;
-    this.rightHandler = this.dom.querySelector(`.${CLASS_NAME_SEGMENT_HANDLE_RIGHT}`) as HTMLElement;
     // 额外其它信息
     if (args.extra) {
       this.extra = args.extra;
@@ -106,8 +104,6 @@ export class Segment extends EventHelper{
           data-framestart="${this.framestart}" 
           data-frameend="${this.frameend}"
           style="width: ${this.width}; height: ${this.height}; left: ${this.left}; ${this.segmentStyle}">
-          <div class="${CLASS_NAME_SEGMENT_HANDLE} ${CLASS_NAME_SEGMENT_HANDLE_LEFT}" data-segment-id="${this.segmentId}"></div>
-          <div class="${CLASS_NAME_SEGMENT_HANDLE} ${CLASS_NAME_SEGMENT_HANDLE_RIGHT}" data-segment-id="${this.segmentId}"></div>
           <div class="segment-renderer">
             ${contentRenderer}
           </div>
@@ -133,6 +129,7 @@ export class Segment extends EventHelper{
     this.dom.dataset.framestart = String(framestart);
     this.dom.dataset.frameend = String(frameend);
     this.resize();
+    this.updateSegmentHandlerPos();
   }
   setTrackId(trackId: string) {
     this.trackId = trackId;
@@ -148,9 +145,29 @@ export class Segment extends EventHelper{
     if (bool) {
       this.actived = true;
       this.dom.classList.add("actived");
+      this.leftHandler.classList.add('actived');
+      this.rightHandler.classList.add('actived');
     } else {
       this.actived = false;
       this.dom.classList.remove("actived");
+      this.leftHandler.classList.remove('actived');
+      this.rightHandler.classList.remove('actived');
+    }
+  }
+  setHover(bool: boolean) {
+    if (bool) {
+      this.leftHandler.classList.add('actived');
+      this.rightHandler.classList.add('actived');
+    } else {
+      this.leftHandler.classList.remove('actived');
+      this.rightHandler.classList.remove('actived');
+    }
+  }
+  setSlideStatus(bool: boolean){
+    if (bool) {
+      this.dom.classList.add("sliding");
+    } else {
+      this.dom.classList.remove("sliding");
     }
   }
   // 调整宽度值
@@ -161,6 +178,14 @@ export class Segment extends EventHelper{
     this.frames = frames;
     this.dom.style.left = `${segmentLeft}px`;
     this.dom.style.width = `${this.frameWidth * frames}px`;
+  }
+  updateSegmentHandlerPos(){
+    if(this.leftHandler){
+      this.leftHandler.style.left = `${this.framestart * this.frameWidth}px`;
+    }
+    if(this.rightHandler){
+      this.rightHandler.style.left = `${((this.framestart + (this.frameend - this.framestart)) * this.frameWidth) - 4}px`;
+    }
   }
   // 拖动手柄状态更新：是否响应拖动
   setHandleEnable(leftEnable: boolean, rightEnable: boolean){
