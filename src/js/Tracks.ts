@@ -298,7 +298,6 @@ export class Tracks extends EventHelper {
         }
       }
       this.hideCoordinateLine();
-      console.log(segment, segments)
       return {segment, segments, handleCode}
     });
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENTS_SET_RANGE);
@@ -684,7 +683,7 @@ export class Tracks extends EventHelper {
         segmentDom.dataset.segmentId ?? ""
       );
       const track = segment?.parentTrack;
-      segment && track?.pointerdown(segment);
+      segment && track?.dragstart(segment);
     }
 
     // 高度变为正在拖动的 segment 高度
@@ -717,7 +716,7 @@ export class Tracks extends EventHelper {
         e.clientY
       );
       // 轨道内 x 轴 移动判断
-      collisionTrack?.pointermove({
+      collisionTrack?.draging({
         isCopy,
         scrollContainerX,
         segment: segmentDom,
@@ -814,7 +813,7 @@ export class Tracks extends EventHelper {
                 newSegment.originParentTrack = this.getTrack(segmentTrackId)
               }
             }
-            vt.pointerup({
+            vt.dragend({
               copy: isCopy,
               framestart,
               segment: newSegment,
@@ -1036,7 +1035,7 @@ export class Tracks extends EventHelper {
   }
   destroy() {
     removeDragTrackContainer();
-    this.tracks.forEach((vt) => vt.destroy());
+    this.tracks.forEach((track) => track.destroy());
     for (let { ele, eventName, listener, options } of this.bindedEventArray) {
       ele.removeEventListener(eventName, listener, options);
     }

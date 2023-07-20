@@ -135,12 +135,12 @@ export class TrackFlex extends Track {
     }
     return [collisionSegment, collisionSegmentFrameend];
   }
-  pointerdown(segment: Segment) {
+  dragstart(segment: Segment) {
     this.framestart = segment.framestart;
     this.frameend = segment.frameend;
     this.frames = segment.frameend - segment.framestart;
   }
-  pointermove({
+  draging({
     isCopy,
     scrollContainerX,
     segment,

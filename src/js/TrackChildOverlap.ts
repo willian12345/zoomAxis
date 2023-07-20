@@ -1,11 +1,6 @@
 /**
  * TrackMergeable
- * Segment 可叠加
- * Track 基础 dom 结构
- * <div class="track">
- *  <div class="track-placeholder"></div>
- *  <div class="segment"></div>
- * </div>
+ * 此类型轨道内 Segment 可叠加
  */
 import {
   CLASS_NAME_TRACK_DRAG_OVER,
@@ -42,7 +37,7 @@ export class TrackChildOverlap extends Track {
     }
     return true;
   }
-  pointermove({
+  draging({
     scrollContainerX,
     segment,
     dragTrackContainerRect,
@@ -63,8 +58,9 @@ export class TrackChildOverlap extends Track {
     // 拖动时轨道内占位元素
     placeHolder.style.width = `${dragTrackContainerRect.width}px`;
     placeHolder.style.left = `${x}px`;
+
   }
-  pointerup({
+  dragend({
     framestart,
     segment,
   }: {
@@ -72,7 +68,7 @@ export class TrackChildOverlap extends Track {
     framestart: number;
     segment: Segment;
   }): Segment|null {
-    this.draging = false;
+    this.isDraging = false;
     const placeHolder = getSegmentPlaceholder(this.dom);
     if (!placeHolder) {
       return null;

@@ -26,6 +26,7 @@ export const CLASS_NAME_SEGMENT_HANDLE_RIGHT = 'segment-handle-right';
 export const CLASS_NAME_SEGMENT_KEYFRAME = 'segment-keyframe';
 export const CLASS_NAME_SEGMENT_KEYFRAME_ACTIVED = 'actived';
 export const DEFAULT_SEGMENT_FRAMES = 150; // 默认 150 帧
+export const CLASS_NAME_SEGMENT_HANDLE_CONTAINER = 'segment-handle-container'
 
 export const createSegment = (segmentInfo: SegmentConstructInfo) => {
   segmentInfo.contentRenderer = getContentRenderer(segmentInfo);

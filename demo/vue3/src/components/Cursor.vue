@@ -13,7 +13,7 @@
     top: -24px;
     bottom: 0;
     left: -9px;
-    z-index: 3;
+    z-index: 15;
     width: 20px;
     background-color: rgba(255, 255, 255, 0);
   }

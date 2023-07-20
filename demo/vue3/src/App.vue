@@ -265,6 +265,9 @@ const testRemoveTrack = () => {
   segmentTracks?.removeTrack(tempTrackId);
   tracks.value = segmentTracks.tracksConfig;
 }
+const testdestroy = () => {
+  segmentTracks.destroy()
+}
 onMounted(() => {
   initApp();
 });
@@ -278,6 +281,7 @@ onMounted(() => {
       <button @click="handlePlay">播放</button>
       <button @click="testAddToTrack">往某个组内添加轨道</button>
       <button @click="testRemoveTrack">删除组内添加的轨道</button>
+      <button @click="testdestroy">destroy</button>
     </div>
     <div class="segment-list" ref="segmentItemListRef">
       <div class="segment-item" style="background-color: #C66136;" data-segment-type="1">
@@ -380,7 +384,7 @@ onMounted(() => {
 .track-drag-container {
   pointer-events: none;
   position: fixed;
-  z-index: 9;
+  z-index: 20;
   left: 0;
   top: 0;
   min-height: 24px;
@@ -408,7 +412,7 @@ onMounted(() => {
   top: 0;
   width: 100%;
   line-height: 1;
-  z-index: 2;
+  z-index: 10;
   background-color: #242424;
   pointer-events: none;
 }
@@ -578,6 +582,7 @@ onMounted(() => {
   width: 4px;
   height: 100%;
   z-index: 2;
+  pointer-events: initial;
   cursor: col-resize;
   background-color: rgba(255, 255, 255, 0);
 }
@@ -610,6 +615,8 @@ onMounted(() => {
 .segment-handle-container{
   position: relative;
   top: 1px;
+  pointer-events: none;
+  z-index: 3;
   height: 24px;
   .segment-handle.actived{
     background-color: rgba(255, 255, 255, 0.8);

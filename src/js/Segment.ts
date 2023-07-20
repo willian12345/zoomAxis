@@ -78,15 +78,9 @@ export class Segment extends EventHelper{
     if (args.extra) {
       this.extra = args.extra;
     }
-    this.initEvents();
     this.setRange(this.framestart, this.frameend);
   }
-  private initEvents() {
-    this.dom.addEventListener('click', this.handleClick);
-  }
-  private handleClick = () => {
-    
-  }
+  
   private createSegmentId() {
     return String(segmentIdIndex++);
   }
@@ -198,6 +192,7 @@ export class Segment extends EventHelper{
     this.keyframes.forEach(keyframe => {
       keyframe.setFrameWidth(width);
     });
+    this.updateSegmentHandlerPos();
   }
   addKeyframe(frame: number){
     const keyframe = new Keyframe({
