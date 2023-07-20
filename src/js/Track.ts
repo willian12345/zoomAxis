@@ -106,13 +106,10 @@ export class Track extends EventHelper {
     const rect = this.dom.getBoundingClientRect();
     const x = e.clientX - rect.left - this.dom.scrollLeft;
     const y = e.clientY - (rect.top + rect.height * .5);
-    const segments = this.getSegments();
-    segments.forEach( segment => segment.setHover(false));
+    this.segments.forEach( segment => segment.setHover(false));
     if(Math.abs(y) >= 14) return;
-    
     const frame = Math.round(x / this.frameWidth);
-  
-    const interacts = this.getInteractSegment(segments, frame);
+    const interacts = this.getInteractSegment(Array.from(this.segments.values()), frame);
     interacts.forEach( segment => segment.setHover(true));
   }
   click = (e: MouseEvent) => {
@@ -585,7 +582,10 @@ export class Track extends EventHelper {
     return segment;
   }
   removeSegment(segment: Segment) {
+    segment.leftHandler.parentElement?.removeChild(segment.leftHandler);
+    segment.rightHandler.parentElement?.removeChild(segment.rightHandler);
     this.segments.delete(segment.segmentId);
+    console.log(segment.dom, segment.dom.parentElement)
     segment.dom.parentElement?.removeChild(segment.dom);
     this.dispatchEvent(
       { eventType: TRACKS_EVENT_TYPES.SEGMENT_DELETED },

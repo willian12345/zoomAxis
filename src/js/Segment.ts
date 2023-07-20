@@ -10,9 +10,6 @@ import { SegmentConstructInfo, SegmentType } from "./TrackType";
 import { Track } from "./Track";
 import { Keyframe } from "./Keyframe";
 import {
-  CLASS_NAME_SEGMENT_HANDLE,
-  CLASS_NAME_SEGMENT_HANDLE_LEFT,
-  CLASS_NAME_SEGMENT_HANDLE_RIGHT,
   CLASS_NAME_SEGMENT,
 } from './trackUtils'
 
@@ -39,8 +36,11 @@ export class Segment extends EventHelper{
   actived = false;
   frameWidth = 0;
   extra = {};
-  leftHandler!: HTMLElement
-  rightHandler!: HTMLElement
+  /**
+   * 左右调节手柄由所属轨道创建
+   */
+  leftHandler!: HTMLElement // 左调节手柄由轨道指定
+  rightHandler!: HTMLElement // 右调节手柄由轨道指定
   keyframes = [] as Keyframe[] // keyframes 内存储着关键帧，帧值是“相对帧”
   disabled = false
   // 内容渲染器，可传自定义的渲染内容，用于个性化
@@ -263,7 +263,6 @@ export class Segment extends EventHelper{
     this.name = name;
   }
   destroy(){
-    this.dom.removeEventListener('click', this.handleClick);
     this.keyframes.forEach((keyframe)=> {
       keyframe.destroy();
     })

@@ -824,6 +824,7 @@ export class Tracks extends EventHelper {
               newSegment.originParentTrack = null;
               newSegment.originSegmentId = '';
               newSegment.originTrackId = '';
+              originTrack = null;
             }
           }
         })
@@ -835,7 +836,7 @@ export class Tracks extends EventHelper {
         this.putSegmentBack(
           segmentDom,
           getLeftValue(segmentDom),
-          originTrack
+          originTrack,
         );
          // 拖完后触发回调
          this.dispatchEvent(
