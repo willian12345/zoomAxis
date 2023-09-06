@@ -359,11 +359,10 @@ onMounted(() => {
         >
           <div
             class="track-list"
-            ref="trackListContainer"
             :style="{ width: `${trackWidth}px` }"
           >
+          <div ref="trackListContainer"></div>
           </div>
-          <div class="coordinate-line"></div>
           <Cursor ref="cursorRef" />
         </div>
       </div>

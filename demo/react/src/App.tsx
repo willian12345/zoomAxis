@@ -31,13 +31,14 @@ let zoomRatio = 1;
 let currentSegment:Segment | null = null;
 function App() {
   console.log('render')
-  const cursorRef = useRef<HTMLDivElement|null>(null);;
-  const trackHeaderListRef = useRef<HTMLDivElement|null>(null);;
-  const trackListContainer = useRef<HTMLDivElement|null>(null);;
-  const segmentItemListRef = useRef<HTMLDivElement|null>(null);;
+  const cursorRef = useRef<HTMLDivElement|null>(null);
+  const trackHeaderListRef = useRef<HTMLDivElement|null>(null);
+  const trackListContainer = useRef<HTMLDivElement|null>(null);
+  const trackListRef = useRef<HTMLDivElement|null>(null);
+  const segmentItemListRef = useRef<HTMLDivElement|null>(null);
   const scrollContainerRef = useRef<HTMLDivElement|null>(null);
-  const scrollContentRef = useRef<HTMLDivElement|null>(null);;
-  const timelineContainer = useRef<HTMLDivElement|null>(null);;
+  const scrollContentRef = useRef<HTMLDivElement|null>(null);
+  const timelineContainer = useRef<HTMLDivElement|null>(null);
   const [stageWidth, setStageWidth] = useState(920);
   const trackScrollWidthRef = useRef(920);
   const [trackScrollWidth, setTrackScrollWidth] = useState(920);
@@ -181,7 +182,7 @@ function App() {
       !cursorRef.current ||
       !scrollContentRef.current ||
       !scrollContainerRef.current ||
-      !trackListContainer.current
+      !trackListRef.current
     ) {
       return;
     }
@@ -224,7 +225,7 @@ function App() {
     segmentTracks = new Tracks({
       scrollContainer,
       tracks,
-      trackListContainer: trackListContainer.current,
+      trackListContainer: trackListRef.current,
       timeline,
       segmentDelegate: segmentItemList,
     });
@@ -369,11 +370,10 @@ function App() {
             >
               <div
                 className="track-list"
-                ref={trackListContainer}
                 style={{ width: `${trackWidth}px` }}
               >
+                <div ref={trackListRef}></div>
               </div>
-              <div className="coordinate-line"></div>
               <Cursor ref={cursorRef} />
             </div>
           </div>

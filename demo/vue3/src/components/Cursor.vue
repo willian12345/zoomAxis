@@ -19,7 +19,7 @@
   }
   .cursor-pointer-hd{
     position: sticky;
-    top: 0px;
+    top: -1px;
     left: 0;
   }
   .icon-cursor{
