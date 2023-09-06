@@ -26,7 +26,7 @@ const scrollContainerRef = ref<HTMLElement | null>(null);
 const trackHeaderListRef = ref<HTMLElement | null>(null);
 const cursorRef = ref<InstanceType<typeof Cursor> | null>(null);
 const scrollContentRef = ref<HTMLElement | null>(null);
-const trackListRef = ref<HTMLElement | null>(null);
+const trackListContainer = ref<HTMLElement | null>(null);
 const segmentItemListRef = ref<HTMLElement | null>(null);
 let currentSegment: Segment | null = null;
 let ctrlDown = false;
@@ -143,7 +143,7 @@ const initApp = () => {
   if (
     !cursorRef.value?.$el ||
     !scrollContentRef.value ||
-    !trackListRef.value ||
+    !trackListContainer.value ||
     !scrollContainerRef.value
   ) {
     return;
@@ -185,7 +185,7 @@ const initApp = () => {
   // 初始化轨道
   segmentTracks = new Tracks({
     scrollContainer,
-    trackListContainer: trackListRef.value,
+    trackListContainer: trackListContainer.value,
     tracks: tracks.value,
     timeline,
     segmentDelegate: segmentItemList,
@@ -357,14 +357,13 @@ onMounted(() => {
           class="scroll-content"
           ref="scrollContentRef"
         >
-        <!-- :style="{ width: `${scrollContentWidth}px` }" -->
           <div
             class="track-list"
-            ref="trackListRef"
+            ref="trackListContainer"
             :style="{ width: `${trackWidth}px` }"
           >
           </div>
-          <div className="coordinate-line"></div>
+          <div class="coordinate-line"></div>
           <Cursor ref="cursorRef" />
         </div>
       </div>

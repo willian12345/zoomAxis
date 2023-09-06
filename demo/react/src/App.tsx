@@ -8,7 +8,7 @@ import "./App.css";
 import Cursor from "./components/Cursor";
 import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "../../../src/js/TimelineAxis";
 import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/CursorPointer";
-import { TRACKS_EVENT_TYPES, TrackBasicConfig } from "../../../src/js/TrackType";
+import { TRACKS_EVENT_TYPES, TTrackConfig } from "../../../src/js/TrackType";
 import { findEndestSegment } from "../../../src/js/trackUtils";
 import { Tracks } from "../../../src/js/Tracks";
 import { Segment } from "../../../src/js/Segment";
@@ -31,15 +31,53 @@ let zoomRatio = 1;
 let currentSegment:Segment | null = null;
 function App() {
   console.log('render')
-  const cursorRef = useRef<HTMLInputElement>(null);
-  const segmentItemListRef = useRef<HTMLInputElement>(null);
-  const scrollContainerRef = useRef<HTMLInputElement>(null);
-  const scrollContentRef = useRef<HTMLInputElement>(null);
-  const timelineContainer = useRef<HTMLInputElement>(null);
+  const cursorRef = useRef<HTMLDivElement|null>(null);;
+  const trackHeaderListRef = useRef<HTMLDivElement|null>(null);;
+  const trackListContainer = useRef<HTMLDivElement|null>(null);;
+  const segmentItemListRef = useRef<HTMLDivElement|null>(null);;
+  const scrollContainerRef = useRef<HTMLDivElement|null>(null);
+  const scrollContentRef = useRef<HTMLDivElement|null>(null);;
+  const timelineContainer = useRef<HTMLDivElement|null>(null);;
   const [stageWidth, setStageWidth] = useState(920);
   const trackScrollWidthRef = useRef(920);
   const [trackScrollWidth, setTrackScrollWidth] = useState(920);
   const [scrollContentWidth, setScrollContentWidth] = useState(920);
+  const [trackWidth, setTrackWidth] = useState(920);
+  const [tracks, setTracks] = useState<TTrackConfig[]>([
+    {
+      trackId: 'a',
+      trackText: '轨道组',
+      trackType: '1',
+      color: '#C66136',
+      subTracks: [
+        {
+          trackId: 'a1',
+          trackText: '轨道组轨道一',
+          color: '#6C4ACD',
+          trackType: '2',
+          childOverlapable: true,
+        },
+        {
+          trackId: 'a2',
+          trackText: '轨道组轨道二',
+          color: '#4767E8',
+          trackType: '3',
+        },
+      ]
+    },
+    {
+      trackId: 'b',
+      trackType: '4',
+      color: '#6C4ACD',
+      trackText: '普通轨道一',
+    },
+    {
+      trackId: 'c',
+      trackType: '5',
+      color: '#46A9CB',
+      trackText: '普通轨道二',
+    },
+  ])
   
   const syncTrackWidth = () => {
     const trackItemWidth = segmentTracks.width();
@@ -47,6 +85,8 @@ function App() {
     trackScrollWidthRef.current = (trackItemWidth < stageWidth) ? stageWidth : trackItemWidth;
     // 会导致重新渲染
     setTrackScrollWidth(trackScrollWidthRef.current);
+    setTrackWidth(trackItemWidth < stageWidth ? stageWidth : trackItemWidth);
+    
   }
   const syncByZoom = (zoom: number) => {
     // 根据缩放比较，减小滚动宽度
@@ -67,6 +107,12 @@ function App() {
     }
     const dom = e.target as HTMLElement;
     timeline?.scrollLeft(-dom.scrollLeft);
+    const st = scrollContainerRef.current?.scrollTop ?? 0;
+    const trackHeadersEl = trackHeaderListRef.current;
+    // 竖向滚动带动轨道头部竖向滚动
+    if(trackHeadersEl){
+      trackHeadersEl.scrollTop = st
+    }
   };
   // 标尺放大(镜头拉近)
   const zoomIn = () => {
@@ -127,11 +173,15 @@ function App() {
     dom.scrollLeft += (40 * direct);
   };
 
+  
+
+
   const initApp = () => {
     if (
       !cursorRef.current ||
       !scrollContentRef.current ||
-      !scrollContainerRef.current
+      !scrollContainerRef.current ||
+      !trackListContainer.current
     ) {
       return;
     }
@@ -153,7 +203,7 @@ function App() {
     // 初始化时间轴
     timeline = new TimelineAxis({
       el: "canvasStage",
-      totalMarks: 500,
+      tickMarks: 500,
       totalFrames: 1220,
       stageWidth: stageWidth,
     });
@@ -170,23 +220,14 @@ function App() {
         timeline?.setCurrentFrame(e.frame);
       }
     );
-    const trackDoms = Array.from(scrollContent.querySelectorAll('.track')) as HTMLElement[];
-    
-    const tracks:TrackBasicConfig[] = trackDoms.map( (dom: HTMLElement) => {
-      return {trackType: dom.dataset.trackType ?? '', trackId: dom.dataset.trackId ?? '', dom, flexiable: dom.classList.contains('track-flexible')};
-    });
-    const coordinateLines = Array.from(scrollContainer.querySelectorAll('.coordinate-line')) as HTMLElement[];
     // 初始化轨道
     segmentTracks = new Tracks({
       scrollContainer,
       tracks,
+      trackListContainer: trackListContainer.current,
       timeline,
-      coordinateLines,
       segmentDelegate: segmentItemList,
     });
-    segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENTS_SLIDE_END, (event) => {
-      console.log(event, 'dragend');
-    })
     segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_ADDED, (event) => {
       console.log(event, 'added');
     })
@@ -213,6 +254,19 @@ function App() {
   const toggleMagnet = () => {
     segmentTracks.adsorbable = !segmentTracks.adsorbable;
   }
+
+  let tempTrackId: string;
+  const handleAddByClick = (trackType: string) => {
+    const trackId = Math.random() + 'newTrack';
+    tempTrackId = trackId
+    const newTrack = {
+      trackId: trackId,
+      trackText: Math.random() + '',
+      trackType,
+    };
+    segmentTracks?.addTrack(newTrack);
+    setTracks([...segmentTracks.tracksConfig]);
+  }
   useEffect(() => {
     initApp();
     timelineContainer.current?.addEventListener('wheel', handleWheel);
@@ -222,26 +276,81 @@ function App() {
       timelineContainer.current?.removeEventListener('wheel', handleWheel);
     }
   }, []);
+
+  const TrackHeaderItem = ({track}: {track?: TTrackConfig}) => {
+    if(track?.subTracks?.length){
+      return <div
+        className="track-operation-item-group cursor-pointer"
+        key={track.trackId}
+      >
+        <div className="track-operation-item flex items-center">
+          <div
+            className="mr-2"
+          >
+            <svg className="text-white" fill="rgba(255,255,255, 0.5)" width="12" height="12" viewBox="0 0 12 12" data-v-f2ec87fa=""><path fillRule="evenodd" clipRule="evenodd" d="M5.57574 8.4247L1.57574 4.4247L2.42427 3.57617L6 7.15191L9.57574 3.57617L10.4243 4.4247L6.42426 8.4247L6 8.84896L5.57574 8.4247Z"></path></svg>
+          </div>
+          { track.trackText }
+        </div>
+        {track.subTracks?.map((subTrack, index) => 
+          <div
+            className="track-operation-item"
+            key={index}
+          >
+            { subTrack.trackText }
+          </div>
+        )}
+        <div className="track-gutter"></div>
+      </div>
+    }
+
+    return (
+      <div 
+        className="track-operation-item"
+        key={track?.trackId}
+      >
+        { track?.trackText }
+      </div>
+    )
+    
+  }
+
   return (
     <div className="App">
       <div className="wrapper">
         <div className="btns"><button onClick={splitHandler}>分割</button><button onClick={toggleMagnet}>辅助线吸附</button></div>
         <div className="segment-list" ref={segmentItemListRef}>
-          <div className="segment-item" data-segment-type="0">拖我</div>
-          <div className="segment-item" data-segment-type="0">拖我</div>
-          <div className="segment-item" data-segment-type="0">拖我</div>
-          <div className="segment-item" data-segment-type="0">拖我</div>
-          <div className="segment-item segment-item-flex" data-segment-type="1" data-track-type="c">
+          <div className="segment-item" style={{backgroundColor: '#C66136'}} data-segment-type={"1"}>
             拖我
-            <em>(伸缩轨道)</em>
-            <button onClick={()=> add('c')}> add </button>
+            <button className="btn" onClick={()=> handleAddByClick('1')}>+</button>
           </div>
+          <div className="segment-item" data-segment-type={"2"}>
+            拖我
+            <button onClick={()=> handleAddByClick('2')}>+</button>
+          </div>
+          <div className="segment-item" data-segment-type={"3"}>
+            拖我（一）
+            <button className="btn" onClick={()=> handleAddByClick('3')}>+</button>
+          </div>
+          <div className="segment-item" data-segment-type={"4"}>
+            拖我
+            <button className="btn" onClick={()=> handleAddByClick('4')}>+</button>
+          </div>
+          {/* <div
+            className="segment-item segment-item-flex"
+            data-segment-type="5"
+            data-track-id="c"
+          >
+            拖我
+          </div> */}
         </div>
+        
         <div className="timeline-container" ref={timelineContainer} >
-          <div className="track-operation">
-            <div className="track-operation-item">普通轨道</div>
-            <div className="track-operation-item">普通轨道</div>
-            <div className="track-operation-item">伸缩轨道</div>
+          <div className="track-header-list" ref={trackHeaderListRef}>
+            <div className="track-operation">
+              {tracks.map((track)=> 
+                <TrackHeaderItem key={track.trackId} track={track} />
+              )}
+            </div>
           </div>
           <div
             className="webkit-scrollbar scroll-container"
@@ -257,25 +366,16 @@ function App() {
             <div
               className="scroll-content"
               ref={scrollContentRef}
-              style={{ width: `${scrollContentWidth}px` }}
-              >
+            >
               <div
                 className="track-list"
-                style={{ width: `${trackScrollWidth}px` }}
+                ref={trackListContainer}
+                style={{ width: `${trackWidth}px` }}
               >
-                <div className="track" data-track-id="a" data-track-type="0">
-                  <div className="track-placeholder"></div>
-                </div>
-                <div className="track" data-track-id="b" data-track-type="0">
-                  <div className="track-placeholder"></div>
-                </div>
-                <div className="track track-flexible" data-track-id="c" data-track-type="1">
-                  <div className="track-placeholder"></div>
-                </div>
               </div>
               <div className="coordinate-line"></div>
+              <Cursor ref={cursorRef} />
             </div>
-            <Cursor ref={cursorRef} />
           </div>
         </div>
       </div>

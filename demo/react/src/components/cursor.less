@@ -1,28 +1,31 @@
-.cursor-pointer{
+.cursor-pointer-header{
   position: absolute;
-  top: 0px;
+  top: 0;
   left: -9px;
-  z-index: 3;
+  bottom: 0;
+  z-index: 15;
   width: 20px;
-  height: 180px;
   background-color: rgba(255, 255, 255, 0);
-  overflow-y: hidden;
-  .icon-cursor{
-    position: absolute;
-    top: 0px;
-    left: 50%;
-    margin-left: -7px;
-    width: 13px;
-    height: 16px;
-  }
-  .cursor-pointer-line{
-    position: absolute;
-    left: 50%;
-    top: 13px;
-    margin-left: -1px;
-    height: 100%;
-    width: 1px;
-    font-size: 0;
-    background-color: white;
-  }
+}
+.cursor-pointer-hd{
+  position: sticky;
+  display: flex;
+  justify-content: center;
+}
+.icon-cursor{
+  display: block;
+  margin-left: -1px;
+  width: 12px;
+  height: 16px;
+}
+.cursor-pointer-line{
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  bottom: 0;
+  margin-left: -1px;
+  /* height: 100%; */
+  width: 1px;
+  font-size: 0;
+  background-color: white;
 }
