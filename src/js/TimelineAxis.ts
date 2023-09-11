@@ -69,7 +69,7 @@ export class TimelineAxis extends ZoomAxis {
     if (this.paused || this.stoped) {
       return;
     }
-    if (this.currentFrame > this.totalFrames) {
+    if (this.currentFrame >= this.totalFrames) {
       this.playing = false;
       this.dispatchEvent(
         { eventType: TIMELINE_AXIS_EVENT_TYPE.PLAY_END },
@@ -123,9 +123,9 @@ export class TimelineAxis extends ZoomAxis {
     this.currentFrame = currentFrame;
   }
   setTotalFrames(frames: number) {
-    if(this.totalFrames > frames){
-      return;
-    }
+    // if(this.totalFrames > frames){
+    //   return;
+    // }
     this.totalFrames = frames;
     this.setTickMarks(frames * 2);
   }
