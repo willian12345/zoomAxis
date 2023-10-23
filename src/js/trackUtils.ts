@@ -373,6 +373,6 @@ export const createContainer = (className: string, cssText?: string) => {
   return div;
 };
 
-export const local2Global = () => {
+export const local2Global = (element: HTMLElement) => {
   
 }

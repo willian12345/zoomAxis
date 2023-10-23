@@ -105,7 +105,7 @@ export class Tracks extends EventHelper {
   rectangleDragStart = [0, 0];
   rectangleDragEnd = [0, 0];
   // 被选框框选中的
-  segmentsHolder: Map<string, Segment> = new Map()
+  segmentsHolder: Map<string, {segment: Segment, rect: DOMRect}> = new Map()
   constructor({
     tracks,
     scrollContainer,
@@ -295,8 +295,9 @@ export class Tracks extends EventHelper {
           || frameend > segment.framestart && framestart < segment.framestart
           || framestart > segment.framestart &&  framestart < segment.frameend
         ){
-          segment.setActived(true)
-          this.segmentsHolder.set(segment.segmentId, segment)
+          segment.setActived(true);
+          const s = {segment, rect: segment.dom.getBoundingClientRect()}
+          this.segmentsHolder.set(segment.segmentId, s)
         }
       })
     }
@@ -808,7 +809,9 @@ export class Tracks extends EventHelper {
     } else {
       // 轨道内拖动将 segment 暂时放到 dragTracContainer 内
       if(this.segmentsHolder.size){
-        this.segmentsHolder.forEach( segment => {
+        this.segmentsHolder.forEach( ({segment, rect}) => {
+          segment.dom.style.left = `${startX - (startX - rect.x)}px`;
+          segment.dom.style.top = `${startY - (startY - rect.y)}px`;
           dragTrackContainer.appendChild(segment.dom);
         })
         
@@ -834,8 +837,8 @@ export class Tracks extends EventHelper {
 
     const mousemove = (e: MouseEvent) => {
       // 拖动时拖动的是 dragTrackContainer
-      const movedX = e.clientX - startX;
-      const movedY = e.clientY - startY;
+      const movedX = e.x - startX;
+      const movedY = e.y - startY;
       
       
       
@@ -851,14 +854,15 @@ export class Tracks extends EventHelper {
       );
       // 多选移动
       if(this.segmentsHolder.size){
-        this.segmentsHolder.forEach( segment => {
-          console.log(segment.dom.getBoundingClientRect())
-          // segment.dom.style.left = `${segment.dom.getBoundingClientRect().left + movedX}px`;
-          // segment.dom.style.top = `${segment.dom.getBoundingClientRect().top + movedY}px`;
-          // console.log(segment.dom.style.left)
+        this.segmentsHolder.forEach( ({segment, rect}) => {
+          
+          // const rect = segment.dom.getBoundingClientRect();
+          segment.dom.style.left = `${e.x -  (startX - rect.x)}px`;
+          segment.dom.style.top = `${e.y - (startY - rect.y)}px`;
+          console.log(rect)
         })
-        startX = e.clientX;
-        startY = e.clientY;
+        // startX = e.clientX;
+        // startY = e.clientY;
         return
       }
       segmentCopy.style.left = `${startX - offsetDistanceX}px`;
@@ -914,7 +918,6 @@ export class Tracks extends EventHelper {
       const segmentTypeStr = segmentDom.dataset.segmentType ?? '0';
       const segmentTrackId = segmentDom.dataset.trackId ?? '';
       const segmentId = segmentDom.dataset.segmentId ?? '';
-      console.log(top, 3333)
 
       setTimeout(() => {
         if (dragTrackContainer.children.length && isCopy) {
