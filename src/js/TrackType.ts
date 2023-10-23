@@ -112,9 +112,9 @@ export interface SegmentTracksOutArgs extends TracksArgs {}
 
 export interface DragingArgs {
   isCopy: boolean;
-  scrollContainerX: number;
+  scrollContainer: HTMLElement;
   segment: HTMLElement;
-  dragTrackContainerRect: DOMRect;
+  dragingDom: HTMLElement;
   tracks: HTMLElement[];
 }
 export interface DropArgs {

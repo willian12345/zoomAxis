@@ -406,9 +406,9 @@ export class Track extends EventHelper {
   }
   // 拖动中
   draging({
-    scrollContainerX,
+    scrollContainer,
     segment,
-    dragTrackContainerRect,
+    dragingDom,
   }: DragingArgs) {
     const placeHolder = getSegmentPlaceholder(this.dom);
     if (!placeHolder) {
@@ -421,10 +421,12 @@ export class Track extends EventHelper {
     if (!isContainSplitFromComma(trackType, segmentType)) {
       this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
     }
-    const x = dragTrackContainerRect.left + scrollContainerX;
+    const scrollContainerX = scrollContainer.getBoundingClientRect().left;
+    // 拖动中的 dom 的 rect
+    const rect = dragingDom.getBoundingClientRect()
     // 拖动时轨道内占位元素
-    placeHolder.style.width = `${dragTrackContainerRect.width}px`;
-    placeHolder.style.left = `${x}px`;
+    placeHolder.style.width = `${rect.width}px`;
+    placeHolder.style.left = `${rect.left - scrollContainerX + scrollContainer.scrollLeft}px`;
     // 利用各轨道内的 placeholder 与 轨道内所有现有存 segment进行x轴碰撞检测
     const isCollistion = collisionCheckX(placeHolder, this.dom);
     // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处

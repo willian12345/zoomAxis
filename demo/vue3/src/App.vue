@@ -385,9 +385,10 @@ onMounted(() => {
   z-index: 20;
   left: 0;
   top: 0;
-  min-height: 24px;
+  width: 100vw;
+  height: 100vh;
   border-radius: 4px;
-  background-color: rgba(aquamarine, 0.8);
+  // background-color: rgba(aquamarine, 0.8);
 }
 
 .wrapper {
@@ -461,7 +462,7 @@ onMounted(() => {
   position: absolute;
 }
 
-.track-list {
+.track-list,.track-drag-container {
   padding-top: @markHeight;
   width: 100%;
   .track {
@@ -561,8 +562,7 @@ onMounted(() => {
 }
 
 .segment-fake {
-  width: 100%;
-  height: 100%;
+  position: absolute;
   background-color: #c66136;
   opacity: 0.8;
 }
@@ -608,6 +608,19 @@ onMounted(() => {
   height: 100%;
   font-size: 0;
   background-color: #00b6c2;
+}
+
+.rectangle-capture{
+  display: none;
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  border: 1px solid rgba(white, .1);
+  background-color: rgba(white, .2);
 }
 
 .segment-handle-container{

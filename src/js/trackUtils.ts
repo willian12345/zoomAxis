@@ -77,7 +77,7 @@ export const getLeftValue = (dom: HTMLElement | undefined) => {
   if (!dom) {
     return 0;
   }
-  return parseFloat(dom.style.left) ?? 0;
+  return parseFloat(dom.style.left) || 0;
 };
 export const createDragTrackContainer = () => {
   const div = createContainer(CLASS_NAME_TRACK_DRAG_CONTAINER)
@@ -372,3 +372,7 @@ export const createContainer = (className: string, cssText?: string) => {
   }
   return div;
 };
+
+export const local2Global = () => {
+  
+}

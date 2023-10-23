@@ -105,7 +105,8 @@ export class Segment extends EventHelper{
       `;
     return div.firstElementChild as HTMLElement;
   }
-  private getSegmentLeft(framestart: number): number {
+  getSegmentLeft(framestart?: number): number {
+    framestart = framestart ?? this.framestart
     return framestart * this.frameWidth;
   }
   private setHandleEnableStatus(dom: HTMLElement, enable: boolean){
