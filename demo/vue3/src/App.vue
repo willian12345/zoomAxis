@@ -268,6 +268,11 @@ const testRemoveTrack = () => {
 const testdestroy = () => {
   segmentTracks.destroy()
 }
+
+const handleContainerClick = () => {
+  console.log('取消选择')
+  // segmentTracks.removeSegmentActivedStatus();
+}
 onMounted(() => {
   initApp();
 });
@@ -309,7 +314,7 @@ onMounted(() => {
         <em>(伸缩轨道)</em>
       </div>
     </div>
-    <div class="timeline-container" @wheel="handleWheel">
+    <div class="timeline-container" @wheel="handleWheel" @mouseup="handleContainerClick">
       <div class="track-header-list" ref="trackHeaderListRef">
         <div class="track-operation">
           <div v-for="track in tracks" :key="track.trackId">
