@@ -54,6 +54,7 @@ export class CursorPointer extends EventHelper{
     // 游标拖动
     cursorEl.addEventListener("mousedown", (e: MouseEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       if (!this._enable || this.timeline?.playing) {
         return;
       }

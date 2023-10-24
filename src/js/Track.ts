@@ -452,7 +452,6 @@ export class Track extends EventHelper {
       return null;
     }
     placeHolder.style.opacity = "0";
-    
     // 如果不合法，则需要删除
     const checkResult = this.check(copy, segment);
     if (checkResult) {
@@ -460,6 +459,7 @@ export class Track extends EventHelper {
       return null;
     }
     const isCollistion = collisionCheckX(placeHolder, this.dom);
+    
     if(isCollistion){
       return null;
     }
@@ -572,6 +572,7 @@ export class Track extends EventHelper {
         { segment }
       );
     }
+    
     this.segments.set(segment.segmentId, segment);
     this.dom.appendChild(segment.dom);
     segment.setTrack(this);

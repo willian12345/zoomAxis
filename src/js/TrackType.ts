@@ -128,9 +128,9 @@ export interface DropArgs {
 
 // Segment 构造参数
 export type SegmentConstructInfo = {
-  trackId: string;
-  framestart: number;
-  frameend: number;
+  trackId?: string;
+  framestart?: number;
+  frameend?: number;
   segmentType: SegmentType;
   name?: string;
   segmentId?: string;

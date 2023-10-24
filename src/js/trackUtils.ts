@@ -272,10 +272,10 @@ export const isContainSplitFromComma = (trackIds: string, trackId: string) => {
 // 轨道 y 轴 碰撞检测
 export const trackCollisionCheckY = <T extends Track>(
   tracks: T[],
-  mouseY: number
+  y: number
 ): T | undefined => {
   for (let track of tracks) {
-    if (isCloseEnouphToY(track.dom, mouseY)) {
+    if (isCloseEnouphToY(track.dom, y)) {
       return track;
     }
   }
