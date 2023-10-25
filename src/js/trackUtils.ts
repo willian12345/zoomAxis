@@ -97,21 +97,28 @@ export const removeDragTrackContainer = () => {
 }
 
 // 创建 segment 点位器
-export const createSegmentPlaceHolder = () => {
+export const createSegmentPlaceHolder = (id: string) => {
   const dom = document.createElement("div");
   dom.className = CLASS_NAME_SEGMENT_PLACEHOLDER;
+  dom.id = id;
   return dom;
 };
 // 获取轨道内 segment 占位器
-export const getSegmentPlaceholder = (track: HTMLElement) => {
+export const getSegmentPlaceholder = (track: HTMLElement, segmentId?: string) => {
+  // 为每一个 segment 单独创建一个 placeholder 占位
+  const segmentPlaceholderId =  'segmentPlaceholder' + segmentId + CLASS_NAME_SEGMENT_PLACEHOLDER;
   // segment 点位器在单独的占位容器内
-  const trackPlaceholder: HTMLElement | null =
-    track.querySelector(`.${CLASS_NAME_TRACK_PLACEHOLDER}`);
+  const trackPlaceholder: HTMLElement | null = track.querySelector(`.${CLASS_NAME_TRACK_PLACEHOLDER}`);
   let dom: HTMLElement | null = null;
   if (trackPlaceholder) {
-    dom = trackPlaceholder.querySelector(`.${CLASS_NAME_SEGMENT_PLACEHOLDER}`) as HTMLElement;
+    if(!segmentId){
+      dom = trackPlaceholder.querySelector(`.${CLASS_NAME_SEGMENT_PLACEHOLDER}`) as HTMLElement;
+    }else{
+      dom = trackPlaceholder.querySelector(`#${segmentPlaceholderId}`) as HTMLElement;
+    }
+    
     if (!dom) {
-      dom = createSegmentPlaceHolder();
+      dom = createSegmentPlaceHolder(segmentPlaceholderId);
       trackPlaceholder?.appendChild(dom);
     }
   }

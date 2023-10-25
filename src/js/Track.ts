@@ -387,11 +387,11 @@ export class Track extends EventHelper {
     const cl = this.dom.classList;
     cl.remove(CLASS_NAME_TRACK_DRAG_OVER);
     cl.remove(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
-    const placeHolder = getSegmentPlaceholder(this.dom);
-    if (!placeHolder) {
-      return;
-    }
-    placeHolder.style.opacity = "0";
+    // const placeHolder = getSegmentPlaceholder(this.dom, segme);
+    // if (!placeHolder) {
+    //   return;
+    // }
+    // placeHolder.style.opacity = "0";
   }
   // 拖动开始
   dragstart(segment: Segment) {
@@ -408,8 +408,13 @@ export class Track extends EventHelper {
   draging({
     scrollContainer,
     segmentDom,
+    segmentId,
   }: DragingArgs) {
-    const placeHolder = getSegmentPlaceholder(this.dom);
+    if(!segmentId){
+      return;
+    }
+    
+    const placeHolder = getSegmentPlaceholder(this.dom, segmentId);
     if (!placeHolder) {
       return;
     }
@@ -446,7 +451,8 @@ export class Track extends EventHelper {
     segment: Segment;
   }): Segment|null {
     this.isDraging = false;
-    const placeHolder = getSegmentPlaceholder(this.dom);
+    console.log(segment.segmentId)
+    const placeHolder = getSegmentPlaceholder(this.dom, segment.segmentId);
     if (!placeHolder) {
       return null;
     }
@@ -469,19 +475,20 @@ export class Track extends EventHelper {
     this.addSegment(segment);
     return segment;
   }
-  hidePlaceHolder() {
-    const placeHolder = getSegmentPlaceholder(this.dom);
+  hidePlaceHolder(segmentId?: string) {
+    const placeHolder = getSegmentPlaceholder(this.dom, segmentId);
     if (!placeHolder) {
       return;
     }
-    placeHolder.style.opacity = "0";
+    // 删除 placeholder 占位
+    placeHolder.parentElement?.removeChild(placeHolder);
   }
-  precheck(segmentType: string) {
+  precheck(segmentType: string, segmentId: string) {
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(this.trackType, segmentType)) {
       return false;
     }
-    const placeHolder = getSegmentPlaceholder(this.dom);
+    const placeHolder = getSegmentPlaceholder(this.dom, segmentId);
     if (!placeHolder) {
       return false;
     }

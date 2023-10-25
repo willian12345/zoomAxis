@@ -971,7 +971,7 @@ export class Tracks extends EventHelper {
         vt.removeStatusClass();
       });
       this.hideCoordinateLine();
-
+      
       // 多选移动
 
       for (let [, selectedSegment] of this.SelectedSegments) {
@@ -985,12 +985,16 @@ export class Tracks extends EventHelper {
           this.tracks,
           this.SelectedSegments.size > 1 ? domY : e.y
         );
+        this.tracks.forEach( vt => {
+          // hidePlaceHolder()
+        })
         // 轨道内 x 轴 移动判断
         collisionTrack?.draging({
           isCreateNew,
           scrollContainer,
           segmentDom: dom,
           tracks,
+          segmentId: selectedSegment.segment.segmentId,
         });
 
         // 拖动容器形变
@@ -1049,8 +1053,8 @@ export class Tracks extends EventHelper {
           vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
           if (isCloseEnouphToY(vt.dom, checkY)) {
             // 预先检测是否是相同轨道，以及有没有发生碰撞
-            const r = vt.precheck(segmentTypeStr);
-            vt.hidePlaceHolder();
+            const r = vt.precheck(segmentTypeStr, segment.segmentId);
+            vt.hidePlaceHolder(segment.segmentId);
             if (!r) {
               return;
             }
