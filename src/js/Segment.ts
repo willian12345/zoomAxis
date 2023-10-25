@@ -47,7 +47,8 @@ export class Segment extends EventHelper{
   contentRenderer: string|HTMLElement|null = null
   constructor(args: SegmentConstructInfo) {
     super();
-    this.trackId = args.trackId;
+    console.log(args)
+    this.trackId = args.trackId ?? '';
     this.segmentId = args.segmentId ?? this.createSegmentId();
     this.framestart = args.framestart;
     this.frameend = args.frameend;

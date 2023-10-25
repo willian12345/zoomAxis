@@ -20,11 +20,8 @@ import {
   CLASS_NAME_TRACK_DRAG_OVER_ERROR,
   CLASS_NAME_SEGMENT,
   createSegment,
-  createSegmentFake,
   getDragTrackCotainer,
   removeDragTrackContainer,
-  collisionCheckX,
-  getLeftValue,
   trackCollisionCheckY,
   isCloseEnouphToY,
   getSegmentPlaceholder,
@@ -104,6 +101,8 @@ export class Tracks extends EventHelper {
   rectangleDraging = false;
   rectangleDragStart = [0, 0];
   rectangleDragEnd = [0, 0];
+  shiftKey = false;
+  isMultiDrag = false;
   // 被选框框选中的
   segmentsHolder: Map<string, { segment: Segment, rect: DOMRect, originTrack: HTMLElement | null }> = new Map()
   constructor({
@@ -209,12 +208,17 @@ export class Tracks extends EventHelper {
       return;
     }
     const result = this.checkClickedOnSegment(e);
-    // 在轨道上
+    // 鼠标落在非 segment 上
     if (!result) {
+      this.removeSegmentActivedStatus();
       this.dispatchRectangleDraging(e)
     } else if (result) {
-      // 在 segment 上
-      // this.dragstartDelay(e, this.scrollContainer, result);
+      // 如果没有按住 shift 键，则清掉框选(多选)
+      if(this.shiftKey){
+        this.getActivedSegments().forEach( segment => this.updateSegmentsHolder(segment))
+        this.isMultiDrag = true;
+      }
+      // 鼠标落在 segment 上
       this.dragStart(e, this.scrollContainer, result);
     }
   }
@@ -230,6 +234,7 @@ export class Tracks extends EventHelper {
   }
   // 拖动创建选框框选
   private dispatchRectangleDraging(e: MouseEvent) {
+    this.isMultiDrag = false;
     this.rectangleDraging = true;
     this.rectangleDragStart = this.getCoordinate(e.x, e.y);
     const [left, top] = this.getRectangleRect()
@@ -247,7 +252,7 @@ export class Tracks extends EventHelper {
       this.rectangle.style.top = `${top}px`;
       this.rectangle.style.width = `${width}px`;
       this.rectangle.style.height = `${height}px`;
-      this.checkSelected(left, top, right, bottom)
+      this.checkSelected(left, top, right, bottom);
     }
     const mouseup = () => {
       this.rectangleDraging = false;
@@ -256,6 +261,10 @@ export class Tracks extends EventHelper {
       this.rectangle.style.height = `0`;
       this.rectangleDragStart = [0, 0];
       this.rectangleDragEnd = [0, 0];
+      // 如果有框选选中的
+      if(this.segmentsHolder.size){
+        this.isMultiDrag = true;
+      }
       document.removeEventListener('mousemove', mousemove);
       document.removeEventListener('mouseup', mouseup);
     }
@@ -328,6 +337,8 @@ export class Tracks extends EventHelper {
     if (!target.classList.contains(CLASS_NAME_NEW_SEGMENT)) {
       return;
     }
+    // 从外部拖入
+    this.removeSegmentActivedStatus();
     this.dragStart(ev, this.scrollContainer, target, true);
   }
   
@@ -344,9 +355,9 @@ export class Tracks extends EventHelper {
     });
   }
   // 清空所有轨道代理事件
-  // private removeDelegateEvents() {
-  //   TRACK_EVENT_TYPES_ARRAY.forEach(te => this.removeEventListenerCallbacks(te))
-  // }
+  private removeDelegateEvents() {
+    TRACK_EVENT_TYPES_ARRAY.forEach(te => this.removeEventListenerCallbacks(te))
+  }
   private queryAllSegmentsDom() {
     return Array.from(this.scrollContainer.querySelectorAll(`.${CLASS_NAME_SEGMENT}`)) as HTMLElement[]
   }
@@ -382,7 +393,9 @@ export class Tracks extends EventHelper {
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.DROP_EFFECT);
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_ADDED);
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_SELECTED, async ({ segment }) => {
-      this.removeSegmentActivedStatus();
+      if(!this.shiftKey){
+        this.removeSegmentActivedStatus();
+      }
       segment?.setActived(true);
     });
     this.delegateDispatchEvent(vt, TRACKS_EVENT_TYPES.SEGMENT_DELETED);
@@ -511,6 +524,16 @@ export class Tracks extends EventHelper {
       if (this.disabled) return;
       this.mouseupHandle();
     });
+    this.on(document.body, 'keydown', (e) => {
+      if(e.shiftKey){
+        this.shiftKey = true;
+      }
+    })
+    this.on(document.body, 'keyup', (e) => {
+      if(!e.shiftKey){
+        this.shiftKey = false;
+      }
+    })
   }
   // 获取相对于轨道上 x 位置
   private getX(mouseX: number, scrollContentDom?: HTMLElement) {
@@ -638,19 +661,19 @@ export class Tracks extends EventHelper {
 
   async deleteSegment(trackId: string, segmentId: string) {
     let result = true;
-    const virtualSegment = this.getSegment(trackId, segmentId);
-    if (!virtualSegment) return;
+    const segment = this.getSegment(trackId, segmentId);
+    if (!segment) return;
     if (this.deleteSegmentCheck) {
       result = await this.deleteSegmentCheck(trackId, segmentId);
       if (!result) {
         console.warn("删除失败");
         return result;
       }
-      if (!virtualSegment) {
+      if (!segment) {
         return result;
       }
     }
-    virtualSegment?.parentTrack?.removeSegment(virtualSegment);
+    segment?.parentTrack?.removeSegment(segment);
     return result;
   }
   async deleteSegments(segments: Segment[]) {
@@ -664,11 +687,17 @@ export class Tracks extends EventHelper {
     }
   }
   removeSegmentActivedStatus() {
-    const segments = this.getSegments();
     this.segmentsHolder.clear();
-    segments.forEach((segment) => segment.setActived(false));
+    this.getActivedSegments().forEach((segment) => {
+      segment.setActived(false);
+      this.dispatchEvent(
+        { eventType: TRACKS_EVENT_TYPES.SEGMENT_DESELECT },
+        { segment: segment }
+      );
+    });
   }
 
+  // 将拖动的 segment 放回轨道内
   private putSegmentBack(
     segment: HTMLElement,
     segmentLeft: number,
@@ -723,6 +752,9 @@ export class Tracks extends EventHelper {
     }
     return track.segments.get(segmentId) ?? null;
   }
+  getActivedSegments(){
+    return this.getSegments().filter( segment => segment.actived);
+  }
   // 获取某条轨道内的所有 segments
   getSegmentsByTrackId(trackId: string): Segment[] {
     const track = this.getTrack(trackId);
@@ -767,6 +799,7 @@ export class Tracks extends EventHelper {
     }
     return [isAdsorbing, _framestart, adsorbTo]
   }
+  // segment 拖动开始
   dragStart(
     e: MouseEvent,
     scrollContainer: HTMLElement,
@@ -795,7 +828,7 @@ export class Tracks extends EventHelper {
     const segmentId = segmentDom.dataset.segmentId ?? '';
     // 如果是外部拖入轨道(复制)
     if (isCopy) {
-      segmentCopy = createSegment({ segmentType: parseInt(segmentTypeStr), frameWidth: this.frameWidth });
+      segmentCopy = createSegment({ segmentType: parseInt(segmentTypeStr), frameWidth: this.frameWidth, framestart: 0, frameend: 6 });
       const frames = getDatasetNumberByKey(segmentCopy.dom, 'frames');
       segmentCopy.dom.style.height = `${segmentRect.height}px`;
       // 如果已知 frames 则需要设置相应的宽度
@@ -809,7 +842,7 @@ export class Tracks extends EventHelper {
       });
 
     } else {
-
+      // 轨道内的拖动
       const segment = this.getSegment(segmentTrackId, segmentId)
       if (!segment) return;
       this.segmentsHolder.set(segmentId, {
@@ -969,13 +1002,13 @@ export class Tracks extends EventHelper {
                 segment: newSegment,
               });
               // 如果有原父级轨道，说明是从原父级轨道拖过来的，需要删除原父级轨道内的 segment
-              // if (newSegment?.originSegmentId) {
-              //   this.deleteSegment(newSegment.originTrackId, newSegment.originSegmentId);
-              //   newSegment.originParentTrack = null;
-              //   newSegment.originSegmentId = '';
-              //   newSegment.originTrackId = '';
-              //   originTrack = null;
-              // }
+              if (newSegment?.originSegmentId) {
+                this.deleteSegment(newSegment.originTrackId, newSegment.originSegmentId);
+                newSegment.originParentTrack = null;
+                newSegment.originSegmentId = '';
+                newSegment.originTrackId = '';
+                originTrack = null;
+              }
             }
           })
         )
@@ -1014,7 +1047,6 @@ export class Tracks extends EventHelper {
             // 如果是复制
             dragTrackContainer.removeChild(segment.dom);
           })
-          // this.segmentsHolder.clear();
         }
       }, 0);
 
@@ -1206,6 +1238,7 @@ export class Tracks extends EventHelper {
   }
   destroy() {
     removeDragTrackContainer();
+    this.removeDelegateEvents();
     this.tracks.forEach((track) => track.destroy());
     for (let { ele, eventName, listener, options } of this.bindedEventArray) {
       ele.removeEventListener(eventName, listener, options);

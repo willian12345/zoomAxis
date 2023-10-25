@@ -193,6 +193,12 @@ const initApp = () => {
   segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_ADDED, () => {
     syncTrackWidth();
   });
+  // segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_SELECTED, (e) => {
+  //   console.log('选中', e)
+  // });
+  // segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_DESELECT, (e) => {
+  //   console.log('取消选中', e)
+  // });
   // 滚动 timeline  x 轴
   const scrollTimelineX = (pointerX: number) => {
     if (!scrollContainerRef.value) {
@@ -269,10 +275,6 @@ const testdestroy = () => {
   segmentTracks.destroy()
 }
 
-const handleContainerClick = () => {
-  console.log('取消选择')
-  // segmentTracks.removeSegmentActivedStatus();
-}
 onMounted(() => {
   initApp();
 });
@@ -314,7 +316,7 @@ onMounted(() => {
         <em>(伸缩轨道)</em>
       </div>
     </div>
-    <div class="timeline-container" @wheel="handleWheel" @mouseup="handleContainerClick">
+    <div class="timeline-container" @wheel="handleWheel">
       <div class="track-header-list" ref="trackHeaderListRef">
         <div class="track-operation">
           <div v-for="track in tracks" :key="track.trackId">

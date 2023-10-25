@@ -45,6 +45,7 @@ export enum TRACKS_EVENT_TYPES {
   KEYFRAME_MOVING,// 关键帧移动结束
   KEYFRAME_MOVE_END,// 关键帧移动结束
   FRAME_JUMP, // 帧跳动
+  SEGMENT_DESELECT, // 取消选中
 }
 export type ERROR_DATA = {
   eventType: TRACKS_EVENT_TYPES;
@@ -129,8 +130,8 @@ export interface DropArgs {
 // Segment 构造参数
 export type SegmentConstructInfo = {
   trackId?: string;
-  framestart?: number;
-  frameend?: number;
+  framestart: number;
+  frameend: number;
   segmentType: SegmentType;
   name?: string;
   segmentId?: string;

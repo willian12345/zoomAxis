@@ -609,11 +609,11 @@ export class Track extends EventHelper {
   // 获取自身轨道及子轨道内的所有 segmetns
   getSegments() {
     let result: Segment[] = Array.from(this.segments.values());
-    if (this.subTracks) {
-      for (const [_, subtrack] of this.subTracks) {
-        result = [...result, ...subtrack.getSegments()];
-      }
-    }
+    // if (this.subTracks) {
+    //   for (const [_, subtrack] of this.subTracks) {
+    //     result = [...result, ...subtrack.getSegments()];
+    //   }
+    // }
     return result;
   }
   getSegmentById(segmentId: string) {
