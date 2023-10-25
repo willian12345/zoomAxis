@@ -177,7 +177,7 @@ const initApp = () => {
   trackCursor.addEventListener(
     CURSOR_POINTER_EVENT_TYPE.UPDATE,
     ({ frame }) => {
-      console.log(frame);
+      // console.log(frame);
       timeline?.setCurrentFrame(frame);
     }
   );
@@ -238,7 +238,7 @@ const initApp = () => {
 const splitHandler = () => {
   currentSegment && segmentTracks.split(currentSegment);
 };
-const toggleMagnet = () => {
+const toggleAdsorbable = () => {
   segmentTracks.adsorbable = !segmentTracks.adsorbable;
 };
 const handleClick = (track: TTrackConfig) => {
@@ -284,7 +284,7 @@ onMounted(() => {
   <div class="wrapper">
     <div className="btns">
       <button @click="splitHandler">分割</button>
-      <button @click="toggleMagnet">辅助线吸附</button>
+      <button @click="toggleAdsorbable">辅助线吸附</button>
       <button @click="handlePlay">播放</button>
       <button @click="testAddToTrack">往某个组内添加轨道</button>
       <button @click="testRemoveTrack">删除组内添加的轨道</button>
@@ -496,7 +496,7 @@ onMounted(() => {
   .segment {
     position: absolute;
     left: 0;
-    top: 1px;
+    top: 2px;
     right: 0;
     bottom: 0;
     z-index: 1;
@@ -584,6 +584,7 @@ onMounted(() => {
 }
 .segment-handle {
   position: absolute;
+  top: 2px;
   width: 4px;
   height: 100%;
   z-index: 2;

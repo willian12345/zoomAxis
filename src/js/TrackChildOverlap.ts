@@ -39,8 +39,7 @@ export class TrackChildOverlap extends Track {
   }
   draging({
     scrollContainer,
-    segment,
-    dragingDom,
+    segmentDom,
   }: DragingArgs) {
     const placeHolder = getSegmentPlaceholder(this.dom);
     if (!placeHolder) {
@@ -49,15 +48,15 @@ export class TrackChildOverlap extends Track {
     placeHolder.style.opacity = "1";
     this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER);
     const trackType = this.trackType;
-    const segmentType = segment.dataset.segmentType ?? "";
+    const segmentType = segmentDom.dataset.segmentType ?? "";
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(trackType, segmentType)) {
       this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
     }
     const scrollContainerX = scrollContainer.getBoundingClientRect().left;
-    const rect = dragingDom.getBoundingClientRect()
+    const rect = segmentDom.getBoundingClientRect()
     // 拖动时轨道内占位元素
-    placeHolder.style.width = `${segment.offsetWidth}px`;
+    placeHolder.style.width = `${segmentDom.offsetWidth}px`;
     placeHolder.style.left = `${rect.left - scrollContainerX + scrollContainer.scrollLeft}px`;
 
   }

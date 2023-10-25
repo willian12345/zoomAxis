@@ -10,6 +10,7 @@ import { Track } from "./Track";
 const CLOSE_ENOUPH_DISTANCE_Y = 15; // 距离 y 是否够近
 const CLOSE_ENOUPH_SEGMENT_X = 20; // 距离 segment x是否够
 
+export const SEGMENT_OFFSET_TOP = 2; // 节点离轨道顶部向下偏移距离
 export const CLASS_NAME_TRACK = 'track';
 export const CLASS_NAME_TRACK_FLEX = 'track-flexible';
 export const CLASS_NAME_TRACK_DRAG_CONTAINER = 'track-drag-container';
