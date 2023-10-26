@@ -40,8 +40,9 @@ export class TrackChildOverlap extends Track {
   draging({
     scrollContainer,
     segmentDom,
+    segmentId,
   }: DragingArgs) {
-    const placeHolder = getSegmentPlaceholder(this.dom);
+    const placeHolder = getSegmentPlaceholder(this.dom, segmentId);
     if (!placeHolder) {
       return;
     }
@@ -56,7 +57,7 @@ export class TrackChildOverlap extends Track {
     const scrollContainerX = scrollContainer.getBoundingClientRect().left;
     const rect = segmentDom.getBoundingClientRect()
     // 拖动时轨道内占位元素
-    placeHolder.style.width = `${segmentDom.offsetWidth}px`;
+    placeHolder.style.width = `${rect.width}px`;
     placeHolder.style.left = `${rect.left - scrollContainerX + scrollContainer.scrollLeft}px`;
 
   }

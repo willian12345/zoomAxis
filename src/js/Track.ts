@@ -451,7 +451,6 @@ export class Track extends EventHelper {
     segment: Segment;
   }): Segment|null {
     this.isDraging = false;
-    console.log(segment.segmentId)
     const placeHolder = getSegmentPlaceholder(this.dom, segment.segmentId);
     if (!placeHolder) {
       return null;
@@ -594,7 +593,6 @@ export class Track extends EventHelper {
     segment.leftHandler.parentElement?.removeChild(segment.leftHandler);
     segment.rightHandler.parentElement?.removeChild(segment.rightHandler);
     this.segments.delete(segment.segmentId);
-    console.log(segment.dom, segment.dom.parentElement)
     segment.dom.parentElement?.removeChild(segment.dom);
     this.dispatchEvent(
       { eventType: TRACKS_EVENT_TYPES.SEGMENT_DELETED },
@@ -615,11 +613,6 @@ export class Track extends EventHelper {
   // 获取自身轨道及子轨道内的所有 segmetns
   getSegments() {
     let result: Segment[] = Array.from(this.segments.values());
-    // if (this.subTracks) {
-    //   for (const [_, subtrack] of this.subTracks) {
-    //     result = [...result, ...subtrack.getSegments()];
-    //   }
-    // }
     return result;
   }
   getSegmentById(segmentId: string) {

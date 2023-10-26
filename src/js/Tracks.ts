@@ -296,7 +296,6 @@ export class Tracks extends EventHelper {
       this.trackListContainer.removeEventListener("mouseup", containerMouseup);
     };
     document.addEventListener("mousemove", mousemove);
-    // this.trackListContainer.addEventListener('mouseup', containerMouseup)
     document.addEventListener("mouseup", mouseup);
   }
   private getCollisionTracks(top: number, bottom: number) {
@@ -986,7 +985,7 @@ export class Tracks extends EventHelper {
           this.SelectedSegments.size > 1 ? domY : e.y
         );
         this.tracks.forEach( vt => {
-          // hidePlaceHolder()
+          vt.hidePlaceHolder(selectedSegment.segment.segmentId)
         })
         // 轨道内 x 轴 移动判断
         collisionTrack?.draging({
