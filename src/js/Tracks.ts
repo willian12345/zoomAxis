@@ -921,9 +921,12 @@ export class Tracks extends EventHelper {
         segmentType: parseInt(segmentTypeStr),
         frameWidth: this.frameWidth,
         framestart: 0,
-        frameend: (frames > 0) ? frames : 6,
+        frameend: (frames > 0) ? frames : 0,
       });
-      segmentCopy.dom.style.height = `${segmentRect.height}px`;
+      
+      if(frames <= 0){
+        segmentCopy.dom.style.width = `${segmentRect.width}px`;
+      }
       
       // 将外部拖入轨道的也视为 segment 拖动
       this.SelectedSegments.set("NEW_SEGMENT", {
