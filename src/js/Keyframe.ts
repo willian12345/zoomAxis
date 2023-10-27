@@ -3,7 +3,7 @@
  * <div class="segment-keyframe" data-frame="0" style="left: 0px;"></div>
  */
 import { EventHelper } from "./EventHelper";
-import { KeyframeConstructInfo, SegmentType, TRACKS_EVENT_TYPES } from "./TrackType";
+import { KeyframeConstructInfo, TRACKS_EVENT_TYPES } from "./TrackType";
 import { createNodeWidthClass, CLASS_NAME_SEGMENT_KEYFRAME, CLASS_NAME_SEGMENT_KEYFRAME_ACTIVED, getLeftValue } from './trackUtils'
 import { Segment } from "./Segment";
 
@@ -29,7 +29,7 @@ export class Keyframe extends EventHelper  {
     this.dom.addEventListener('mousedown', this.dragstart)
     this.dom.addEventListener('mouseup', this.dragend)
   }
-  click = (e: MouseEvent) => {
+  click = () => {
     if(!this.parent){
       return;
     }
@@ -43,7 +43,7 @@ export class Keyframe extends EventHelper  {
       }
     );
   }
-  dragend = (e: MouseEvent) => {
+  dragend = () => {
     // e.stopPropagation();
   }
   // 拖动关键帧

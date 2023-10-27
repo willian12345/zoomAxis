@@ -193,9 +193,9 @@ const initApp = () => {
   segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_ADDED, () => {
     syncTrackWidth();
   });
-  // segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_SELECTED, (e) => {
-  //   console.log('选中', e)
-  // });
+  segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_SELECTED, (e) => {
+    console.log('选中', e, segmentTracks.multiSegmentDraging)
+  });
   // segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_DESELECT, (e) => {
   //   console.log('取消选中', e)
   // });
@@ -275,6 +275,13 @@ const testdestroy = () => {
   segmentTracks.destroy()
 }
 
+const handleAddKeyframe = () => {
+  if(!currentSegment || !timeline){
+    return;
+  }
+  segmentTracks.addKeyframe(currentSegment.segmentId, timeline?.currentFrame - currentSegment.framestart)
+}
+
 onMounted(() => {
   initApp();
 });
@@ -289,6 +296,7 @@ onMounted(() => {
       <button @click="testAddToTrack">往某个组内添加轨道</button>
       <button @click="testRemoveTrack">删除组内添加的轨道</button>
       <button @click="testdestroy">destroy</button>
+      <button @click="handleAddKeyframe">添加关键帧</button>
     </div>
     <div class="segment-list" ref="segmentItemListRef">
       <div class="segment-item" style="background-color: #C66136;" data-segment-type="1">
@@ -640,6 +648,38 @@ onMounted(() => {
   .segment-handle.actived{
     background-color: rgba(255, 255, 255, 0.8);
   }
+}
+
+.segment-keyframe{
+  // display: none;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  z-index: 1;
+  transform: translate( calc(-50% - 1px), -50%);
+  border-radius: 1px;
+  &::after{
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 8px;
+    height: 8px;
+    transform-origin: 50% 50%;
+    transform: rotate(45deg);
+    background: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+}
+.segment-keyframe.actived{
+  &::after{
+    background: #FAA700;
+  }
+}
+.segment.actived .segment-keyframe{
+  display: block;
 }
 
 

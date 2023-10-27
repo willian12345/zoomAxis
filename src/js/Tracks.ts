@@ -113,7 +113,7 @@ export class Tracks extends EventHelper {
   // 按 shift 健可单击多选
   shiftKey = false;
   // 是否为多选拖动
-  isMultiDrag = false;
+  multiSegmentDraging = false;
   // 被选框框选中的
   SelectedSegments: Map<
     string,
@@ -230,7 +230,7 @@ export class Tracks extends EventHelper {
         this.getActivedSegments().forEach((segment) =>
           this.updateSelectedSegment(segment)
         );
-        this.isMultiDrag = true;
+        this.multiSegmentDraging = true;
       }
       // 鼠标落在 segment 上
       this.dragStart(e, this.scrollContainer, result);
@@ -252,7 +252,7 @@ export class Tracks extends EventHelper {
   }
   // 拖动创建选框框选
   private dispatchRectangleDraging(e: MouseEvent) {
-    this.isMultiDrag = false;
+    this.multiSegmentDraging = false;
     this.rectangleDraging = true;
     this.rectangleDragStart = this.getCoordinate(e.x, e.y);
     const [left, top] = this.getRectangleRect();
@@ -281,7 +281,7 @@ export class Tracks extends EventHelper {
       this.rectangleDragEnd = [0, 0];
       // 如果有框选选中的
       if (this.SelectedSegments.size) {
-        this.isMultiDrag = true;
+        this.multiSegmentDraging = true;
       }
       document.removeEventListener("mousemove", mousemove);
       document.removeEventListener("mouseup", mouseup);
@@ -1161,7 +1161,7 @@ export class Tracks extends EventHelper {
           });
         }
 
-        if (!this.isMultiDrag) {
+        if (!this.multiSegmentDraging) {
           this.SelectedSegments.clear();
         }
       }, 0);
