@@ -182,6 +182,30 @@ export class Segment extends EventHelper{
       this.rightHandler.style.left = `${((this.framestart + (this.frameend - this.framestart)) * this.frameWidth) - 4}px`;
     }
   }
+  /**
+   * 实时更新keyframe的关键帧位置，但不更新 frame
+   * 用于手柄拖动时临时更新相对位置以保持关键帧位置不动
+   */
+  syncKeyframesLeftPosition(){
+    const offset = this.framestart - this.prevFrameStart;
+    if(this.keyframes){
+      this.keyframes.forEach((keyframe) => {
+        const newFrame = keyframe.frame - offset
+        keyframe.dom.style.left = `${(newFrame) * this.frameWidth}px`;
+      });
+    }
+  }
+  /**
+   * 更新 keyframe 帧数
+   */
+  updateSegmentKeyframesFrame(){
+    const offset = this.framestart - this.prevFrameStart;
+    if(this.keyframes){
+      this.keyframes.forEach((keyframe) => {
+        keyframe.frame = keyframe.frame - offset
+      });
+    }
+  }
   // 拖动手柄状态更新：是否响应拖动
   setHandleEnable(leftEnable: boolean, rightEnable: boolean){
     this.setHandleEnableStatus(this.leftHandler, leftEnable);
@@ -196,6 +220,10 @@ export class Segment extends EventHelper{
     this.updateSegmentHandlerPos();
   }
   addKeyframe(frame: number){
+    const exist = this.keyframes.find(keyframe => keyframe.frame === frame)
+    if(exist){
+      return;
+    }
     const keyframe = new Keyframe({
       segmentId: this.segmentId,
       frame,
@@ -221,8 +249,9 @@ export class Segment extends EventHelper{
   // 删除不在可视范围内的关键帧
   deleteKeyframeOutOfRange(){
     const deletedArr = this.keyframes.filter(keyframe => {
+      const absFrame = this.framestart + keyframe.frame
       // 不在可视范围内
-      return (this.framestart + keyframe.frame) > this.frameend
+      return (absFrame) > this.frameend || (absFrame) < this.framestart;
     })
     deletedArr.forEach( keyframe => {
       this.deleteKeyframe(keyframe.frame);
@@ -233,10 +262,6 @@ export class Segment extends EventHelper{
     return this.keyframes.find(keyframe => {
       return keyframe.actived
     })
-  }
-  getNextKeyframe(){
-    const actived = this.getActivedKeyframe();
-    
   }
   // 更新 自定义渲染器 renderer 用于渲染不同UI
   updateContentRenderer(renderer: string|HTMLElement){

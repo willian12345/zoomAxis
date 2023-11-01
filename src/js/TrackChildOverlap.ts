@@ -78,6 +78,8 @@ export class TrackChildOverlap extends Track {
     
     // 普通轨道
     const [fs, fd] = getFrameRange(segment.dom);
+    segment.prevFrameStart = fs;
+    segment.prevFrameEnd = fd;
     const frameend = framestart + (fd - fs);
     segment.setRange(framestart, frameend);
     this.addSegment(segment);
@@ -103,6 +105,8 @@ export class TrackChildOverlap extends Track {
     }
     segment.setRange(framestart, frameend);
     segment.setHover(true);
+    // 左侧手柄被拖动时需要更新关键帧的 left 值以抵销相对定位导致关键帧的左右移动
+    segment.syncKeyframesLeftPosition();
     return;
   }
   // segment 右侧手柄拖动

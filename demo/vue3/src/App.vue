@@ -241,9 +241,7 @@ const splitHandler = () => {
 const toggleAdsorbable = () => {
   segmentTracks.adsorbable = !segmentTracks.adsorbable;
 };
-const handleClick = (track: TTrackConfig) => {
 
-}
 let tempTrackId: string;
 const handleAddByClick = (trackType: string) => {
   const trackId = Math.random() + 'newTrack';
@@ -277,9 +275,19 @@ const testdestroy = () => {
 
 const handleAddKeyframe = () => {
   if(!currentSegment || !timeline){
+    console.log('请先选择一个segment');
     return;
   }
   segmentTracks.addKeyframe(currentSegment.segmentId, timeline?.currentFrame - currentSegment.framestart)
+}
+
+const handleSegmentDelete = () => {
+  if(!currentSegment){
+    console.log('请先选择一个segment');
+    return;
+  }
+  segmentTracks.deleteSegment(currentSegment.trackId, currentSegment.segmentId);
+  currentSegment = null;
 }
 
 onMounted(() => {
@@ -297,6 +305,7 @@ onMounted(() => {
       <button @click="testRemoveTrack">删除组内添加的轨道</button>
       <button @click="testdestroy">destroy</button>
       <button @click="handleAddKeyframe">添加关键帧</button>
+      <button @click="handleSegmentDelete">删除当前 segment</button>
     </div>
     <div class="segment-list" ref="segmentItemListRef">
       <div class="segment-item" style="background-color: #C66136;" data-segment-type="1">
@@ -509,6 +518,7 @@ onMounted(() => {
     bottom: 0;
     z-index: 1;
     height: 24px;
+    overflow: hidden;
     border-radius: 4px;
     pointer-events: all;
     border: 1px solid transparent;

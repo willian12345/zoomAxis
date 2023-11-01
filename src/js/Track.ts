@@ -47,7 +47,7 @@ export class Track extends EventHelper {
   dom!: HTMLElement;
   trackId = "";
   trackType = "";
-  group:TrackGroup|null = null;
+  group: TrackGroup | null = null;
   visibility = true;
   segments: Map<string, Segment> = new Map(); // 轨道内的 segment
   subTracks: Map<string, Track> = new Map(); // 子轨道
@@ -61,7 +61,7 @@ export class Track extends EventHelper {
   isDraging = false;
   sliding = false;
   segmentHandleContainer!: HTMLElement
-  createSegmentCheck?:ICreateSegmentCheck; // 外部 UE 真正添加新 segment 逻辑
+  createSegmentCheck?: ICreateSegmentCheck; // 外部 UE 真正添加新 segment 逻辑
   constructor({ trackId, trackType, frameWidth, createSegmentCheck }: ITrackArgs) {
     super();
     this.frameWidth = frameWidth;
@@ -69,17 +69,17 @@ export class Track extends EventHelper {
     this.trackType = trackType;
     this.dom = this.createDom();
     const segmentHandleContainer = this.dom.querySelector(`.${CLASS_NAME_SEGMENT_HANDLE_CONTAINER}`);
-    if(!segmentHandleContainer){
+    if (!segmentHandleContainer) {
       throw new Error(`轨道模板内缺少${CLASS_NAME_SEGMENT_HANDLE_CONTAINER}容器`);
     }
     this.segmentHandleContainer = segmentHandleContainer as HTMLElement
 
-    if(createSegmentCheck){
+    if (createSegmentCheck) {
       this.createSegmentCheck = createSegmentCheck;
     }
     this.initEvent();
   }
-  createDom(){
+  createDom() {
     const div = document.createElement("div");
     div.innerHTML = `
         <div class="track" data-track-id="${this.trackId}" data-track-type="${this.trackType}">
@@ -97,20 +97,20 @@ export class Track extends EventHelper {
     document.body.addEventListener('mousemove', this.mousemove);
   }
   mouseout = () => {
-    if(this.isDraging || this.sliding) return;
+    if (this.isDraging || this.sliding) return;
     const segments = this.getSegments();
-    segments.forEach( segment => segment.setHover(false));
+    segments.forEach(segment => segment.setHover(false));
   }
   mousemove = (e: MouseEvent) => {
-    if(this.isDraging || this.sliding) return;
+    if (this.isDraging || this.sliding) return;
     const rect = this.dom.getBoundingClientRect();
     const x = e.clientX - rect.left - this.dom.scrollLeft;
     const y = e.clientY - (rect.top + rect.height * .5);
-    this.segments.forEach( segment => segment.setHover(false));
-    if(Math.abs(y) >= 14) return;
+    this.segments.forEach(segment => segment.setHover(false));
+    if (Math.abs(y) >= 14) return;
     const frame = Math.round(x / this.frameWidth);
     const interacts = this.getInteractSegment(Array.from(this.segments.values()), frame);
-    interacts.forEach( segment => segment.setHover(true));
+    interacts.forEach(segment => segment.setHover(true));
   }
   click = (e: MouseEvent) => {
     if (this.disabled) {
@@ -132,7 +132,7 @@ export class Track extends EventHelper {
       let segmentDom = findParentElementByClassName(target, CLASS_NAME_SEGMENT);
       if (segmentDom) {
         const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? "");
-        if(!segment?.actived){
+        if (!segment?.actived) {
           this.dispatchEvent(
             { eventType: TRACKS_EVENT_TYPES.SEGMENT_SELECTED },
             {
@@ -174,7 +174,7 @@ export class Track extends EventHelper {
     }
     if (target.classList.contains(CLASS_NAME_SEGMENT_HANDLE_LEFT)) {
       e.stopPropagation();
-      this.dragHandleStart(e, target, this.leftHandleMove.bind(this), 0);``
+      this.dragHandleStart(e, target, this.leftHandleMove.bind(this), 0); ``
       return;
     }
     if (target.classList.contains(CLASS_NAME_SEGMENT_HANDLE_RIGHT)) {
@@ -191,7 +191,9 @@ export class Track extends EventHelper {
     handleCode: number
   ) => {
     const segment = this.getSegmentById(handle.dataset.segmentId ?? '')
-    if(!segment) return;
+    if (!segment) return;
+    segment.prevFrameStart = segment.framestart
+    segment.prevFrameEnd = segment.frameend
     this.sliding = true;
     const segmentDom = segment.dom
     e.preventDefault();
@@ -217,11 +219,23 @@ export class Track extends EventHelper {
       startX = e.clientX;
       const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? "");
       if (segment) {
-        
+
         //注意： 宽度调节完毕后，影响到的相关 segment 不能同时调整需要另外再调用，所以使用了新的 SEGMENTS_SET_RANGE 事件
         this.triggerSlideEndEvent(segment, handleCode);
         this.sliding = false;
         segment.setSlideStatus(false);
+
+        // 更新关键帧
+        segment.updateSegmentKeyframesFrame();
+        // 检测是否有超出范围的关键帧
+        segment.deleteKeyframeOutOfRange();
+
+        console.log(1)
+
+        segment.prevFrameStart = segment.framestart
+        segment.prevFrameEnd = segment.frameend
+
+        // segment.syncKeyframesLeftPosition();
       }
       document.body.removeEventListener("mousemove", mousemove);
       document.body.removeEventListener("mouseup", mouseup);
@@ -268,7 +282,6 @@ export class Track extends EventHelper {
         if (framestart < 0) {
           framestart = 0;
         }
-        segment.setRange(framestart, frameend);
       } else {
         // 左侧有 segment 的情况，最多拖到左侧 segment 的 frameend
         const sideSegmentFrameend = segmentLeftSide.frameend;
@@ -276,8 +289,10 @@ export class Track extends EventHelper {
         if (framestart < sideSegmentFrameend) {
           framestart = sideSegmentFrameend;
         }
-        segment.setRange(framestart, frameend);
       }
+      segment.setRange(framestart, frameend);
+      // 左侧手柄被拖动时需要更新关键帧的 left 值以抵销相对定位导致关键帧的左右移动
+      segment.syncKeyframesLeftPosition();
       this.triggerSlideEvent(segment, [], 0);
       this.setHandlesActive(segment, true)
       return segmentLeftSide;
@@ -324,9 +339,9 @@ export class Track extends EventHelper {
     }
     return;
   }
-  getInteractSegment(segments: Segment[], frame: number){
-    return segments.filter( segment => {
-      return  frame >= segment.framestart && frame <= segment.frameend
+  getInteractSegment(segments: Segment[], frame: number) {
+    return segments.filter(segment => {
+      return frame >= segment.framestart && frame <= segment.frameend
     })
   }
   getSegmentLeft(framestart: number): number {
@@ -367,8 +382,8 @@ export class Track extends EventHelper {
       }
     );
   }
-  triggerEvent(eventType: TRACKS_EVENT_TYPES, data: any){
-    this.dispatchEvent({eventType}, data);
+  triggerEvent(eventType: TRACKS_EVENT_TYPES, data: any) {
+    this.dispatchEvent({ eventType }, data);
   }
   setFrameWidth(w: number) {
     this.frameWidth = w;
@@ -397,7 +412,9 @@ export class Track extends EventHelper {
   dragstart(segment: Segment) {
     this.originFrameStart = segment.framestart;
     this.originFrameEnd = segment.frameend;
-    this.segments.forEach( segment => segment.setHover(false));
+    segment.prevFrameStart = segment.framestart;
+    segment.prevFrameEnd = segment.frameend;
+    this.segments.forEach(segment => segment.setHover(false));
     this.isDraging = true;
     this.dispatchEvent(
       { eventType: TRACKS_EVENT_TYPES.DRAG_START },
@@ -410,10 +427,10 @@ export class Track extends EventHelper {
     segmentDom,
     segmentId,
   }: DragingArgs) {
-    if(!segmentId){
+    if (!segmentId) {
       return;
     }
-    
+
     const placeHolder = getSegmentPlaceholder(this.dom, segmentId);
     if (!placeHolder) {
       return;
@@ -449,7 +466,7 @@ export class Track extends EventHelper {
     copy: boolean;
     framestart: number;
     segment: Segment;
-  }): Segment|null {
+  }): Segment | null {
     this.isDraging = false;
     const placeHolder = getSegmentPlaceholder(this.dom, segment.segmentId);
     if (!placeHolder) {
@@ -463,12 +480,14 @@ export class Track extends EventHelper {
       return null;
     }
     const isCollistion = collisionCheckX(placeHolder, this.dom);
-    
-    if(isCollistion){
+
+    if (isCollistion) {
       return null;
     }
     // 普通轨道
     const [fs, fd] = getFrameRange(segment.dom);
+    segment.prevFrameStart = fs;
+    segment.prevFrameEnd = fd;
     const frameend = framestart + (fd - fs);
     segment.setRange(framestart, frameend);
     this.addSegment(segment);
@@ -497,7 +516,7 @@ export class Track extends EventHelper {
     }
     return true;
   }
-  
+
   async createSegment(
     segmentTrackId: string,
     framestart: number,
@@ -548,7 +567,7 @@ export class Track extends EventHelper {
     const isAdded = this.segments.get(segment.segmentId);
     // 非从其它轨道拖入且拖动前与拖动后位置没有发生变化则什么都不做
     if (
-      !segment.originParentTrack && 
+      !segment.originParentTrack &&
       this.originFrameStart === segment.framestart &&
       this.originFrameEnd === segment.frameend
     ) {
@@ -556,7 +575,7 @@ export class Track extends EventHelper {
     }
     segment.prevFrameStart = this.originFrameStart
     segment.prevFrameEnd = this.originFrameEnd
-    
+
     // 如果添加过了，则无需再添加, 但要触发 DRAG_END
     if (isAdded) {
       // // 拖动放回原处是异步，拖完也要延时
@@ -577,7 +596,7 @@ export class Track extends EventHelper {
         { segment }
       );
     }
-    
+
     this.segments.set(segment.segmentId, segment);
     this.dom.appendChild(segment.dom);
     segment.setTrack(this);
@@ -641,22 +660,22 @@ export class Track extends EventHelper {
       <div class="${CLASS_NAME_SEGMENT_HANDLE} ${CLASS_NAME_SEGMENT_HANDLE_LEFT}" data-segment-id="${segment.segmentId}"></div>
       <div class="${CLASS_NAME_SEGMENT_HANDLE} ${CLASS_NAME_SEGMENT_HANDLE_RIGHT}" data-segment-id="${segment.segmentId}"></div>
     `
-    const dom  = createContainer('div')
+    const dom = createContainer('div')
     dom.innerHTML = tmpl
     // 关联至 segment
     segment.leftHandler = Array.from(dom.children)[0] as HTMLElement;
     segment.rightHandler = Array.from(dom.children)[1] as HTMLElement;
     // 添加到轨道 segment handle container
-    Array.from(dom.children).forEach( node => {
+    Array.from(dom.children).forEach(node => {
       this.segmentHandleContainer.appendChild(node);
     });
     segment.updateSegmentHandlerPos();
   }
-  setHandlesActive(segment: Segment, b: boolean){
+  setHandlesActive(segment: Segment, b: boolean) {
     this.setHandleActive(segment.leftHandler, b)
     this.setHandleActive(segment.rightHandler, b)
   }
-  setHandleActive(dom: HTMLElement, b: boolean){
+  setHandleActive(dom: HTMLElement, b: boolean) {
     b ? dom.classList.add('actived') : dom.classList.remove('actived');
   }
   setVisibility(visibility: boolean) {

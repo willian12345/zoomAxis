@@ -10,6 +10,7 @@ import { Track } from "./Track";
 const CLOSE_ENOUPH_DISTANCE_Y = 15; // 距离 y 是否够近
 const CLOSE_ENOUPH_SEGMENT_X = 20; // 距离 segment x是否够
 
+export const UNIQUE_PREFIX = "wang-er-gou";
 export const SEGMENT_OFFSET_TOP = 2; // 节点离轨道顶部向下偏移距离
 export const CLASS_NAME_TRACK = 'track';
 export const CLASS_NAME_TRACK_FLEX = 'track-flexible';
@@ -106,7 +107,7 @@ export const createSegmentPlaceHolder = (id: string) => {
 // 获取轨道内 segment 占位器
 export const getSegmentPlaceholder = (track: HTMLElement, segmentId?: string) => {
   // 为每一个 segment 单独创建一个 placeholder 占位
-  const segmentPlaceholderId =  'segmentPlaceholder' + segmentId + CLASS_NAME_SEGMENT_PLACEHOLDER;
+  const segmentPlaceholderId =  `${UNIQUE_PREFIX}segmentPlaceholder${segmentId}${CLASS_NAME_SEGMENT_PLACEHOLDER}`;
   // segment 点位器在单独的占位容器内
   const trackPlaceholder: HTMLElement | null = track.querySelector(`.${CLASS_NAME_TRACK_PLACEHOLDER}`);
   let dom: HTMLElement | null = null;
@@ -380,7 +381,3 @@ export const createContainer = (className: string, cssText?: string) => {
   }
   return div;
 };
-
-export const local2Global = (element: HTMLElement) => {
-  
-}

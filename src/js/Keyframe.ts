@@ -72,7 +72,7 @@ export class Keyframe extends EventHelper  {
       if(frame > this.parent.frameend ){
         return;
       }
-      console.log(frame)
+      
       this.frame = frame - this.parent.framestart;
       this.parent?.parentTrack?.triggerEvent(TRACKS_EVENT_TYPES.KEYFRAME_MOVING, {frame})
       this.resize();
