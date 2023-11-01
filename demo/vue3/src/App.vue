@@ -307,22 +307,22 @@ onMounted(() => {
       <button @click="handleAddKeyframe">添加关键帧</button>
       <button @click="handleSegmentDelete">删除当前 segment</button>
     </div>
-    <div class="segment-list" ref="segmentItemListRef">
-      <div class="segment-item" style="background-color: #C66136;" data-segment-type="1">
+    <div class="segment-list px-8" ref="segmentItemListRef">
+      <div class="segment-item pl-2" style="background-color: #C66136;" data-segment-type="1">
         拖我
-        <button class="btn" @click.stop="handleAddByClick('1')">+</button>
+        <button @click.stop="handleAddByClick('1')">+</button>
       </div>
       <div class="segment-item" data-segment-type="2">
         拖我
-        <button @click="handleAddByClick('1')">+</button>
+        <button @click="handleAddByClick('2')">+</button>
       </div>
       <div class="segment-item" data-segment-type="3">
         拖我（一）
-        <button class="btn" @click="handleAddByClick('3')">+</button>
+        <button @click="handleAddByClick('3')">+</button>
       </div>
       <div class="segment-item" data-segment-type="4">
         拖我
-        <button class="btn" @click="handleAddByClick('4')">+</button>
+        <button @click="handleAddByClick('4')">+</button>
       </div>
       <div
         class="segment-item segment-item-flex"
@@ -399,8 +399,8 @@ onMounted(() => {
 @trackHeight: 28px;
 @timelineContainerHeight: 200px;
 .btn{
-  width: 20px;
-  height: 10px;
+  // width: 20px;
+  // height: 10px;
   background-color: aliceblue;
 }
 .track-drag-container {

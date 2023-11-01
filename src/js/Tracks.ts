@@ -214,6 +214,7 @@ export class Tracks extends EventHelper {
     }
   }
   private mousedownHandle(e: MouseEvent) {
+    
     e.preventDefault();
     e.stopPropagation();
     if (this?.timeline?.playing) {
@@ -228,13 +229,17 @@ export class Tracks extends EventHelper {
       // 如果没有按住 shift 键，则清掉框选(多选)
       if (this.shiftKey) {
         this.getActivedSegments().forEach((segment) =>
-          this.updateSelectedSegment(segment)
+          this.setSelectedSegment(segment)
         );
         this.multiSegmentDraging = true;
       }
+      
+      
       // 鼠标落在 segment 上
       this.dragStart(e, this.scrollContainer, result);
+      
     }
+  
   }
   // 获取选框框选坐标,宽高
   private getRectangleRect() {
@@ -314,6 +319,9 @@ export class Tracks extends EventHelper {
     }
     return selectedTrack;
   }
+  /**
+   * 检测否在选中范围内 
+   */
   private checkSelected(
     left: number,
     top: number,
@@ -340,12 +348,13 @@ export class Tracks extends EventHelper {
           (framestart > segment.framestart && framestart < segment.frameend)
         ) {
           segment.setActived(true);
-          this.updateSelectedSegment(segment);
+          this.setSelectedSegment(segment);
         }
       });
     }
   }
-  private updateSelectedSegment(segment: Segment) {
+  // 将 segment 添加至 SelectedSegments Map 内
+  private setSelectedSegment(segment: Segment) {
     const s = {
       segment,
       rect: segment.dom.getBoundingClientRect(),
@@ -952,7 +961,7 @@ export class Tracks extends EventHelper {
       });
 
       for (let [_, segmentSelected] of this.SelectedSegments) {
-        this.updateSelectedSegment(segmentSelected.segment);
+        this.setSelectedSegment(segmentSelected.segment);
       }
     }
 

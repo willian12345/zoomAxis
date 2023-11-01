@@ -147,6 +147,9 @@ export class Segment extends EventHelper{
       this.dom.classList.remove("actived");
       this.leftHandler.classList.remove('actived');
       this.rightHandler.classList.remove('actived');
+      this.keyframes.forEach(keyframe => {
+        keyframe.setActived(false);
+      });
     }
   }
   setHover(bool: boolean) {

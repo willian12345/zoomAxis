@@ -27,7 +27,6 @@ export class Keyframe extends EventHelper  {
   initEvent(){
     this.dom.addEventListener('click', this.click)
     this.dom.addEventListener('mousedown', this.dragstart)
-    this.dom.addEventListener('mouseup', this.dragend)
   }
   click = () => {
     if(!this.parent){
@@ -42,9 +41,6 @@ export class Keyframe extends EventHelper  {
         keyframe: this.parent.framestart + this.frame,
       }
     );
-  }
-  dragend = () => {
-    // e.stopPropagation();
   }
   // 拖动关键帧
   dragstart = (e:MouseEvent) => {
@@ -114,6 +110,5 @@ export class Keyframe extends EventHelper  {
   }
   destroy(){
     this.dom.removeEventListener('mousedown', this.dragstart);
-    this.dom.removeEventListener('mouseup', this.dragend);
   }
 }

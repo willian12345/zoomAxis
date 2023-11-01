@@ -152,6 +152,21 @@ export class Track extends EventHelper {
     if (!target) {
       return;
     }
+    if (!target.classList.contains(CLASS_NAME_SEGMENT)) {
+      let segmentDom = findParentElementByClassName(target, CLASS_NAME_SEGMENT);
+      if (segmentDom) {
+        const segment = this.getSegmentById(segmentDom.dataset.segmentId ?? "");
+        if (!segment?.actived) {
+          this.dispatchEvent(
+            { eventType: TRACKS_EVENT_TYPES.SEGMENT_SELECTED },
+            {
+              segment,
+            }
+          );
+        }
+        return;
+      }
+    }
     if (e.button === 2) {
       if (!target.classList.contains(CLASS_NAME_SEGMENT)) {
         let segmentDom = findParentElementByClassName(
