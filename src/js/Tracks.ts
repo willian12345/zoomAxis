@@ -1029,7 +1029,7 @@ export class Tracks extends EventHelper {
           isCreateNew,
           scrollContainer,
           segmentDom: dom,
-          leftValue,
+          leftValue: this.getX(leftValue, this.scrollContainer),
           tracks,
           segment: selectedSegment.segment,
         });

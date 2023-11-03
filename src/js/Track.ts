@@ -441,6 +441,7 @@ export class Track extends EventHelper {
     scrollContainer,
     segmentDom,
     segment,
+    left
   }: DragingArgs) {
     if (!segment) {
       return;
@@ -460,9 +461,14 @@ export class Track extends EventHelper {
     const scrollContainerX = scrollContainer.getBoundingClientRect().left;
     // 拖动中的 dom 的 rect
     const rect = segmentDom.getBoundingClientRect()
+    const frameWidth: number = this.frameWidth;
+    let currentFrame = Math.round((rect.left - scrollContainerX + scrollContainer.scrollLeft) / frameWidth);
+    if (currentFrame < 0) {
+      currentFrame = 0;
+    }
     // 拖动时轨道内占位元素
     placeHolder.style.width = `${rect.width}px`;
-    placeHolder.style.left = `${rect.left - scrollContainerX + scrollContainer.scrollLeft}px`;
+    placeHolder.style.left = `${currentFrame * this.frameWidth}px`;
     // 利用各轨道内的 placeholder 与 轨道内所有现有存 segment进行x轴碰撞检测
     const isCollistion = collisionCheckX(placeHolder, this.dom);
     // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
