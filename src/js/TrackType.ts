@@ -116,7 +116,8 @@ export interface DragingArgs {
   scrollContainer: HTMLElement;
   segmentDom: HTMLElement;
   tracks: HTMLElement[];
-  segmentId: string;
+  segment: Segment;
+  leftValue: number
 }
 export interface DropArgs {
   e: MouseEvent;

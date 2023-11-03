@@ -105,14 +105,14 @@ export const createSegmentPlaceHolder = (id: string) => {
   return dom;
 };
 // 获取轨道内 segment 占位器
-export const getSegmentPlaceholder = (track: HTMLElement, segmentId?: string) => {
+export const getSegmentPlaceholder = (track: HTMLElement, segment: Segment) => {
   // 为每一个 segment 单独创建一个 placeholder 占位
-  const segmentPlaceholderId =  `${UNIQUE_PREFIX}segmentPlaceholder${segmentId}${CLASS_NAME_SEGMENT_PLACEHOLDER}`;
+  const segmentPlaceholderId =  `${UNIQUE_PREFIX}segmentPlaceholder${segment.segmentId}${CLASS_NAME_SEGMENT_PLACEHOLDER}`;
   // segment 点位器在单独的占位容器内
   const trackPlaceholder: HTMLElement | null = track.querySelector(`.${CLASS_NAME_TRACK_PLACEHOLDER}`);
   let dom: HTMLElement | null = null;
   if (trackPlaceholder) {
-    if(!segmentId){
+    if(!segment.segmentId){
       dom = trackPlaceholder.querySelector(`.${CLASS_NAME_SEGMENT_PLACEHOLDER}`) as HTMLElement;
     }else{
       dom = trackPlaceholder.querySelector(`#${segmentPlaceholderId}`) as HTMLElement;
@@ -122,17 +122,28 @@ export const getSegmentPlaceholder = (track: HTMLElement, segmentId?: string) =>
       dom = createSegmentPlaceHolder(segmentPlaceholderId);
       trackPlaceholder?.appendChild(dom);
     }
+    dom.dataset.framestart = segment.framestart.toString();
+    dom.dataset.frameend = segment.frameend.toString();
   }
+  
   return dom;
 };
 
+export const getFramestart = (x: number, frameWidth: number) => {
+  let frame = Math.round(x / frameWidth);
+  if (frame < 0) {
+    frame = 0;
+  }
+  return frame;
+}
+
 // 同轨道内 segment x 轴横向碰撞检测
 export const collisionCheckX = (
-  target: HTMLElement, // placeholder
+  placeholder: HTMLElement, // placeholder
   track: HTMLElement
 ): boolean => {
   // target 即轨道内的 当前拖动 segment 的 placeholder 替身
-  const targetRect = target.getBoundingClientRect();
+  const placeholderRect = placeholder.getBoundingClientRect();
   const segments: HTMLElement[] = Array.from(
     track.querySelectorAll(`.${CLASS_NAME_SEGMENT}`)
   );
@@ -140,17 +151,23 @@ export const collisionCheckX = (
   if (!segmentsLength) {
     return false
   }
+  console.log(getLeftValue(placeholder))
+  let placeholderLeft = Math.round(getLeftValue(placeholder));
+  // const framestart = parseInt(target.dataset.framestart ?? '0');
+  // const frameend = parseInt(target.dataset.frameend ?? '0');
   for (let segment of segments) {
     const segmentRect = segment.getBoundingClientRect();
     // placeholder与 segment 都属于轨道内，left 值取 style内的值 即相对坐标
-    const segmentLeft = getLeftValue(segment);
-    let targetLeft = getLeftValue(target);
+    const segmentLeft = Math.round(getLeftValue(segment));
+    const segmentRight = Math.round(segmentLeft + segmentRect.width);
     // 如果值是负数说明拖到超出轨道左侧需要修正为 0
-    targetLeft = targetLeft < 0 ? 0 : targetLeft;
-    // x 轴碰撞检测，判断如果targetLeft值处于 segment 位置有重叠则表示碰撞了
+    placeholderLeft = placeholderLeft < 0 ? 0 : placeholderLeft;
+    const placeholderRight = placeholderLeft + placeholderRect.width;
+    // x 轴碰撞检测，判断如果placeholderLeft值处于 segment 位置有重叠则表示碰撞了
     if (
-      targetLeft + targetRect.width > segmentLeft &&
-      targetLeft < segmentLeft + segmentRect.width
+      placeholderLeft > segmentLeft && placeholderLeft < segmentRight
+      || 
+      placeholderRight > segmentLeft && placeholderRight < segmentRight
     ) {
       return true;
     }

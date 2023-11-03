@@ -120,7 +120,7 @@ const tracks: Ref<TTrackConfig[]> = ref([
       },
       {
         trackId: 'a2',
-        trackText: '轨道组轨道二',
+        trackText: '融合轨道',
         color: '#4767E8',
         trackType: '3',
       },
@@ -196,9 +196,12 @@ const initApp = () => {
   segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_SELECTED, (e) => {
     console.log('选中', e, segmentTracks.multiSegmentDraging)
   });
-  // segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_DESELECT, (e) => {
-  //   console.log('取消选中', e)
-  // });
+  segmentTracks.addEventListener(
+    TRACKS_EVENT_TYPES.DRAG_END,
+    async (e) => {
+      console.log(e)
+    }
+  );
   // 滚动 timeline  x 轴
   const scrollTimelineX = (pointerX: number) => {
     if (!scrollContainerRef.value) {

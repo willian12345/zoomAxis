@@ -440,13 +440,13 @@ export class Track extends EventHelper {
   draging({
     scrollContainer,
     segmentDom,
-    segmentId,
+    segment,
   }: DragingArgs) {
-    if (!segmentId) {
+    if (!segment) {
       return;
     }
 
-    const placeHolder = getSegmentPlaceholder(this.dom, segmentId);
+    const placeHolder = getSegmentPlaceholder(this.dom, segment);
     if (!placeHolder) {
       return;
     }
@@ -467,7 +467,7 @@ export class Track extends EventHelper {
     const isCollistion = collisionCheckX(placeHolder, this.dom);
     // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
     if (isCollistion) {
-      placeHolder.style.opacity = "0";
+      // placeHolder.style.opacity = "0";
     } else {
       placeHolder.style.opacity = "1";
     }
@@ -483,11 +483,11 @@ export class Track extends EventHelper {
     segment: Segment;
   }): Segment | null {
     this.isDraging = false;
-    const placeHolder = getSegmentPlaceholder(this.dom, segment.segmentId);
+    const placeHolder = getSegmentPlaceholder(this.dom, segment);
     if (!placeHolder) {
       return null;
     }
-    placeHolder.style.opacity = "0";
+    // placeHolder.style.opacity = "0";
     // 如果不合法，则需要删除
     const checkResult = this.check(copy, segment);
     if (checkResult) {
@@ -503,25 +503,26 @@ export class Track extends EventHelper {
     const [fs, fd] = getFrameRange(segment.dom);
     segment.prevFrameStart = fs;
     segment.prevFrameEnd = fd;
+    // console.log(segment.prevFrameStart, 3333333, segment.framestart, segment)
     const frameend = framestart + (fd - fs);
     segment.setRange(framestart, frameend);
     this.addSegment(segment);
     return segment;
   }
-  hidePlaceHolder(segmentId?: string) {
-    const placeHolder = getSegmentPlaceholder(this.dom, segmentId);
+  hidePlaceHolder(segment: Segment) {
+    const placeHolder = getSegmentPlaceholder(this.dom, segment);
     if (!placeHolder) {
       return;
     }
     // 删除 placeholder 占位
-    placeHolder.parentElement?.removeChild(placeHolder);
+    // placeHolder.parentElement?.removeChild(placeHolder);
   }
-  precheck(segmentType: string, segmentId: string) {
+  precheck(segmentType: string, segment: Segment) {
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(this.trackType, segmentType)) {
       return false;
     }
-    const placeHolder = getSegmentPlaceholder(this.dom, segmentId);
+    const placeHolder = getSegmentPlaceholder(this.dom, segment);
     if (!placeHolder) {
       return false;
     }

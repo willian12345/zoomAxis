@@ -26,12 +26,12 @@ export class TrackChildOverlap extends Track {
     super( {trackId, trackType, frameWidth, createSegmentCheck} );
     
   }
-  precheck(segmentType: string) {
+  precheck(segmentType: string, segment: Segment) {
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(this.trackType, segmentType)) {
       return false;
     }
-    const placeHolder = getSegmentPlaceholder(this.dom);
+    const placeHolder = getSegmentPlaceholder(this.dom, segment);
     if (!placeHolder) {
       return false;
     }
@@ -40,9 +40,9 @@ export class TrackChildOverlap extends Track {
   draging({
     scrollContainer,
     segmentDom,
-    segmentId,
+    segment,
   }: DragingArgs) {
-    const placeHolder = getSegmentPlaceholder(this.dom, segmentId);
+    const placeHolder = getSegmentPlaceholder(this.dom, segment);
     if (!placeHolder) {
       return;
     }
@@ -70,11 +70,11 @@ export class TrackChildOverlap extends Track {
     segment: Segment;
   }): Segment|null {
     this.isDraging = false;
-    const placeHolder = getSegmentPlaceholder(this.dom);
+    const placeHolder = getSegmentPlaceholder(this.dom, segment);
     if (!placeHolder) {
       return null;
     }
-    placeHolder.style.opacity = "0";
+    // placeHolder.style.opacity = "0";
     
     // 普通轨道
     const [fs, fd] = getFrameRange(segment.dom);
