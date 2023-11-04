@@ -31,6 +31,7 @@ import {
   getDatasetNumberByKey,
   DEFAULT_SEGMENT_FRAMES,
   findLastIndex,
+  getFrameByX,
 } from "./trackUtils";
 import { TrackFlex } from "./TrackFlex";
 import { TrackChildOverlap } from "./TrackChildOverlap";
@@ -812,12 +813,7 @@ export class Tracks extends EventHelper {
     }
   }
   private getFramestart(x: number): number {
-    const frameWidth: number = this.timeline?.frameWidth ?? 0;
-    let currentFrame = Math.round(x / frameWidth);
-    if (currentFrame < 0) {
-      currentFrame = 0;
-    }
-    return currentFrame;
+    return getFrameByX(x, this.frameWidth)
   }
 
   async removeSegment(segment: HTMLElement) {
@@ -1093,13 +1089,11 @@ export class Tracks extends EventHelper {
           if (isCloseEnouphToY(vt.dom, checkY)) {
             // 预先检测是否是相同轨道，以及有没有发生碰撞
             const r = vt.precheck(segmentTypeStr, segment);
-            
             vt.hidePlaceHolder(segment);
-            
             if (!r) {
               return;
             }
-            // todo: 多个拖动吸附 this.scrollContainer.querySelectorAll
+            // todo: 多个拖动吸附优化
             if (this._adsorbable && (selectedSegmentArr.length < 2)) {
               // 计算吸附与否及对应 framestart 位置
               const [isAdsorbing, _framestart] = checkCoordinateLine(
@@ -1144,7 +1138,7 @@ export class Tracks extends EventHelper {
               }
             }
             
-            // dom.parentNode?.removeChild(dom);
+            dom.parentNode?.removeChild(dom);
             // 拖动完毕后加入进具体轨道内
             vt.dragend({
               copy: isCreateNew,
@@ -1152,8 +1146,6 @@ export class Tracks extends EventHelper {
               segment: newSegment,
             });
 
-            
-            
             // 如果有原父级轨道，说明是从原父级轨道拖过来的，需要删除原父级轨道内的 segment
             if (newSegment?.originSegmentId) {
               this.deleteSegment(
@@ -1171,9 +1163,6 @@ export class Tracks extends EventHelper {
         // 等待所有轨道异步判断新建完毕
         await Promise.all(actions);
 
-        // document.querySelectorAll('.segment-placeholder').forEach(dom => {
-        //   dom.parentElement?.removeChild(dom);
-        // });
         // 如果没有跨轨道拖放成功
         if (originTrack) {
           // 放回原轨道
@@ -1204,7 +1193,6 @@ export class Tracks extends EventHelper {
 
       // 清空临时放在全局拖动层容器内容
       setTimeout(() => {
-        
         if (this.selectedSegments.size) {
           this.selectedSegments.forEach(({ segment }) => {
             // 如果是复制
@@ -1215,7 +1203,6 @@ export class Tracks extends EventHelper {
         }
 
         if(this.multiSegmentDraging && this.selectedSegments.size){
-          
           // 拖完后触发回调
           this.dispatchEvent(
             { eventType: TRACKS_EVENT_TYPES.DRAG_END },
@@ -1226,10 +1213,8 @@ export class Tracks extends EventHelper {
         if (!this.multiSegmentDraging) {
           this.selectedSegments.clear();
         }
-
-        
-        
       }, 0);
+
       if (segmentCopy) {
         const newSegmentTmp =
           this.selectedSegments.get("NEW_SEGMENT")?.segment.dom;

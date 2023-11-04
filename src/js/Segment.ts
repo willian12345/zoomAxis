@@ -99,7 +99,7 @@ export class Segment extends EventHelper{
           data-frameend="${this.frameend}"
           style="width: ${this.width}; height: ${this.height}; left: ${this.left}; ${this.segmentStyle}">
           <div class="segment-renderer">
-            ${this.segmentId}--${contentRenderer}
+            ${contentRenderer}
           </div>
         </div>
       `;

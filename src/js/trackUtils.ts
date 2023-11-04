@@ -398,3 +398,11 @@ export const createContainer = (className: string, cssText?: string) => {
   }
   return div;
 };
+
+export const getFrameByX = (x: number, frameWidth: number) => {
+  let frame = Math.round(x / frameWidth);
+  if (frame < 0) {
+    frame = 0;
+  }
+  return frame;
+}
