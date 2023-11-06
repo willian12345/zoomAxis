@@ -16,7 +16,7 @@ import {
 import { Tracks } from "../../../src/js/Tracks";
 import { Segment } from "../../../src/js/Segment";
 
-let timeline: TimelineAxis | null;
+let timeline: TimelineAxis;
 let trackCursor: CursorPointer;
 let segmentTracks: Tracks;
 let stageWidth = ref(920);
@@ -92,14 +92,16 @@ document.addEventListener('keyup', (e: KeyboardEvent) => {
   ctrlDown = false;
 })
 const handlePlay = () => {
-  if (!timeline) {
-    return;
-  }
   if (timeline.currentFrame === timeline.totalFrames) {
     timeline.play(0);
     return;
   }
-  timeline?.play();
+  if(timeline.playing){
+    timeline.pause();
+  }else{
+    timeline.play();
+  }
+  
 };
 
 
@@ -202,6 +204,12 @@ const initApp = () => {
       console.log(e)
     }
   );
+
+  segmentTracks.addEventListener(TRACKS_EVENT_TYPES.FRAME_JUMP, (e) => {
+    const jumptoFrame = (e.frame > timeline.totalFrames) ? timeline.totalFrames : e.frame
+    timeline.setCurrentFrame(jumptoFrame)
+    trackCursor.sync();
+  });
   // 滚动 timeline  x 轴
   const scrollTimelineX = (pointerX: number) => {
     if (!scrollContainerRef.value) {
@@ -292,6 +300,8 @@ const handleSegmentDelete = () => {
   segmentTracks.deleteSegment(currentSegment.trackId, currentSegment.segmentId);
   currentSegment = null;
 }
+
+
 
 onMounted(() => {
   initApp();

@@ -207,7 +207,7 @@ export class Tracks extends EventHelper {
       return;
     }
     // 正在拖动关键帧
-    if (this.keyframeMoving) {
+    if (this.keyframeMoving || this.multiSegmentDraging) {
       return;
     }
 
