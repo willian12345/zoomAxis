@@ -151,13 +151,11 @@ export const collisionCheckX = (
   if (!segmentsLength) {
     return false
   }
-  console.log(getLeftValue(placeholder))
+
   let placeholderLeft = Math.round(getLeftValue(placeholder));
-  // const framestart = parseInt(target.dataset.framestart ?? '0');
-  // const frameend = parseInt(target.dataset.frameend ?? '0');
   for (let segment of segments) {
     const segmentRect = segment.getBoundingClientRect();
-    // placeholder与 segment 都属于轨道内，left 值取 style内的值 即相对坐标
+    // placeholder与 segment 都属于轨道内，left 值取 style 内的值 即相对坐标
     const segmentLeft = Math.round(getLeftValue(segment));
     const segmentRight = Math.round(segmentLeft + segmentRect.width);
     // 如果值是负数说明拖到超出轨道左侧需要修正为 0
@@ -174,14 +172,14 @@ export const collisionCheckX = (
   }
   return false;
 };
-const getFrameByWidth = (width: number, frameWidth: number): number => {
+export const getFrameByWidth = (width: number, frameWidth: number): number => {
   let frame = Math.round(width / frameWidth);
   if (frame < 0) {
     frame = 0;
   }
   return frame;
 };
-const getframes = (rect: DOMRect, frameWidth: number,  segment?: Segment) => {
+export const getframes = (rect: DOMRect, frameWidth: number,  segment?: Segment) => {
   if(segment){
     return segment.frameend - segment.frameend;
   }
@@ -254,20 +252,22 @@ export const checkCoordinateLine = (
   }
   return [false, 0, 0, null];
 };
-export const getSegmentsByTrack = (track: HTMLElement): HTMLElement[] => {
+export const getSegmentsByTrackDom = (track: HTMLElement): HTMLElement[] => {
   const segments: HTMLElement[] = Array.from(
     track.querySelectorAll(`.${CLASS_NAME_SEGMENT}`)
   );
   return segments;
 };
 export const collisionCheckFrame = (
-  target: HTMLElement,
-  track: HTMLElement
+  target: Segment,
+  track: Track
 ): boolean => {
-  const [framestart, frameend] = getFrameRange(target);
-  const segments = getSegmentsByTrack(track);
-  for (let segment of segments) {
-    const [start, end] = getFrameRange(segment);
+  const frameGroup = track.getOtherSegments(target.segmentId).map( segment => [segment.framestart, segment.frameend]);
+  return collisionCheckFrames(target.framestart, target.frameend, frameGroup);
+};
+
+export const collisionCheckFrames = (framestart: number, frameend: number, frameGroup: number[][]) => {
+  for (let [start, end] of frameGroup) {
     if (
       (framestart < start && frameend > end) || // 完整覆盖
       (framestart > start && framestart < end) ||
@@ -277,7 +277,7 @@ export const collisionCheckFrame = (
     }
   }
   return false;
-};
+}
 
 // 离Y轴是否足够近
 export const isCloseEnouphToY = (track: HTMLElement, mouseY: number) => {

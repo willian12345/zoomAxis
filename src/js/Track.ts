@@ -402,12 +402,13 @@ export class Track extends EventHelper {
   }
   setFrameWidth(w: number) {
     this.frameWidth = w;
+    const segments = this.getSegments();
+    segments.forEach((segment) => segment.setFrameWidth(w));
   }
-  check(copy: boolean, segment: Segment) {
+  checkCollision(copy: boolean, segment: Segment) {
     // copy 说明是非轨道内的 Segment 拖动，即拖入并新建 Segment
     // ！！！由于异步，拖入后需要检测是否发生碰撞,如果发生碰撞则需要删除
-    if (copy && collisionCheckFrame(segment.dom, this.dom)) {
-      this.removeSegment(segment);
+    if (copy && collisionCheckFrame(segment, this)) {
       return true;
     }
     return false;
@@ -494,21 +495,24 @@ export class Track extends EventHelper {
     }
     placeHolder.style.opacity = "0";
     // 如果不合法，则需要删除
-    const checkResult = this.check(copy, segment);
+    const checkResult = this.checkCollision(copy, segment);
     if (checkResult) {
-      this.removeSegment(segment);
       return null;
     }
-    const isCollistion = collisionCheckX(placeHolder, this.dom);
+    // const isCollistion = collisionCheckX(placeHolder, this.dom);
 
-    if (isCollistion) {
-      return null;
-    }
-    // 普通轨道
+    // if (isCollistion) {
+    //   return null;
+    // }
+
+    // 获取拖动前的 framestart ,frameend 这些直接存储于 dom 的 dataset 内
+    // 传入的 framstart 是拖动后的当前状态值
     const [fs, fd] = getFrameRange(segment.dom);
+
+    // 记录上一次拖动时的值
     segment.prevFrameStart = fs;
     segment.prevFrameEnd = fd;
-
+    
     const frameend = framestart + (fd - fs);
     segment.setRange(framestart, frameend);
     this.addSegment(segment);
@@ -584,6 +588,7 @@ export class Track extends EventHelper {
     }
     return virtualSegment;
   }
+  // 将 segment 逻辑或 dom 上添加进轨道
   addSegment(segment: Segment) {
     const isAdded = this.segments.get(segment.segmentId);
     // 非从其它轨道拖入且拖动前与拖动后位置没有发生变化则什么都不做
@@ -599,15 +604,6 @@ export class Track extends EventHelper {
 
     // 如果添加过了，则无需再添加, 但要触发 DRAG_END
     if (isAdded) {
-      // // 拖动放回原处是异步，拖完也要延时
-      // setTimeout(() => {
-      //   this.updateSegmentHandler();
-      //   // 拖完后触发回调
-      //   this.dispatchEvent(
-      //     { eventType: TRACKS_EVENT_TYPES.DRAG_END },
-      //     { segment }
-      //   );
-      // }, 2);
       return null;
     }
     // 如果是从别的轨道拖过来的，需要从原轨道移聊
@@ -630,8 +626,8 @@ export class Track extends EventHelper {
     return segment;
   }
   removeSegment(segment: Segment) {
-    segment.leftHandler.parentElement?.removeChild(segment.leftHandler);
-    segment.rightHandler.parentElement?.removeChild(segment.rightHandler);
+    segment.leftHandler && segment.leftHandler.parentElement?.removeChild(segment.leftHandler);
+    segment.rightHandler && segment.rightHandler.parentElement?.removeChild(segment.rightHandler);
     this.segments.delete(segment.segmentId);
     segment.dom.parentElement?.removeChild(segment.dom);
     this.dispatchEvent(

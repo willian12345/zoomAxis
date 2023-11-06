@@ -113,14 +113,14 @@ const tracks: Ref<TTrackConfig[]> = ref([
     subTracks: [
       {
         trackId: 'a1',
-        trackText: '轨道组轨道一',
+        trackText: '融合轨道',
         color: '#6C4ACD',
         trackType: '2',
         childOverlapable: true,
       },
       {
         trackId: 'a2',
-        trackText: '融合轨道',
+        trackText: '轨道组轨道',
         color: '#4767E8',
         trackType: '3',
       },
@@ -333,7 +333,6 @@ onMounted(() => {
         data-track-id="c"
       >
         拖我
-        <em>(伸缩轨道)</em>
       </div>
     </div>
     <div class="timeline-container" @wheel="handleWheel">
