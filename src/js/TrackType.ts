@@ -46,6 +46,8 @@ export enum TRACKS_EVENT_TYPES {
   KEYFRAME_MOVE_END,// 关键帧移动结束
   FRAME_JUMP, // 帧跳动
   SEGMENT_DESELECT, // 取消选中
+  SEGMENT_MULTI_SELECT_START, // 多选开始
+  SEGMENT_MULTI_SELECT_END, // 多选开始
 }
 export type ERROR_DATA = {
   eventType: TRACKS_EVENT_TYPES;

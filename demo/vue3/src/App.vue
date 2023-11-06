@@ -204,6 +204,12 @@ const initApp = () => {
       console.log(e)
     }
   );
+  segmentTracks.addEventListener(
+    TRACKS_EVENT_TYPES.SEGMENT_MULTI_SELECT_START,
+    async (e) => {
+      console.log('多选', e)
+    }
+  );
 
   segmentTracks.addEventListener(TRACKS_EVENT_TYPES.FRAME_JUMP, (e) => {
     const jumptoFrame = (e.frame > timeline.totalFrames) ? timeline.totalFrames : e.frame

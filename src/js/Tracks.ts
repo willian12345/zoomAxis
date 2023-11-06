@@ -53,6 +53,8 @@ const TRACK_EVENT_TYPES_ARRAY = [
   TRACKS_EVENT_TYPES.KEYFRAME_MOVING,
   TRACKS_EVENT_TYPES.KEYFRAME_SKIP,
   TRACKS_EVENT_TYPES.FRAME_JUMP,
+  TRACKS_EVENT_TYPES.SEGMENT_MULTI_SELECT_START,
+  TRACKS_EVENT_TYPES.SEGMENT_MULTI_SELECT_END
 ];
 
 type TSelectedSegment = {
@@ -229,6 +231,8 @@ export class Tracks extends EventHelper {
     // 鼠标落在非 segment 上
     if (!result) {
       this.removeSegmentActivedStatus();
+      this.selectedSegments.clear();
+      this.multiSegmentDraging = false;
       this.dispatchRectangleDraging(e);
     } else if (result) {
       // 如果没有按住 shift 键，则清掉框选(多选)
@@ -292,6 +296,7 @@ export class Tracks extends EventHelper {
       // 如果有框选选中的
       if (this.selectedSegments.size) {
         this.multiSegmentDraging = true;
+        this.dispatchEvent({ eventType: TRACKS_EVENT_TYPES.SEGMENT_MULTI_SELECT_END });
       }
       document.removeEventListener("mousemove", mousemove);
       document.removeEventListener("mouseup", mouseup);
@@ -1195,7 +1200,7 @@ export class Tracks extends EventHelper {
             // 拖完后触发回调
             this.dispatchEvent(
               { eventType: TRACKS_EVENT_TYPES.DRAG_END },
-              { segment: segment}
+              { segment}
             );
           }
           
@@ -1219,11 +1224,21 @@ export class Tracks extends EventHelper {
             }
           });
           if(this.multiSegmentDraging){
-            // 拖完后触发回调
-            this.dispatchEvent(
-              { eventType: TRACKS_EVENT_TYPES.DRAG_END },
-              { segments: selectedSegmentArr.map(selected => selected.segment) }
-            );
+            const segments = selectedSegmentArr.map(selected => selected.segment).filter( segment=> segment.framestart !== segment.prevFrameStart);
+            if(segments.length > 0){
+              // 拖完后触发回调
+              this.dispatchEvent(
+                { eventType: TRACKS_EVENT_TYPES.DRAG_END },
+                { segments }
+              );
+            }
+
+            if(this.shiftKey){
+              this.dispatchEvent(
+                { eventType: TRACKS_EVENT_TYPES.SEGMENT_MULTI_SELECT_END },
+                { segments: selectedSegmentArr.map(selected => selected.segment) }
+              );
+            }
           }else{
             this.selectedSegments.clear();
           }
