@@ -201,7 +201,7 @@ const initApp = () => {
   segmentTracks.addEventListener(
     TRACKS_EVENT_TYPES.DRAG_END,
     async (e) => {
-      console.log(e)
+      console.log('拖动结束：', e)
     }
   );
   segmentTracks.addEventListener(
@@ -216,6 +216,22 @@ const initApp = () => {
     timeline.setCurrentFrame(jumptoFrame)
     trackCursor.sync();
   });
+
+  segmentTracks.addEventListener(
+    TRACKS_EVENT_TYPES.SEGMENT_DELETED,
+    async (e) => {
+      console.log('删除', e)
+    }
+  );
+  segmentTracks.addEventListener(
+    TRACKS_EVENT_TYPES.SEGMENT_MOVED,
+    async (e) => {
+      console.log('跨轨道拖动', e)
+    }
+  );
+
+
+
   // 滚动 timeline  x 轴
   const scrollTimelineX = (pointerX: number) => {
     if (!scrollContainerRef.value) {

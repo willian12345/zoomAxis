@@ -48,6 +48,7 @@ export enum TRACKS_EVENT_TYPES {
   SEGMENT_DESELECT, // 取消选中
   SEGMENT_MULTI_SELECT_START, // 多选开始
   SEGMENT_MULTI_SELECT_END, // 多选开始
+  SEGMENT_MOVED, // 跨轨道拖动
 }
 export type ERROR_DATA = {
   eventType: TRACKS_EVENT_TYPES;

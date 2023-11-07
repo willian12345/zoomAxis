@@ -128,6 +128,11 @@ export const getSegmentPlaceholder = (track: HTMLElement, segment: Segment) => {
   
   return dom;
 };
+export const removePlaceholder = (track: HTMLElement, segment: Segment)=> {
+  const segmentPlaceholderId =  `${UNIQUE_PREFIX}segmentPlaceholder${segment.segmentId}${CLASS_NAME_SEGMENT_PLACEHOLDER}`;
+  const dom = track.querySelector(`#${segmentPlaceholderId}`) as HTMLElement;
+  if(dom) dom.parentElement?.removeChild(dom);
+}
 
 export const getFramestart = (x: number, frameWidth: number) => {
   let frame = Math.round(x / frameWidth);
@@ -381,7 +386,6 @@ export const getLeftSideSegments = (segments: Segment[], leftValue: number) => {
 
 export const findLastIndex = (arr: any[], fn: CallableFunction) => {
   let index = -1;
-  console.log(arr);
   for(let i=0, l=arr.length; i<l;i++){
     if(fn(arr[i])){
       index = i;

@@ -25,6 +25,7 @@ import {
   CLASS_NAME_SEGMENT_HANDLE_CONTAINER,
   createSegment,
   createContainer,
+  removePlaceholder,
 } from "./trackUtils";
 import {
   ITrackArgs,
@@ -526,9 +527,17 @@ export class Track extends EventHelper {
     // 删除 placeholder 占位
     placeHolder.parentElement?.removeChild(placeHolder);
   }
-  precheck(segmentType: string, segment: Segment) {
+  /**
+   * 预检查
+   * !! 暂时不支持多拖动时跨轨道，后期可以放开
+   */
+  precheck(segmentType: string, segment: Segment, multi: boolean) {
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(this.trackType, segmentType)) {
+      return false;
+    }
+    // 注意：由于 UE端无法支持多 segment 此处用于禁止跨轨道拖动
+    if(segment.trackId !== this.trackId && multi){
       return false;
     }
     const placeHolder = getSegmentPlaceholder(this.dom, segment);
@@ -542,6 +551,7 @@ export class Track extends EventHelper {
     return true;
   }
 
+  // todo: 是否重用 dom
   async createSegment(
     segmentTrackId: string,
     framestart: number,
@@ -599,20 +609,20 @@ export class Track extends EventHelper {
     ) {
       return null;
     }
-    segment.prevFrameStart = this.originFrameStart
-    segment.prevFrameEnd = this.originFrameEnd
+    // segment.prevFrameStart = this.originFrameStart
+    // segment.prevFrameEnd = this.originFrameEnd
 
     // 如果添加过了，则无需再添加, 但要触发 DRAG_END
     if (isAdded) {
       return null;
     }
     // 如果是从别的轨道拖过来的，需要从原轨道移聊
-    if (segment.originParentTrack) {
-      this.dispatchEvent(
-        { eventType: TRACKS_EVENT_TYPES.SEGMENT_DELETED },
-        { segment }
-      );
-    }
+    // if (segment.originParentTrack) {
+    //   this.dispatchEvent(
+    //     { eventType: TRACKS_EVENT_TYPES.SEGMENT_MOVED },
+    //     { segment, originTrack: segment.originParentTrack },
+    //   );
+    // }
 
     this.segments.set(segment.segmentId, segment);
     this.dom.appendChild(segment.dom);
@@ -625,11 +635,16 @@ export class Track extends EventHelper {
     );
     return segment;
   }
-  removeSegment(segment: Segment) {
+  removeSegment(segment: Segment, dispatchEvent = true) {
     segment.leftHandler && segment.leftHandler.parentElement?.removeChild(segment.leftHandler);
     segment.rightHandler && segment.rightHandler.parentElement?.removeChild(segment.rightHandler);
     this.segments.delete(segment.segmentId);
+    removePlaceholder(this.dom, segment)
     segment.dom.parentElement?.removeChild(segment.dom);
+
+    if(!dispatchEvent){
+      return;
+    }
     this.dispatchEvent(
       { eventType: TRACKS_EVENT_TYPES.SEGMENT_DELETED },
       {
