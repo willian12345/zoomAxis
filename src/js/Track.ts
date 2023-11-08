@@ -26,6 +26,7 @@ import {
   createSegment,
   createContainer,
   removePlaceholder,
+  collisionCheckFrames,
 } from "./trackUtils";
 import {
   ITrackArgs,
@@ -245,8 +246,6 @@ export class Track extends EventHelper {
         segment.updateSegmentKeyframesFrame();
         // 检测是否有超出范围的关键帧
         segment.deleteKeyframeOutOfRange();
-
-        console.log(1)
 
         segment.prevFrameStart = segment.framestart
         segment.prevFrameEnd = segment.frameend
@@ -471,7 +470,9 @@ export class Track extends EventHelper {
     placeHolder.style.width = `${rect.width}px`;
     placeHolder.style.left = `${currentFrame * this.frameWidth}px`;
     // 利用各轨道内的 placeholder 与 轨道内所有现有存 segment进行x轴碰撞检测
-    const isCollistion = collisionCheckX(placeHolder, this.dom);
+    const getOtherSegments = this.getOtherSegments(segment.segmentId).map( segment => [segment.framestart, segment. frameend]);
+    const isCollistion = collisionCheckFrames(segment.framestart,  segment.framestart+segment.frames, getOtherSegments);
+    // const isCollistion = collisionCheckX(placeHolder, this.dom);
     // 占位与其它元素如果碰撞则隐藏即不允许拖动到此处
     if (isCollistion) {
       placeHolder.style.opacity = "0";
@@ -494,6 +495,7 @@ export class Track extends EventHelper {
     if (!placeHolder) {
       return null;
     }
+    placeHolder.style.left = `${segment.framestart * this.frameWidth}px`;
     placeHolder.style.opacity = "0";
     // 如果不合法，则需要删除
     const checkResult = this.checkCollision(copy, segment);
@@ -531,7 +533,7 @@ export class Track extends EventHelper {
    * 预检查
    * !! 暂时不支持多拖动时跨轨道，后期可以放开
    */
-  precheck(segmentType: string, segment: Segment, multi: boolean) {
+  precheck(scrollContainer: HTMLElement, segmentType: string, segment: Segment, multi: boolean) {
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(this.trackType, segmentType)) {
       return false;
@@ -544,7 +546,18 @@ export class Track extends EventHelper {
     if (!placeHolder) {
       return false;
     }
-    const isCollistion = collisionCheckX(placeHolder, this.dom);
+    const scrollContainerX = scrollContainer.getBoundingClientRect().left;
+    // 拖动中的 dom 的 rect
+    const rect = segment.dom.getBoundingClientRect()
+    const frameWidth: number = this.frameWidth;
+    let currentFrame = Math.round((rect.left - scrollContainerX + scrollContainer.scrollLeft) / frameWidth);
+    if (currentFrame < 0) {
+      currentFrame = 0;
+    }
+    // 拖动时轨道内占位元素
+    placeHolder.style.width = `${rect.width}px`;
+    placeHolder.style.left = `${currentFrame * this.frameWidth}px`;
+    const isCollistion = collisionCheckX(currentFrame, currentFrame + segment.frames, this.getOtherSegments(segment.segmentId));
     if (isCollistion) {
       return false;
     }

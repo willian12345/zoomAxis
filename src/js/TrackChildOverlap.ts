@@ -26,15 +26,15 @@ export class TrackChildOverlap extends Track {
     super( {trackId, trackType, frameWidth, createSegmentCheck} );
     
   }
-  precheck(segmentType: string, segment: Segment) {
+  precheck(_scrollContainer: HTMLElement, segmentType: string) {
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
     if (!isContainSplitFromComma(this.trackType, segmentType)) {
       return false;
     }
-    const placeHolder = getSegmentPlaceholder(this.dom, segment);
-    if (!placeHolder) {
-      return false;
-    }
+    // const placeHolder = getSegmentPlaceholder(this.dom, segment);
+    // if (!placeHolder) {
+    //   return false;
+    // }
     return true;
   }
   draging({

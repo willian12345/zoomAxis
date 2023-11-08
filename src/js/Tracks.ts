@@ -1133,7 +1133,7 @@ export class Tracks extends EventHelper {
           vt.dom.classList.remove(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
           if (isCloseEnouphToY(vt.dom, checkY)) {
             // 预先检测是否是相同轨道，以及有没有发生碰撞
-            const r = vt.precheck(segmentTypeStr, segment, this.selectedSegments.size > 1);
+            const r = vt.precheck(scrollContainer, segmentTypeStr, segment, this.selectedSegments.size > 1);
             vt.hidePlaceHolder(segment);
             if (!r) {
               return;

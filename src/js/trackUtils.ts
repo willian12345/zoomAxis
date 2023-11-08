@@ -144,6 +144,18 @@ export const getFramestart = (x: number, frameWidth: number) => {
 
 // 同轨道内 segment x 轴横向碰撞检测
 export const collisionCheckX = (
+  framestart: number,
+  frameend: number,
+  segments: Segment[] = []
+): boolean => {
+  const segmentsLength = segments.length;
+  if (!segmentsLength) {
+    return false
+  }
+  const frameGroup = segments.map( segment => [segment.framestart, segment.frameend]);
+  return collisionCheckFrames(framestart, frameend, frameGroup);
+};
+export const collisionCheckX1 = (
   placeholder: HTMLElement, // placeholder
   track: HTMLElement
 ): boolean => {
@@ -386,6 +398,7 @@ export const getLeftSideSegments = (segments: Segment[], leftValue: number) => {
 
 export const findLastIndex = (arr: any[], fn: CallableFunction) => {
   let index = -1;
+  console.log(arr);
   for(let i=0, l=arr.length; i<l;i++){
     if(fn(arr[i])){
       index = i;
