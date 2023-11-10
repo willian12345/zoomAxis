@@ -215,7 +215,7 @@ export const getSegmentStyle = ({ segmentType }: SegmentConstructInfo ): string 
     return 'background: #139F5C;';
   }
   if(segmentType === SegmentType.DECORATION){
-    return 'background: #00A2DD;';
+    return 'background: rgba(108, 74, 205, 0.20)';
   }
   return ''
 }

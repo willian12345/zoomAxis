@@ -1219,8 +1219,8 @@ export class Tracks extends EventHelper {
             }
           
         }
-        // 没有 segmentId 且没有新建成功，说明是从外部拖入创建且未成功创建，需要触发 DRAG_END
-        if (!segmentId && !_segment) {
+        // 没有新建成功，说明是从外部拖入创建且未成功创建，需要触发 DRAG_END
+        if (segmentId === NEW_SEGMENT_ID && !_segment) {
           // 拖完后触发回调
           this.dispatchEvent({ eventType: TRACKS_EVENT_TYPES.DRAG_END });
         }
