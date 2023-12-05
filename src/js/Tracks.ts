@@ -1366,16 +1366,17 @@ export class Tracks extends EventHelper {
       segmentType
     );
     if (!segment) return;
-    if (track instanceof TrackFlex) {
-      track.pointerup({
-        copy: true,
-        framestart: this.timeline.currentFrame,
-        segment,
-      });
-    } else {
-      track.addSegment(segment);
-      segment.setRange(segment.framestart, segment.frameend);
-    }
+    // if (track instanceof TrackFlex) {
+    //   track.pointerup({
+    //     copy: true,
+    //     framestart: this.timeline.currentFrame,
+    //     segment,
+    //   });
+    // } else {
+      
+    // }
+    track.addSegment(segment);
+    segment.setRange(segment.framestart, segment.frameend);
   }
   // 帧位置更新
   zoom() {

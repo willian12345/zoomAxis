@@ -652,6 +652,8 @@ export class Track extends EventHelper {
     segment.leftHandler && segment.leftHandler.parentElement?.removeChild(segment.leftHandler);
     segment.rightHandler && segment.rightHandler.parentElement?.removeChild(segment.rightHandler);
     this.segments.delete(segment.segmentId);
+    this.originFrameStart = 0;
+    this.originFrameEnd = 0;
     removePlaceholder(this.dom, segment)
     segment.dom.parentElement?.removeChild(segment.dom);
 
