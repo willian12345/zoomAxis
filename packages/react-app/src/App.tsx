@@ -6,12 +6,12 @@ import React, {
 } from "react";
 import "./App.css";
 import Cursor from "./components/Cursor";
-import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "../../../src/js/TimelineAxis";
-import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../../src/js/CursorPointer";
-import { TRACKS_EVENT_TYPES, TTrackConfig } from "../../../src/js/TrackType";
-import { findEndestSegment } from "../../../src/js/trackUtils";
-import { Tracks } from "../../../src/js/Tracks";
-import { Segment } from "../../../src/js/Segment";
+import { TimelineAxis, TIMELINE_AXIS_EVENT_TYPE } from "../../zoomAxis/js/TimelineAxis";
+import { CursorPointer, CURSOR_POINTER_EVENT_TYPE } from "../../zoomAxis/js/CursorPointer";
+import { TRACKS_EVENT_TYPES, TTrackConfig } from "../../zoomAxis/js/TrackType";
+import { findEndestSegment } from "../../zoomAxis/js/trackUtils";
+import { Tracks } from "../../zoomAxis/js/Tracks";
+import { Segment } from "../../zoomAxis/js/Segment";
 
 let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;

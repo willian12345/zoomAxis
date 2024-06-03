@@ -88,7 +88,7 @@ export class CursorPointer extends EventHelper{
     this.cursorUpdate(this.timeline, this.getX(e.clientX, this.scrollContentDom));
     this.triggerDragEnd(this.timeline, this.getX(e.clientX, this.scrollContentDom));
   }
-  private triggerDragEnd(timelineAxis: TimelineAxis, x){
+  private triggerDragEnd(timelineAxis: TimelineAxis, x: number){
     const frame = Math.round(x / timelineAxis.frameWidth);
     const left = timelineAxis.frameWidth * frame;
     this.dispatchEvent({ eventType: CURSOR_POINTER_EVENT_TYPE.DRAG_END }, {frame, left});

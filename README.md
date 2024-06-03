@@ -8,7 +8,24 @@ pnpm >= 6.11.0
 vite >= 3.1.0
 typescript >= 4.6.4
 
-运行脚本
+安装
 -----------------------------------------------------------------------------------------------------------
-pnpm dev 开发
-pnpm build 编译
+pnpm install 
+
+
+## demo vue3.0
+
+进入 packages/vue-app
+
+```
+pnpm dev
+```
+
+## demo react
+
+进入 packages/react-app
+
+```
+pnpm dev
+```
+

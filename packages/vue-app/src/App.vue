@@ -3,18 +3,18 @@ import { onMounted, onUnmounted, ref, Ref } from "vue";
 import {
   TimelineAxis,
   TIMELINE_AXIS_EVENT_TYPE,
-} from "../../../src/js/TimelineAxis";
+} from "../../zoomAxis/js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
 import {
   CursorPointer,
   CURSOR_POINTER_EVENT_TYPE,
-} from "../../../src/js/cursorPointer";
+} from "../../zoomAxis/js/cursorPointer";
 import {
   TRACKS_EVENT_TYPES,
   TTrackConfig,
-} from "../../../src/js/trackType";
-import { Tracks } from "../../../src/js/Tracks";
-import { Segment } from "../../../src/js/Segment";
+} from "../../zoomAxis/js/trackType";
+import { Tracks } from "../../zoomAxis/js/Tracks";
+import { Segment } from "../../zoomAxis/js/Segment";
 
 let timeline: TimelineAxis;
 let trackCursor: CursorPointer;
