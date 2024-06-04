@@ -10,7 +10,7 @@ export class TrackGroup{
     this.mainTrack = track;
     this.dom = this.createDom();
     this.subTracksDom = this.dom.querySelector('.track-sub-track') as HTMLElement;
-    this.dom.insertBefore(track.dom,  this.subTracksDom);
+    this?.dom?.insertBefore(track.dom,  this.subTracksDom);
   }
   collapse(collapse: boolean){
     this.isCollapsed = collapse;

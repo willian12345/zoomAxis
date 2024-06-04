@@ -25,11 +25,12 @@ export interface CursorPointer {
 // todo: 剥离掉 timeline 
 export class CursorPointer extends EventHelper{
   private _enable = true;
-  cursorEl: HTMLElement | null = null;
+  cursorEl!: HTMLElement;
   scrollContentDom: HTMLElement | null = null;
-  timeline: TimelineAxis | null = null;
+  timeline!: TimelineAxis;
   preRatio = 0;
   currentRatio = 0;
+  left = 0;
   get enable() {
     return this._enable;
   }
@@ -88,9 +89,10 @@ export class CursorPointer extends EventHelper{
     this.cursorUpdate(this.timeline, this.getX(e.clientX, this.scrollContentDom));
     this.triggerDragEnd(this.timeline, this.getX(e.clientX, this.scrollContentDom));
   }
-  private triggerDragEnd(timelineAxis: TimelineAxis, x: number){
-    const frame = Math.round(x / timelineAxis.frameWidth);
-    const left = timelineAxis.frameWidth * frame;
+  private triggerDragEnd(timeline: TimelineAxis, x){
+    const frame = Math.round(x / timeline.frameWidth);
+    const left =  Math.round(timeline.frameWidth * frame);
+    this.left = left;
     this.dispatchEvent({ eventType: CURSOR_POINTER_EVENT_TYPE.DRAG_END }, {frame, left});
   }
   private getX(clientX: number, scrollContentDom: HTMLElement) {
@@ -107,26 +109,29 @@ export class CursorPointer extends EventHelper{
     }
     return x;
   }
-  private cursorUpdate(timelineAxis: TimelineAxis, x: number) {
+  private cursorUpdate(timeline: TimelineAxis, x: number) {
     if (!this.cursorEl) {
       return;
     }
-    let frame = Math.round(x / timelineAxis.frameWidth);
-    if(frame > timelineAxis.totalFrames){
-      frame = timelineAxis.totalFrames;
+    let frame = Math.round(x / timeline.frameWidth);
+    if(frame > timeline.totalFrames){
+      frame = timeline.totalFrames;
     }
-    const left = timelineAxis.frameWidth * frame;
+    const left = timeline.frameWidth * frame;
     // 游标拖动的 left 值根据当前帧与每帧所占宽度计算
     this.cursorEl.style.transform = `translateX(${left}px)`;
+    this.left = left;
     this.dispatchEvent({ eventType: CURSOR_POINTER_EVENT_TYPE.UPDATE }, {frame, left, x});
   }
   sync() {
-    if (!this.timeline || !this.cursorEl) {
-      return;
-    }
-    const left = this.timeline.frameWidth * this.timeline.currentFrame;
-    this.cursorEl.style.transform = `translateX(${left}px)`;
+    const left = this.syncPositon();
     this.dispatchEvent({ eventType: CURSOR_POINTER_EVENT_TYPE.UPDATE }, {frame:this.timeline.currentFrame, left});
+  }
+  syncPositon(){
+    const left = Math.round(this.timeline.frameWidth * this.timeline.currentFrame);
+    this.left = left;
+    this.cursorEl.style.transform = `translateX(${left}px)`;
+    return left
   }
   freeze() {
     this._enable = false;

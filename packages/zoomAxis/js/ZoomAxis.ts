@@ -42,11 +42,10 @@ export function roundFun(value: number, n: number) {
 export class ZoomAxis extends EventHelper {
   private canvas?: HTMLCanvasElement = {} as HTMLCanvasElement;
   private ctx?: CanvasRenderingContext2D = {} as CanvasRenderingContext2D;
-  dpr = (window.devicePixelRatio ?? 1) * 2;
   vertical = false;
   private stageWidth = 600; // 最小宽度 600px
   private stageHeightOut = 24;
-  private stageHeight = this.stageHeightOut * this.dpr;
+  private stageHeight = this.stageHeightOut * 2;
   private lineColor = "rgba(255, 255, 255, 0.12)";
   private lineColorPrimary = "rgba(255, 255, 255, 0.2)";
   private textColor = "rgba(255, 255, 255, 0.35)";
@@ -145,7 +144,7 @@ export class ZoomAxis extends EventHelper {
     }
 
     if (stageWidth) {
-      this.stageWidth = stageWidth * this.dpr;
+      this.stageWidth = stageWidth * 2;
     }
     //为了清晰度 canvas dom 属性宽度是 css 内设置宽度的 2 倍
     this.canvas?.setAttribute("width", this.stageWidth + "");
@@ -181,8 +180,6 @@ export class ZoomAxis extends EventHelper {
     if (this.markIndex > this.tickMarks) {
       return;
     }
-    // !!此处不能用递归数量超过 8000 后会 RangeError: Maximum call stack size exceeded
-    // 直接用简单的 for 循环
     for (let i = 0; i <= this.tickMarks; i++) {
       const isCyclePoint = this.checkIsCyclePoint();
       const lineHeight = isCyclePoint ? this.lineHeight : this.lineShortHeight;
@@ -239,7 +236,7 @@ export class ZoomAxis extends EventHelper {
   }
   scrollLeft(left: number) {
     this.resetToDraw();
-    this.lineX = left * this.dpr; // canvas 内所有物体都是 dpr 倍，所以 left 需要被放大 dpr 倍
+    this.lineX = left * 2; // canvas 内所有物体都是1倍，所以 left 需要被放大一倍
     this.redraw();
   }
   /**

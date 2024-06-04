@@ -25,6 +25,7 @@ export enum SegmentType {
   CAMERA_DYNAMIC,
   TEXT_WIDGET,
   DECORATION,
+  VIDEO,
 }
 export enum TRACKS_EVENT_TYPES {
   DRAG_START,// 拖动开始事件

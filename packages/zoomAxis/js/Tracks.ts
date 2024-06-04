@@ -681,7 +681,7 @@ export class Tracks extends EventHelper {
       track.parent = parentTrack;
     }
     if (prevTrack) {
-      prevTrack.dom.parentElement?.insertBefore(track.dom, prevTrack.dom);
+      prevTrack?.dom?.parentElement?.insertBefore(track.dom, prevTrack.dom);
       // list = [...list.slice(0, lastIndex + 1), trackConfig, ...list.slice(lastIndex + 1)];
       // 相同最后一个 TrackType 相同元素位置后添加
       list.splice(lastIndex + 1, 0, trackConfig);
@@ -767,11 +767,12 @@ export class Tracks extends EventHelper {
     const segment = this.getSegment(trackId, segmentId);
     if (!segment) return;
     if (this.deleteSegmentCheck) {
-      result = await this.deleteSegmentCheck(trackId, segmentId);
-      if (!result) {
-        console.warn("删除失败");
-        return result;
-      }
+      await this.deleteSegmentCheck(trackId, segmentId);
+      // 不管后台有没有删除成功，都识别为删除成功
+      // if (!result) {
+      //   console.warn("删除失败");
+      //   return result;
+      // }
       if (!segment) {
         return result;
       }
