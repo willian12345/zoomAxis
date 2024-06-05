@@ -13,8 +13,7 @@ import {
   TRACKS_EVENT_TYPES,
   TTrackConfig,
 } from "../../zoomAxis/js/trackType";
-import { Tracks } from "../../zoomAxis/js/Tracks";
-import { Segment } from "../../zoomAxis/js/Segment";
+import { Tracks, Segment } from "../../zoomAxis/js/index";
 
 let timeline: TimelineAxis;
 let trackCursor: CursorPointer;
@@ -110,33 +109,33 @@ const tracks: Ref<TTrackConfig[]> = ref([
   {
     trackId: 'a',
     trackText: '轨道组',
-    trackType: '1',
+    trackType: 1,
     color: '#C66136',
     subTracks: [
       {
         trackId: 'a1',
         trackText: '融合轨道',
         color: '#6C4ACD',
-        trackType: '2',
+        trackType: 2,
         childOverlapable: true,
       },
       {
         trackId: 'a2',
         trackText: '轨道组轨道',
         color: '#4767E8',
-        trackType: '3',
+        trackType: 3,
       },
     ]
   },
   {
     trackId: 'b',
-    trackType: '4',
+    trackType: 11,
     color: '#6C4ACD',
     trackText: '普通轨道一',
   },
   {
     trackId: 'c',
-    trackType: '5',
+    trackType: 10,
     color: '#46A9CB',
     trackText: '普通轨道二',
   },
@@ -355,13 +354,13 @@ onMounted(() => {
         拖我（一）
         <button @click="handleAddByClick('3')">+</button>
       </div>
-      <div class="segment-item" data-segment-type="4">
+      <div class="segment-item" data-segment-type="11">
         拖我
-        <button @click="handleAddByClick('4')">+</button>
+        <button @click="handleAddByClick('11')">+</button>
       </div>
       <div
         class="segment-item segment-item-flex"
-        data-segment-type="5"
+        data-segment-type="10"
         data-track-id="c"
       >
         拖我

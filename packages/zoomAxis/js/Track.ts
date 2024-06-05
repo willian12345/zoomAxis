@@ -604,7 +604,7 @@ export class Track extends EventHelper {
         trackId: segmentTrackId ?? "",
         framestart,
         frameend,
-        name: "",
+        text: String(Math.random()),
         segmentType,
         frameWidth: this.frameWidth,
       });

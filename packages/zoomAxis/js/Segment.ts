@@ -6,12 +6,10 @@
  * </div>
  */
 import { EventHelper } from "./EventHelper";
-import { SegmentConstructInfo, SegmentType } from "./TrackType";
+import { SegmentConstructParams, SegmentType, SegmentRendererConstructor } from "./TrackType";
 import { Track } from "./Track";
 import { Keyframe } from "./Keyframe";
-import {
-  CLASS_NAME_SEGMENT,
-} from './trackUtils'
+import { SegmentRenderer} from './segmentRenderer/SegmentRenderer'
 
 let segmentIdIndex = 0;
 export class Segment extends EventHelper{
@@ -28,9 +26,9 @@ export class Segment extends EventHelper{
   left: string | number = '0';
   segmentId = '';
   segmentStyle = '';
-  dom = {} as HTMLElement;
+  dom!:HTMLElement;
   trackId = '';
-  segmentType = SegmentType.BODY_ANIMATION;
+  segmentType = -1;
   name = '';
   parentTrack: Track | null = null;
   actived = false;
@@ -43,12 +41,12 @@ export class Segment extends EventHelper{
   rightHandler!: HTMLElement // 右调节手柄由轨道指定
   keyframes = [] as Keyframe[] // keyframes 内存储着关键帧，帧值是“相对帧”
   disabled = false
-  // 内容渲染器，可传自定义的渲染内容，用于个性化
-  contentRenderer: string|HTMLElement|null = null
-  constructor(args: SegmentConstructInfo) {
+  segmentRenderer!: SegmentRenderer
+  constructor(args: SegmentConstructParams) {
     super();
+    args.segmentId = args.segmentId ?? this.createSegmentId();
     this.trackId = args.trackId ?? '';
-    this.segmentId = args.segmentId ?? this.createSegmentId();
+    this.segmentId = args.segmentId;
     this.framestart = args.framestart;
     this.frameend = args.frameend;
     this.prevFrameStart = this.framestart;
@@ -67,13 +65,9 @@ export class Segment extends EventHelper{
     if(args.segmentStyle){
       this.segmentStyle = args.segmentStyle
     }
-    // 内容渲染器
-    if(args.contentRenderer){
-      this.contentRenderer = args.contentRenderer;
-    }
     this.segmentType = args.segmentType;
     this.name = args.name ?? "";
-    this.dom = this.createDom();
+    this.dom = this.createUI({...args});
     // 额外其它信息
     if (args.extra) {
       this.extra = args.extra;
@@ -85,25 +79,9 @@ export class Segment extends EventHelper{
     return String(segmentIdIndex++);
   }
 
-  private createDom() {
-    const div = document.createElement("div");
-    const defaultContentRenderer = `<div class="segment-name">${this.name}</div>`
-    const contentRenderer = this.contentRenderer ? this.contentRenderer : defaultContentRenderer
-    div.innerHTML = `
-        <div 
-          class="${CLASS_NAME_SEGMENT}" 
-          data-segment-id="${this.segmentId}" 
-          data-segment-type="${this.segmentType}" 
-          data-track-id="${this.trackId}" 
-          data-framestart="${this.framestart}" 
-          data-frameend="${this.frameend}"
-          style="width: ${this.width}; height: ${this.height}; left: ${this.left}; ${this.segmentStyle}">
-          <div class="segment-renderer">
-            ${contentRenderer}
-          </div>
-        </div>
-      `;
-    return div.firstElementChild as HTMLElement;
+  private createUI(args: SegmentConstructParams) {
+    this.segmentRenderer = new args.segmentRendererConstructor(args)
+    return this.segmentRenderer.wrapper;
   }
   getSegmentLeft(framestart?: number): number {
     framestart = framestart ?? this.framestart
@@ -267,7 +245,7 @@ export class Segment extends EventHelper{
     })
   }
   // 更新 自定义渲染器 renderer 用于渲染不同UI
-  updateContentRenderer(renderer: string|HTMLElement){
+  updatesegmentRenderer(renderer: string|HTMLElement){
     let div: HTMLElement;
     if(!renderer) return;
     if(typeof renderer === 'string'){

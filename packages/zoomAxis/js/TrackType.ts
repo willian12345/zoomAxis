@@ -1,6 +1,7 @@
 import { TimelineAxis } from "./TimelineAxis";
 import { Track } from "./Track";
 import { Segment } from "./Segment";
+import { SegmentRenderer } from "./segmentRenderer/SegmentRenderer";
 // 轨道基本配置信息
 export type TTrackConfig = {
   trackId: string;
@@ -110,10 +111,10 @@ export interface ITracksArgs {
   createSegmentCheck?: ICreateSegmentCheck;
   deleteSegmentCheck?: IDeleteSegmentCheck;
 }
-export interface SegmentTracksArgs extends TracksArgs {
+export interface SegmentTracksArgs extends ITracksArgs {
   deleteSegmentCheck?: IDeleteSegmentCheck;
 }
-export interface SegmentTracksOutArgs extends TracksArgs {}
+export interface SegmentTracksOutArgs extends ITracksArgs {}
 
 export interface DragingArgs {
   isCreateNew: boolean;
@@ -133,19 +134,20 @@ export interface DropArgs {
 }
 
 // Segment 构造参数
-export type SegmentConstructInfo = {
+export type SegmentConstructParams = {
   trackId?: string;
   framestart: number;
   frameend: number;
   segmentType: SegmentType;
   name?: string;
+  text?: string;
   segmentId?: string;
   width?: number | string;
   frameWidth: number;
   height?: number | string;
   left?: number | string;
   extra?: any;
-  contentRenderer?: string | HTMLElement;
+  segmentRendererConstructor: SegmentRendererConstructor;
   segmentClass?: string;
   segmentStyle?: string;
 };
@@ -167,3 +169,19 @@ export type EventListenerType<T extends keyof HTMLElementEventMap> = (
   this: HTMLElement,
   e: HTMLElementEventMap[T]
 ) => any;
+
+export interface ISegmentContentRenderer {
+  type: number,
+  text: string,
+  renderer: ()=> HTMLElement
+}
+
+// 定义一个接口来描述类的构造函数和静态属性
+export interface ISegmentContentRendererClass {
+  new (name: string): ISegmentContentRenderer; // 构造函数签名
+  SegmentType: number; // 静态属性
+}
+
+export interface SegmentRendererConstructor {
+  new (params: SegmentConstructParams): SegmentRenderer;
+}

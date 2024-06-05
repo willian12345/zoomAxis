@@ -1,11 +1,9 @@
 // 创建 segment
 import {
-  SegmentBasicInfo,
-  SegmentType,
-  SegmentConstructInfo,
+  SegmentConstructParams,
 } from "./TrackType";
 import { Segment } from "./Segment";
-import { getContentRenderer, getSegmentStyle } from "./SegmentRenderers";
+import { segmentRenderers } from './SegmentRendererManager'
 import { Track } from "./Track";
 const CLOSE_ENOUPH_DISTANCE_Y = 15; // 距离 y 是否够近
 const CLOSE_ENOUPH_SEGMENT_X = 20; // 距离 segment x是否够
@@ -30,10 +28,14 @@ export const CLASS_NAME_SEGMENT_KEYFRAME_ACTIVED = 'actived';
 export const DEFAULT_SEGMENT_FRAMES = 150; // 默认 150 帧
 export const CLASS_NAME_SEGMENT_HANDLE_CONTAINER = 'segment-handle-container'
 
-export const createSegment = (segmentInfo: SegmentConstructInfo) => {
-  segmentInfo.contentRenderer = getContentRenderer(segmentInfo);
-  segmentInfo.segmentStyle = getSegmentStyle(segmentInfo);
-  const segment = new Segment(segmentInfo);
+export const createSegment = (params: SegmentConstructParams) => {
+  const SegmentContentRenderClass = segmentRenderers.getRenderer(params.segmentType);
+  if(SegmentContentRenderClass){
+    params.segmentRendererConstructor = SegmentContentRenderClass;
+  }else{
+    params.segmentRendererConstructor = segmentRenderers.getRenderer(-1);
+  }
+  const segment = new Segment(params);
   return segment;
 };
 export const createNodeWidthClass = (className: string) => {
@@ -47,23 +49,6 @@ export const createSegmentFake = (rect: DOMRect) => {
   dom.style.width = `${rect.width}px`;
   dom.style.borderRadius = "4px";
   return dom;
-};
-export const createSegmentToTrack = (
-  segmentName: string,
-  segmentType: SegmentType,
-  segmentInfo: SegmentBasicInfo,
-  frameWidth: number
-): Segment => {
-  const segment = createSegment({
-    trackId: segmentInfo.trackId,
-    framestart: segmentInfo.startFrame,
-    frameend: segmentInfo.endFrame,
-    name: segmentName,
-    segmentId: segmentInfo.segmentId,
-    segmentType,
-    frameWidth,
-  });
-  return segment;
 };
 export const findParentElementByClassName = (
   dom: HTMLElement,
@@ -155,40 +140,7 @@ export const collisionCheckX = (
   const frameGroup = segments.map( segment => [segment.framestart, segment.frameend]);
   return collisionCheckFrames(framestart, frameend, frameGroup);
 };
-export const collisionCheckX1 = (
-  placeholder: HTMLElement, // placeholder
-  track: HTMLElement
-): boolean => {
-  // target 即轨道内的 当前拖动 segment 的 placeholder 替身
-  const placeholderRect = placeholder.getBoundingClientRect();
-  const segments: HTMLElement[] = Array.from(
-    track.querySelectorAll(`.${CLASS_NAME_SEGMENT}`)
-  );
-  const segmentsLength = segments.length;
-  if (!segmentsLength) {
-    return false
-  }
 
-  let placeholderLeft = Math.round(getLeftValue(placeholder));
-  for (let segment of segments) {
-    const segmentRect = segment.getBoundingClientRect();
-    // placeholder与 segment 都属于轨道内，left 值取 style 内的值 即相对坐标
-    const segmentLeft = Math.round(getLeftValue(segment));
-    const segmentRight = Math.round(segmentLeft + segmentRect.width);
-    // 如果值是负数说明拖到超出轨道左侧需要修正为 0
-    placeholderLeft = placeholderLeft < 0 ? 0 : placeholderLeft;
-    const placeholderRight = placeholderLeft + placeholderRect.width;
-    // x 轴碰撞检测，判断如果placeholderLeft值处于 segment 位置有重叠则表示碰撞了
-    if (
-      placeholderLeft > segmentLeft && placeholderLeft < segmentRight
-      || 
-      placeholderRight > segmentLeft && placeholderRight < segmentRight
-    ) {
-      return true;
-    }
-  }
-  return false;
-};
 export const getFrameByWidth = (width: number, frameWidth: number): number => {
   let frame = Math.round(width / frameWidth);
   if (frame < 0) {
