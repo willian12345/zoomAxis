@@ -1,19 +1,11 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, Ref } from "vue";
-import {
-  TimelineAxis,
-  TIMELINE_AXIS_EVENT_TYPE,
-} from "../../zoomAxis/js/TimelineAxis";
 import Cursor from "./components/Cursor.vue";
+
 import {
-  CursorPointer,
-  CURSOR_POINTER_EVENT_TYPE,
-} from "../../zoomAxis/js/cursorPointer";
-import {
-  TRACKS_EVENT_TYPES,
-  TTrackConfig,
-} from "../../zoomAxis/js/trackType";
-import { Tracks, Segment } from "../../zoomAxis/js/index";
+  Tracks, Segment, TimelineAxis, TIMELINE_AXIS_EVENT_TYPE, CursorPointer,
+  CURSOR_POINTER_EVENT_TYPE, TRACKS_EVENT_TYPES, TTrackConfig
+} from "../../zoomAxis/js/index";
 
 let timeline: TimelineAxis;
 let trackCursor: CursorPointer;
@@ -29,6 +21,11 @@ const trackListContainer = ref<HTMLElement | null>(null);
 const segmentItemListRef = ref<HTMLElement | null>(null);
 let currentSegment: Segment | null = null;
 let ctrlDown = false;
+
+const roundNumber = (value: number, n: number) => {
+  return Math.round(value * Math.pow(10, n)) / Math.pow(10, n);
+};
+
 // 左右滚动
 const handleScroll = (e: UIEvent) => {
   if (!e) {
@@ -36,27 +33,12 @@ const handleScroll = (e: UIEvent) => {
   }
   const dom = e.target as HTMLElement;
   timeline?.scrollLeft(-dom.scrollLeft);
-  if(trackHeaderListRef.value){
+  if (trackHeaderListRef.value) {
     trackHeaderListRef.value.scrollTop = dom.scrollTop;
   }
 };
 
-let zoomRatio = 1;
 
-const zoomIn = () => {
-  if (zoomRatio >= 1.4) {
-    zoomRatio = 1.4;
-    return;
-  }
-  zoomRatio += 0.1;
-};
-const zoomOut = () => {
-  if (zoomRatio <= 0.1) {
-    zoomRatio = 0.1;
-    return;
-  }
-  zoomRatio -= 0.1;
-};
 const syncTrackWidth = () => {
   const trackItemWidth = segmentTracks.width();
   trackWidth.value =
@@ -65,23 +47,46 @@ const syncTrackWidth = () => {
 const syncByZoom = (zoom: number) => {
   // 根据缩放比较，减小滚动宽度
   if (zoom) {
+    const prevLeft = trackCursor.left;
     timeline?.zoom(zoom);
     segmentTracks?.zoom();
     syncTrackWidth();
     // 根据帧数变更游标位置
     if (trackCursor) {
-      trackCursor.sync();
+      trackCursor.syncPositon();
+    }
+    // 如果滚动宽度大于舞台宽度，则需要滚动相应的距离保证指针位置不变
+    const scrollWidth = scrollContainerRef.value?.scrollWidth ?? 0;
+    const clientWidth = scrollContainerRef.value?.clientWidth ?? 0;
+    if (scrollWidth > clientWidth) {
+      scrollContainerRef.value!.scrollLeft = scrollContainerRef.value!.scrollLeft + (trackCursor.left - prevLeft)
     }
   }
 };
+let zoomRatio = 1;
+
+const zoom = (isZoomIn: boolean) => {
+  const zoomStep = 0.01;
+  const v = roundNumber(
+    isZoomIn
+      ? zoomRatio - zoomStep
+      : zoomRatio + zoomStep,
+    2
+  );
+  if (v < 0.1 || v > 2) {
+    return zoomRatio;
+  }
+  return v;
+};
 // 滚轮缩放
 const handleWheel = (e: WheelEvent) => {
-  if(!ctrlDown){
-    return; 
+  if (!ctrlDown) {
+    return;
   }
   e.stopPropagation();
   e.preventDefault();
-  e.deltaY > 0 ? zoomOut() : zoomIn();
+  
+  zoomRatio = e.deltaY > 0 ? zoom(true) : zoom(false);
   syncByZoom(zoomRatio);
 };
 document.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -95,12 +100,12 @@ const handlePlay = () => {
     timeline.play(0);
     return;
   }
-  if(timeline.playing){
+  if (timeline.playing) {
     timeline.pause();
-  }else{
+  } else {
     timeline.play();
   }
-  
+
 };
 
 
@@ -161,12 +166,11 @@ const initApp = () => {
   stageWidth.value = scrollContainer.getBoundingClientRect().width;
   scrollContentWidth.value = stageWidth.value;
   trackWidth.value = stageWidth.value;
-
   // 初始化时间轴
   timeline = new TimelineAxis({
     el: "canvasStage",
-    tickMarks: 500,
-    totalFrames: 1220,
+    tickMarks: 960*2,
+    totalFrames: 960,
     stageWidth: stageWidth.value,
   });
 
@@ -306,7 +310,7 @@ const testdestroy = () => {
 }
 
 const handleAddKeyframe = () => {
-  if(!currentSegment || !timeline){
+  if (!currentSegment || !timeline) {
     console.log('请先选择一个segment');
     return;
   }
@@ -314,7 +318,7 @@ const handleAddKeyframe = () => {
 }
 
 const handleSegmentDelete = () => {
-  if(!currentSegment){
+  if (!currentSegment) {
     console.log('请先选择一个segment');
     return;
   }
@@ -358,11 +362,7 @@ onMounted(() => {
         拖我
         <button @click="handleAddByClick('11')">+</button>
       </div>
-      <div
-        class="segment-item segment-item-flex"
-        data-segment-type="10"
-        data-track-id="c"
-      >
+      <div class="segment-item segment-item-flex" data-segment-type="10" data-track-id="c">
         拖我
       </div>
     </div>
@@ -370,55 +370,37 @@ onMounted(() => {
       <div class="track-header-list" ref="trackHeaderListRef">
         <div class="track-operation">
           <div v-for="track in tracks" :key="track.trackId">
-            <div
-              class="track-operation-item-group cursor-pointer"
-              :key="track.trackId"
-              v-if="track.subTracks"
-            >
+            <div class="track-operation-item-group cursor-pointer" :key="track.trackId" v-if="track.subTracks">
               <div class="track-operation-item flex items-center">
-                <div
-                  class="mr-2"
-                >
-                  <svg class="text-white" fill="rgba(255,255,255, 0.5)" width="12" height="12" viewBox="0 0 12 12" data-v-f2ec87fa="" style="transform: rotate(0deg);"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.57574 8.4247L1.57574 4.4247L2.42427 3.57617L6 7.15191L9.57574 3.57617L10.4243 4.4247L6.42426 8.4247L6 8.84896L5.57574 8.4247Z"></path></svg>
+                <div class="mr-2">
+                  <svg class="text-white" fill="rgba(255,255,255, 0.5)" width="12" height="12" viewBox="0 0 12 12"
+                    data-v-f2ec87fa="" style="transform: rotate(0deg);">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                      d="M5.57574 8.4247L1.57574 4.4247L2.42427 3.57617L6 7.15191L9.57574 3.57617L10.4243 4.4247L6.42426 8.4247L6 8.84896L5.57574 8.4247Z">
+                    </path>
+                  </svg>
                 </div>
                 {{ track.trackText }}
               </div>
-              <div
-                  class="track-operation-item"
-                  v-for="(subTrack, index) in track.subTracks"
-                  :key="index"
-                >
-                  {{ subTrack.trackText }}
+              <div class="track-operation-item" v-for="(subTrack, index) in track.subTracks" :key="index">
+                {{ subTrack.trackText }}
               </div>
               <div class="track-gutter"></div>
             </div>
-            <div 
-              class="track-operation-item"
-              v-else
-            >
+            <div class="track-operation-item" v-else>
               {{ track.trackText }}
             </div>
           </div>
         </div>
       </div>
-      <div
-        class="webkit-scrollbar scroll-container"
-        @scroll="handleScroll"
-        ref="scrollContainerRef"
-        :style="{ width: `${scrollContentWidth}px` }"
-      >
+      <div class="webkit-scrollbar scroll-container" @scroll="handleScroll" ref="scrollContainerRef"
+        :style="{ width: `${scrollContentWidth}px` }">
         <div class="timeline-markers" :style="{ width: `${stageWidth}px` }">
           <div id="canvasStage"></div>
         </div>
-        <div
-          class="scroll-content"
-          ref="scrollContentRef"
-        >
-          <div
-            class="track-list"
-            :style="{ width: `${trackWidth}px` }"
-          >
-          <div ref="trackListContainer"></div>
+        <div class="scroll-content" ref="scrollContentRef">
+          <div class="track-list" :style="{ width: `${trackWidth}px` }">
+            <div ref="trackListContainer"></div>
           </div>
           <Cursor ref="cursorRef" />
         </div>
@@ -431,11 +413,13 @@ onMounted(() => {
 @markHeight: 24px;
 @trackHeight: 28px;
 @timelineContainerHeight: 200px;
-.btn{
+
+.btn {
   // width: 20px;
   // height: 10px;
   background-color: aliceblue;
 }
+
 .track-drag-container {
   pointer-events: none;
   position: fixed;
@@ -449,14 +433,14 @@ onMounted(() => {
 }
 
 .wrapper {
-  padding: 100px 40px 0;
+  padding: 0;
 }
 
 .timeline-container {
   display: flex;
   position: relative;
-  margin: 180px 40px;
-  width: 100vh;
+  margin: 180px 0;
+  width: 100%;
   height: 200px;
   overflow: hidden;
   background-color: #0f0c0c;
@@ -487,16 +471,18 @@ onMounted(() => {
   width: 100%;
 }
 
-.track-header-list{
+.track-header-list {
   height: 200px;
   overflow: hidden;
 }
+
 .track-operation {
   padding-top: @markHeight;
   flex-basis: 120px;
   border-right: 1px solid black;
   background-color: rgba(white, 0);
   height: 400px;
+
   .track-operation-item {
     margin-bottom: 2px;
     padding-left: 6px;
@@ -506,8 +492,9 @@ onMounted(() => {
     color: rgba(255, 255, 255, 0.5);
     background-color: rgba(255, 255, 255, 0.04);
   }
-  .track-operation-item-group{
-    .track-operation-item{
+
+  .track-operation-item-group {
+    .track-operation-item {
       padding-left: 2em;
     }
   }
@@ -519,9 +506,11 @@ onMounted(() => {
   position: absolute;
 }
 
-.track-list,.track-drag-container {
+.track-list,
+.track-drag-container {
   padding-top: @markHeight;
   width: 100%;
+
   .track {
     // pointer-events: none;
     position: relative;
@@ -556,6 +545,7 @@ onMounted(() => {
     pointer-events: all;
     border: 1px solid transparent;
   }
+
   svg {
     width: 1em;
     height: 1em;
@@ -563,6 +553,7 @@ onMounted(() => {
     overflow: hidden;
     font-size: inherit;
   }
+
   .segment-action {
     background-color: #c66136;
   }
@@ -588,6 +579,7 @@ onMounted(() => {
 .track.dragover {
   background-color: rgba(white, 0.08);
 }
+
 .track.dragover-error {
   background-color: rgba(red, 0.08);
 }
@@ -608,11 +600,13 @@ onMounted(() => {
     cursor: move;
     user-select: none;
   }
+
   .segment-item-stretch {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
+
     em {
       font-size: 8px;
     }
@@ -624,6 +618,7 @@ onMounted(() => {
   background-color: #c66136;
   opacity: 0.8;
 }
+
 .segment-name {
   padding: 0 6px;
   font-size: 11px;
@@ -633,6 +628,7 @@ onMounted(() => {
   line-height: 24px;
   pointer-events: none;
 }
+
 .segment-handle {
   position: absolute;
   top: 2px;
@@ -643,19 +639,25 @@ onMounted(() => {
   cursor: col-resize;
   background-color: rgba(255, 255, 255, 0);
 }
+
 .segment-handle-left {
   left: 0;
   border-radius: 4px 0 0 4px;
 }
+
 .segment-handle-right {
   right: 0;
   border-radius: 0 4px 4px 0;
 }
-.segment:hover, .segment.actived, .segment.sliding {
-  .segment-handle{
+
+.segment:hover,
+.segment.actived,
+.segment.sliding {
+  .segment-handle {
     background-color: rgba(255, 255, 255, 0.8);
   }
 }
+
 .coordinate-line {
   display: none;
   position: absolute;
@@ -669,7 +671,7 @@ onMounted(() => {
   background-color: #00b6c2;
 }
 
-.rectangle-capture{
+.rectangle-capture {
   display: none;
   position: absolute;
   z-index: 10;
@@ -682,18 +684,19 @@ onMounted(() => {
   background-color: rgba(white, .2);
 }
 
-.segment-handle-container{
+.segment-handle-container {
   position: relative;
   top: 1px;
   pointer-events: none;
   z-index: 3;
   height: 24px;
-  .segment-handle.actived{
+
+  .segment-handle.actived {
     background-color: rgba(255, 255, 255, 0.8);
   }
 }
 
-.segment-keyframe{
+.segment-keyframe {
   // display: none;
   position: absolute;
   left: 0;
@@ -701,9 +704,10 @@ onMounted(() => {
   width: 8px;
   height: 8px;
   z-index: 1;
-  transform: translate( calc(-50% - 1px), -50%);
+  transform: translate(calc(-50% - 1px), -50%);
   border-radius: 1px;
-  &::after{
+
+  &::after {
     content: "";
     position: absolute;
     left: 0;
@@ -716,12 +720,14 @@ onMounted(() => {
     border: 1px solid rgba(255, 255, 255, 0.3);
   }
 }
-.segment-keyframe.actived{
-  &::after{
+
+.segment-keyframe.actived {
+  &::after {
     background: #FAA700;
   }
 }
-.segment.actived .segment-keyframe{
+
+.segment.actived .segment-keyframe {
   display: block;
 }
 
@@ -732,18 +738,20 @@ onMounted(() => {
   display: flex;
   gap: 20px;
 }
+
 button {
   padding: 4px 6px;
 }
 
-.track-gutter{
+.track-gutter {
   margin: 8px 0 10px;
   height: 1px;
   width: 100%;
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.04);
 }
-.segment-renderer{
+
+.segment-renderer {
   display: flex;
   height: 24px;
   overflow: hidden;

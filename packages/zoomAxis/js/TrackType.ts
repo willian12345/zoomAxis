@@ -147,7 +147,7 @@ export type SegmentConstructParams = {
   height?: number | string;
   left?: number | string;
   extra?: any;
-  segmentRendererConstructor: SegmentRendererConstructor;
+  segmentRendererConstructor?: SegmentRendererConstructor;
   segmentClass?: string;
   segmentStyle?: string;
 };

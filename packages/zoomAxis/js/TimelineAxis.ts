@@ -51,8 +51,9 @@ export class TimelineAxis extends ZoomAxis {
     frameRate,
     ratio,
     ratioMap,
+    stageWidth
   }: TimelineAxisArgs) {
-    super({ el, tickMarks, ratio, ratioMap });
+    super({ el, tickMarks, ratio, ratioMap,  stageWidth});
     this.totalFrames = totalFrames;
     this.frameRate = frameRate ?? FRAME_RATE;
     this.setFrameIntervalTime();

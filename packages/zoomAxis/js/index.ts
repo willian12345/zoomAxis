@@ -15,5 +15,8 @@ export * from './segmentRenderer/VoiceRenderer';
 export * from './segmentRenderer/VideoRenderer';
 
 export * from './Tracks';
+export * from './TrackType';
 export * from './Segment';
 export * from './CursorPointer';
+
+export * from './TimelineAxis';
