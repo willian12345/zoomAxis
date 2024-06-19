@@ -2,9 +2,10 @@
  * TrackFlex 伸缩轨道
  */
 
-import { Segment } from "./Segment";
+import { Segment } from "../Segment";
+import { trackRenderers } from '../trackRendererManager';
 import { Track } from "./Track";
-import { TRACKS_EVENT_TYPES, ITrackArgs, DragingArgs } from "./TrackType";
+import { TRACKS_EVENT_TYPES, ITrackArgs, DragingArgs } from "../TrackType";
 import {
   isContainSplitFromComma,
   getSegmentPlaceholder,
@@ -15,12 +16,13 @@ import {
   CLASS_NAME_TRACK_DRAG_OVER,
   CLASS_NAME_TRACK_DRAG_OVER_ERROR,
   DEFAULT_SEGMENT_FRAMES,
-} from "./trackUtils";
+} from "../trackUtils";
 export interface ITrackFlexArgs extends ITrackArgs {
   totalFrames: number;
 }
 
 export class TrackFlex extends Track {
+  static trackType = 'segmentFlex'
   totalFrames = 0;
   isFlex = true;
   framestart = 0; // 当前轨道拖动的 segment  framestart
@@ -151,10 +153,10 @@ export class TrackFlex extends Track {
       return;
     }
     this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER);
-    const trackType = this.trackType;
+    const segmentTypes = this.segmentTypes;
     const segmentType = segment.dataset.segmentType ?? "";
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
-    if (!isContainSplitFromComma(trackType, segmentType)) {
+    if (!isContainSplitFromComma(segmentTypes, segmentType)) {
       this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
     }
     const x = dragTrackContainerRect.left + scrollContainerX;
@@ -226,10 +228,10 @@ export class TrackFlex extends Track {
     framestart: number;
     segment: Segment;
   }): Segment | null {
-    const trackType = this.trackType;
+    const segmentTypes = this.segmentTypes;
     const segmentType = String(segment.segmentType);
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
-    if (!isContainSplitFromComma(trackType, segmentType)) {
+    if (!isContainSplitFromComma(segmentTypes, segmentType)) {
       return null;
     }
     // 如果是轨道内的拖动，则不需要裁剪功能
@@ -321,3 +323,5 @@ export class TrackFlex extends Track {
     this.totalFrames = n;
   }
 }
+
+trackRenderers.add(TrackFlex.trackType, TrackFlex);

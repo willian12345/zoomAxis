@@ -14,6 +14,9 @@ export * from './segmentRenderer/TextWidgetRenderer';
 export * from './segmentRenderer/VoiceRenderer';
 export * from './segmentRenderer/VideoRenderer';
 
+export * from './track/Track';
+export * from './track/TrackSegmentOverlap';
+
 export * from './Tracks';
 export * from './TrackType';
 export * from './Segment';

@@ -6,8 +6,8 @@
  * </div>
  */
 import { EventHelper } from "./EventHelper";
-import { SegmentConstructParams, SegmentType, SegmentRendererConstructor } from "./TrackType";
-import { Track } from "./Track";
+import { TSegmentConstructParams, SegmentType, SegmentRendererConstructor } from "./TrackType";
+import { Track } from "./track/Track";
 import { Keyframe } from "./Keyframe";
 import { SegmentRenderer} from './segmentRenderer/SegmentRenderer'
 
@@ -42,7 +42,7 @@ export class Segment extends EventHelper{
   keyframes = [] as Keyframe[] // keyframes 内存储着关键帧，帧值是“相对帧”
   disabled = false
   segmentRenderer!: SegmentRenderer
-  constructor(args: SegmentConstructParams) {
+  constructor(args: TSegmentConstructParams) {
     super();
     args.segmentId = args.segmentId ?? this.createSegmentId();
     this.trackId = args.trackId ?? '';
@@ -79,7 +79,7 @@ export class Segment extends EventHelper{
     return String(segmentIdIndex++);
   }
 
-  private createUI(args: SegmentConstructParams) {
+  private createUI(args: TSegmentConstructParams) {
     this.segmentRenderer = new args.segmentRendererConstructor(args)
     return this.segmentRenderer.wrapper;
   }

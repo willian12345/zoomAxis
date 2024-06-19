@@ -1,10 +1,10 @@
 
-import type { ISegmentContentRenderer, SegmentConstructParams, ISegmentContentRendererClass} from '../TrackType';
+import type { ISegmentContentRenderer, TSegmentConstructParams, ISegmentContentRendererClass} from '../TrackType';
 import { SegmentRenderer } from './SegmentRenderer';
 import { segmentRenderers } from '../SegmentRendererManager';
 export class FaceAnimationRenderer extends SegmentRenderer {
   static SegmentType = 1
-  constructor(params:  SegmentConstructParams  ) {
+  constructor(params:  TSegmentConstructParams  ) {
     super(params);
     this.renderer()
   }

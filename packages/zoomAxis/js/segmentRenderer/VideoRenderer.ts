@@ -1,10 +1,10 @@
 
-import type { ISegmentContentRenderer, SegmentConstructParams, ISegmentContentRendererClass} from '../TrackType';
+import type { ISegmentContentRenderer, TSegmentConstructParams, ISegmentContentRendererClass} from '../TrackType';
 import { SegmentRenderer } from './SegmentRenderer';
 import { segmentRenderers } from '../SegmentRendererManager';
 export class VideoRenderer extends SegmentRenderer {
   static SegmentType = 11
-  constructor(params:  SegmentConstructParams  ) {
+  constructor(params:  TSegmentConstructParams  ) {
     super(params);
     this.renderer()
   }

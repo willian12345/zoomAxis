@@ -5,7 +5,8 @@
  *  <div class="segment"></div>
  * </div>
  */
-import { Segment } from "./Segment";
+import { Segment } from "../Segment";
+import { trackRenderers } from '../trackRendererManager';
 import {
   collisionCheckX,
   getFrameRange,
@@ -27,16 +28,16 @@ import {
   createContainer,
   removePlaceholder,
   collisionCheckFrames,
-} from "./trackUtils";
+} from "../trackUtils";
 import {
   ITrackArgs,
   DragingArgs,
   TRACKS_EVENT_TYPES,
   SegmentType,
   ICreateSegmentCheck,
-} from "./TrackType";
-import { EventHelper } from "./EventHelper";
-import { TrackGroup } from "./Group";
+} from "../TrackType";
+import { EventHelper } from "../EventHelper";
+import { TrackGroup } from "../Group";
 
 export type TMoveFunctionArgs = {
   frameWidth: number;
@@ -48,7 +49,8 @@ export type TMoveFunctionArgs = {
 export class Track extends EventHelper {
   dom!: HTMLElement;
   trackId = "";
-  trackType = "";
+  segmentTypes = "";
+  static trackType = 'normal'
   group: TrackGroup | null = null;
   visibility = true;
   segments: Map<string, Segment> = new Map(); // 轨道内的 segment
@@ -64,11 +66,11 @@ export class Track extends EventHelper {
   sliding = false;
   segmentHandleContainer!: HTMLElement
   createSegmentCheck?: ICreateSegmentCheck; // 外部 UE 真正添加新 segment 逻辑
-  constructor({ trackId, trackType, frameWidth, createSegmentCheck }: ITrackArgs) {
+  constructor({ trackId, segmentTypes, frameWidth, createSegmentCheck }: ITrackArgs) {
     super();
     this.frameWidth = frameWidth;
     this.trackId = trackId;
-    this.trackType = trackType;
+    this.segmentTypes = segmentTypes;
     this.dom = this.createDom();
     const segmentHandleContainer = this.dom.querySelector(`.${CLASS_NAME_SEGMENT_HANDLE_CONTAINER}`);
     if (!segmentHandleContainer) {
@@ -84,7 +86,7 @@ export class Track extends EventHelper {
   createDom() {
     const div = document.createElement("div");
     div.innerHTML = `
-        <div class="track" data-track-id="${this.trackId}" data-track-type="${this.trackType}">
+        <div class="track" data-track-id="${this.trackId}" data-track-type="${this.segmentTypes}">
           <div class="track-placeholder"></div>
           <div class="${CLASS_NAME_SEGMENT_HANDLE_CONTAINER}"></div>
         </div>
@@ -452,10 +454,10 @@ export class Track extends EventHelper {
       return;
     }
     this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER);
-    const trackType = this.trackType;
+    const segmentTypes = this.segmentTypes;
     const segmentType = segmentDom.dataset.segmentType ?? "";
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
-    if (!isContainSplitFromComma(trackType, segmentType)) {
+    if (!isContainSplitFromComma(segmentTypes, segmentType)) {
       this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
     }
     const scrollContainerX = scrollContainer.getBoundingClientRect().left;
@@ -535,7 +537,7 @@ export class Track extends EventHelper {
    */
   precheck(scrollContainer: HTMLElement, segmentType: string, segment: Segment, multi: boolean) {
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
-    if (!isContainSplitFromComma(this.trackType, segmentType)) {
+    if (!isContainSplitFromComma(this.segmentTypes, segmentType)) {
       return false;
     }
     // 注意：由于 UE端无法支持多 segment 此处用于禁止跨轨道拖动
@@ -756,3 +758,5 @@ export class Track extends EventHelper {
     document.body.removeEventListener('mousemove', this.mousemove);
   }
 }
+
+trackRenderers.add(Track.trackType, Track);

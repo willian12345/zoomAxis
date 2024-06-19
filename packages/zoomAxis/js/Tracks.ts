@@ -9,7 +9,8 @@ import {
 } from "./TrackType";
 
 import { TimelineAxis } from "./TimelineAxis";
-import { Track } from "./Track";
+import { Track } from "./track/Track";
+import { trackRenderers } from './trackRendererManager';
 import { Segment } from "./Segment";
 import { TrackGroup } from "./Group";
 import { EventHelper } from "./EventHelper";
@@ -34,8 +35,7 @@ import {
   getFrameByX,
   collisionCheckFrames,
 } from "./trackUtils";
-import { TrackFlex } from "./TrackFlex";
-import { TrackChildOverlap } from "./TrackChildOverlap";
+
 
 const NEW_SEGMENT_ID = 'NEW_SEGMENT_ID';
 const TRACK_EVENT_TYPES_ARRAY = [
@@ -527,11 +527,12 @@ export class Tracks extends EventHelper {
     });
   }
   private createVirtualTrack(tbc: TTrackConfig) {
-    const trackType = String(tbc.trackType);
-    const TrackClass = tbc.childOverlapable ? TrackChildOverlap : Track;
+    const trackType = tbc.trackType;
+    const TrackClass = trackRenderers.getTrackRenderer(trackType);
+    if(!TrackClass) return null;
     let vt = new TrackClass({
       trackId: tbc.trackId,
-      trackType,
+      segmentTypes: String(tbc.segmentTypes),
       createSegmentCheck: this.createSegmentCheck,
       frameWidth: this.timeline.frameWidth,
     });
@@ -665,7 +666,7 @@ export class Tracks extends EventHelper {
     parentTrack?: Track
   ) {
     const lastIndex = findLastIndex(list, (vt: Track) => {
-      return vt.trackType === trackConfig.trackType;
+      return vt.segmentTypes === trackConfig.segmentTypes;
     });
     // 获取插入位置后的轨道用于insertBefore
     const prevTrackConfig = lastIndex === -1 ? null : list[lastIndex + 1];
@@ -673,7 +674,7 @@ export class Tracks extends EventHelper {
 
     const track = new Track({
       trackId: trackConfig.trackId,
-      trackType: trackConfig.trackType + "",
+      segmentTypes: trackConfig.segmentTypes + "",
       createSegmentCheck: this.createSegmentCheck,
       frameWidth: this.timeline.frameWidth,
     });
@@ -826,7 +827,7 @@ export class Tracks extends EventHelper {
     const segmentId = segment.dataset.segmentId ?? "";
     this.deleteSegment(trackId, segmentId);
   }
-  getTrack(trackId: string): Track | TrackFlex | null {
+  getTrack(trackId: string): Track | null {
     if (!trackId?.length) {
       return null;
     }

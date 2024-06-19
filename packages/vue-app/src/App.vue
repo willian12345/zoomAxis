@@ -114,33 +114,37 @@ const tracks: Ref<TTrackConfig[]> = ref([
   {
     trackId: 'a',
     trackText: '轨道组',
-    trackType: 1,
+    segmentTypes: 1,
     color: '#C66136',
+    trackType: 'normal',
     subTracks: [
       {
         trackId: 'a1',
         trackText: '融合轨道',
         color: '#6C4ACD',
-        trackType: 2,
-        childOverlapable: true,
+        segmentTypes: 2,
+        trackType: 'segmentOverlap'
       },
       {
         trackId: 'a2',
         trackText: '轨道组轨道',
         color: '#4767E8',
-        trackType: 3,
+        segmentTypes: 3,
+        trackType: 'normal'
       },
     ]
   },
   {
     trackId: 'b',
-    trackType: 11,
+    segmentTypes: 11,
+    trackType: 'normal',
     color: '#6C4ACD',
     trackText: '普通轨道一',
   },
   {
     trackId: 'c',
-    trackType: 10,
+    segmentTypes: 10,
+    trackType: 'normal',
     color: '#46A9CB',
     trackText: '普通轨道二',
   },
@@ -159,7 +163,6 @@ const initApp = () => {
     return;
   }
   const segmentItemList: HTMLElement = segmentItemListRef.value;
-
   const cursor: HTMLElement = cursorRef.value.$el;
   const scrollContainer: HTMLElement = scrollContainerRef.value;
   const scrollContent: HTMLElement = scrollContentRef.value;
@@ -279,13 +282,14 @@ const toggleAdsorbable = () => {
 };
 
 let tempTrackId: string;
-const handleAddByClick = (trackType: string) => {
+const handleAddByClick = (segmentTypes: string, trackType?: string) => {
   const trackId = Math.random() + 'newTrack';
   tempTrackId = trackId
   const newTrack = {
     trackId: trackId,
     trackText: Math.random() + '',
-    trackType,
+    segmentTypes,
+    trackType: trackType ?? 'normal'
   };
   segmentTracks?.addTrack(newTrack);
   tracks.value = segmentTracks.tracksConfig;
@@ -296,7 +300,8 @@ const testAddToTrack = () => {
   const newTrack = {
     trackId: trackId,
     trackText: Math.random() + '',
-    trackType: '2',
+    segmentTypes: '2',
+    trackType: 'normal'
   };
   segmentTracks?.addToTrackGroup('a', newTrack);
   tracks.value = segmentTracks.tracksConfig;
@@ -352,7 +357,7 @@ onMounted(() => {
       </div>
       <div class="segment-item" data-segment-type="2">
         拖我
-        <button @click="handleAddByClick('2')">+</button>
+        <button @click="handleAddByClick('2', 'segmentOverlap')">+</button>
       </div>
       <div class="segment-item" data-segment-type="3">
         拖我（一）

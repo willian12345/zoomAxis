@@ -1,10 +1,10 @@
 // 创建 segment
 import {
-  SegmentConstructParams,
+  TSegmentConstructParams,
 } from "./TrackType";
 import { Segment } from "./Segment";
 import { segmentRenderers } from './SegmentRendererManager'
-import { Track } from "./Track";
+import { Track } from "./track/Track";
 const CLOSE_ENOUPH_DISTANCE_Y = 15; // 距离 y 是否够近
 const CLOSE_ENOUPH_SEGMENT_X = 20; // 距离 segment x是否够
 
@@ -28,7 +28,7 @@ export const CLASS_NAME_SEGMENT_KEYFRAME_ACTIVED = 'actived';
 export const DEFAULT_SEGMENT_FRAMES = 150; // 默认 150 帧
 export const CLASS_NAME_SEGMENT_HANDLE_CONTAINER = 'segment-handle-container'
 
-export const createSegment = (params: SegmentConstructParams) => {
+export const createSegment = (params: TSegmentConstructParams) => {
   const SegmentContentRenderClass = segmentRenderers.getRenderer(params.segmentType);
   if(SegmentContentRenderClass){
     params.segmentRendererConstructor = SegmentContentRenderClass;

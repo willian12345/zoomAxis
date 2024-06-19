@@ -2,7 +2,7 @@ import {
   CLASS_NAME_SEGMENT,
 } from '../trackUtils'
 import {
-  SegmentConstructParams,
+  TSegmentConstructParams,
 } from "../TrackType";
 export abstract class SegmentRenderer {
   segmentId: string
@@ -17,7 +17,7 @@ export abstract class SegmentRenderer {
   text: string
   content: HTMLElement
   wrapper: HTMLElement
-  constructor(params:  SegmentConstructParams  ){
+  constructor(params:  TSegmentConstructParams  ){
     for(let k in params){
       this[k] = params[k];
     }

@@ -1,14 +1,14 @@
 import { TimelineAxis } from "./TimelineAxis";
-import { Track } from "./Track";
+import { Track } from "./track/Track";
 import { Segment } from "./Segment";
 import { SegmentRenderer } from "./segmentRenderer/SegmentRenderer";
 // 轨道基本配置信息
 export type TTrackConfig = {
   trackId: string;
-  childOverlapable?: boolean;
+  trackType: string
   color?: string;
   trackText?: string;
-  trackType: string | SegmentType;
+  segmentTypes: string | SegmentType;// 允许接受两多种 segmentType
   flexiable?: boolean;
   parentId?: string;
   subTracks?: TTrackConfig[];
@@ -134,7 +134,7 @@ export interface DropArgs {
 }
 
 // Segment 构造参数
-export type SegmentConstructParams = {
+export type TSegmentConstructParams = {
   trackId?: string;
   framestart: number;
   frameend: number;
@@ -161,7 +161,7 @@ export type KeyframeConstructInfo = {
 export interface ITrackArgs {
   trackId: string;
   frameWidth: number;
-  trackType: string;
+  segmentTypes: string;
   createSegmentCheck?: ICreateSegmentCheck;
 }
 
@@ -182,6 +182,10 @@ export interface ISegmentContentRendererClass {
   SegmentType: number; // 静态属性
 }
 
-export interface SegmentRendererConstructor {
-  new (params: SegmentConstructParams): SegmentRenderer;
+export interface ISegmentRendererConstructor {
+  new (params: TSegmentConstructParams): SegmentRenderer;
+}
+
+export interface ITrackConstructor {
+  new (params: ITrackArgs): Track
 }

@@ -8,27 +8,23 @@ import {
   isContainSplitFromComma,
   getSegmentPlaceholder,
   getFrameRange,
-} from "./trackUtils";
-import { Segment } from './Segment'
+} from "../trackUtils";
+import { Segment } from '../Segment'
+import { trackRenderers } from '../trackRendererManager';
 import {
   ITrackArgs,
   DragingArgs,
-} from "./TrackType";
+} from "../TrackType";
 import { Track } from "./Track";
-export type TMoveFunctionArgs = {
-  frameWidth: number;
-  segmentDom: HTMLElement;
-  framestart: number;
-  frameend: number;
-};
-export class TrackChildOverlap extends Track {
-  constructor({ trackId, trackType, frameWidth, createSegmentCheck }: ITrackArgs) {
-    super( {trackId, trackType, frameWidth, createSegmentCheck} );
+export class TrackSegmentOverlap extends Track {
+  static trackType = 'segmentOverlap'
+  constructor({ trackId, segmentTypes, frameWidth, createSegmentCheck }: ITrackArgs) {
+    super( {trackId, segmentTypes, frameWidth, createSegmentCheck} );
     
   }
   precheck(_scrollContainer: HTMLElement, segmentType: string) {
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
-    if (!isContainSplitFromComma(this.trackType, segmentType)) {
+    if (!isContainSplitFromComma(this.segmentTypes, segmentType)) {
       return false;
     }
     // const placeHolder = getSegmentPlaceholder(this.dom, segment);
@@ -48,10 +44,10 @@ export class TrackChildOverlap extends Track {
     }
     placeHolder.style.opacity = "1";
     this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER);
-    const trackType = this.trackType;
+    const segmentTypes = this.segmentTypes;
     const segmentType = segmentDom.dataset.segmentType ?? "";
     // 如果轨道id 与 片断内存的轨道 id 不同，则说明不能拖到这条轨道
-    if (!isContainSplitFromComma(trackType, segmentType)) {
+    if (!isContainSplitFromComma(segmentTypes, segmentType)) {
       this.dom.classList.add(CLASS_NAME_TRACK_DRAG_OVER_ERROR);
     }
     const scrollContainerX = scrollContainer.getBoundingClientRect().left;
@@ -128,3 +124,5 @@ export class TrackChildOverlap extends Track {
     return;
   }
 }
+
+trackRenderers.add(TrackSegmentOverlap.trackType, TrackSegmentOverlap)

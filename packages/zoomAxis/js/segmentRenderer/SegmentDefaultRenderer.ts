@@ -1,11 +1,11 @@
 
-import type { SegmentConstructParams } from '../TrackType';
+import type { TSegmentConstructParams } from '../TrackType';
 import { SegmentRenderer } from './SegmentRenderer';
 import { segmentRenderers } from '../SegmentRendererManager';
 export class SegmentDefaultRenderer extends SegmentRenderer {
   static SegmentType = -1
   type = SegmentDefaultRenderer.SegmentType;
-  constructor(params:  SegmentConstructParams  ) {
+  constructor(params:  TSegmentConstructParams  ) {
     super(params);
     this.renderer()
   }
