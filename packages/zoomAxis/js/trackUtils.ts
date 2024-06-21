@@ -43,13 +43,6 @@ export const createNodeWidthClass = (className: string) => {
   dom.className = className;
   return dom;
 };
-export const createSegmentFake = (rect: DOMRect) => {
-  const dom = document.createElement("div");
-  dom.className = CLASS_NAME_SEGMENT_FAKE;
-  dom.style.width = `${rect.width}px`;
-  dom.style.borderRadius = "4px";
-  return dom;
-};
 export const findParentElementByClassName = (
   dom: HTMLElement,
   parentClassName: string

@@ -7,6 +7,8 @@ import {
   CURSOR_POINTER_EVENT_TYPE, TRACKS_EVENT_TYPES, TTrackConfig
 } from "../../zoomAxis/js/index";
 
+import { tracksData } from './assets/tracksData';
+const tracks: Ref<TTrackConfig[]> = ref(tracksData);
 let timeline: TimelineAxis;
 let trackCursor: CursorPointer;
 let segmentTracks: Tracks;
@@ -110,45 +112,6 @@ const handlePlay = () => {
 
 
 
-const tracks: Ref<TTrackConfig[]> = ref([
-  {
-    trackId: 'a',
-    trackText: '轨道组',
-    segmentTypes: 1,
-    color: '#C66136',
-    trackType: 'normal',
-    subTracks: [
-      {
-        trackId: 'a1',
-        trackText: '融合轨道',
-        color: '#6C4ACD',
-        segmentTypes: 2,
-        trackType: 'segmentOverlap'
-      },
-      {
-        trackId: 'a2',
-        trackText: '轨道组轨道',
-        color: '#4767E8',
-        segmentTypes: 3,
-        trackType: 'normal'
-      },
-    ]
-  },
-  {
-    trackId: 'b',
-    segmentTypes: 11,
-    trackType: 'normal',
-    color: '#6C4ACD',
-    trackText: '普通轨道一',
-  },
-  {
-    trackId: 'c',
-    segmentTypes: 10,
-    trackType: 'normal',
-    color: '#46A9CB',
-    trackText: '普通轨道二',
-  },
-]);
 const initApp = () => {
   if (
     !cursorRef.value?.$el ||
@@ -417,7 +380,7 @@ onMounted(() => {
 <style lang="less">
 @markHeight: 24px;
 @trackHeight: 28px;
-@timelineContainerHeight: 200px;
+@timelineContainerHeight: 240px;
 
 .btn {
   // width: 20px;
@@ -446,7 +409,7 @@ onMounted(() => {
   position: relative;
   margin: 180px 0;
   width: 100%;
-  height: 200px;
+  height: 240px;
   overflow: hidden;
   background-color: #0f0c0c;
 }
@@ -477,7 +440,7 @@ onMounted(() => {
 }
 
 .track-header-list {
-  height: 200px;
+  height: 240px;
   overflow: hidden;
 }
 
@@ -616,12 +579,6 @@ onMounted(() => {
       font-size: 8px;
     }
   }
-}
-
-.segment-fake {
-  position: absolute;
-  background-color: #c66136;
-  opacity: 0.8;
 }
 
 .segment-name {

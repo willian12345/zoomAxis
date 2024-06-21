@@ -63,6 +63,7 @@ type TSelectedSegment = {
   rect: DOMRect;
   originTrack: HTMLElement | null;
 }
+type TDragEventParams = {dragTrackContainer: HTMLElement,  scrollContainerRect: DOMRect, scrollContainer: HTMLElement, startY: number, startX: number, isCreateNew: boolean, trackDoms: HTMLElement[], segmentRect: DOMRect }
 export interface Tracks {
   addEventListener<EventType extends TRACKS_EVENT_TYPES>(
     eventType: EventType,
@@ -93,7 +94,7 @@ export class Tracks extends EventHelper {
   rectangle!: HTMLElement;
 
   private bindedEventArray: {
-    ele: HTMLElement|Document;
+    ele: HTMLElement | Document;
     eventName: keyof HTMLElementEventMap;
     listener: any;
     options?: any;
@@ -219,10 +220,10 @@ export class Tracks extends EventHelper {
     this.dispatchEvent({ eventType: TRACKS_EVENT_TYPES.FRAME_JUMP }, { frame });
   }
   private mouseupHandle() {
-    
+
   }
   private mousedownHandle(e: MouseEvent) {
-    
+
     e.preventDefault();
     e.stopPropagation();
     if (this?.timeline?.playing) {
@@ -243,13 +244,13 @@ export class Tracks extends EventHelper {
         );
         this.multiSegmentDraging = true;
       }
-      
-      
+
+
       // 鼠标落在 segment 上
       this.dragStart(e, this.scrollContainer, result);
-      
+
     }
-  
+
   }
   // 获取选框框选坐标,宽高
   private getRectangleRect() {
@@ -373,6 +374,7 @@ export class Tracks extends EventHelper {
     };
     this.selectedSegments.set(segment.segmentId, s);
   }
+  // 轨道外元素
   private mousedownDelegateHandle(ev: MouseEvent) {
     const target = ev.target as HTMLElement;
     // 右健点击忽略
@@ -387,6 +389,7 @@ export class Tracks extends EventHelper {
     }
     // 从外部拖入
     this.removeSegmentActivedStatus();
+    // 轨道外元素拖动开始
     this.dragStart(ev, this.scrollContainer, target, true);
   }
 
@@ -529,7 +532,7 @@ export class Tracks extends EventHelper {
   private createVirtualTrack(tbc: TTrackConfig) {
     const trackType = tbc.trackType;
     const TrackClass = trackRenderers.getTrackRenderer(trackType);
-    if(!TrackClass) return null;
+    if (!TrackClass) return null;
     let vt = new TrackClass({
       trackId: tbc.trackId,
       segmentTypes: String(tbc.segmentTypes),
@@ -578,7 +581,7 @@ export class Tracks extends EventHelper {
   }
   // 代理 HTMLElement 事件，以便 destroy 时正确清除
   private on<T extends keyof HTMLElementEventMap>(
-    ele: HTMLElement|Document,
+    ele: HTMLElement | Document,
     eventName: T,
     listener: (this: HTMLElement, ev: HTMLElementEventMap[T]) => any,
     options?: boolean | AddEventListenerOptions
@@ -802,12 +805,13 @@ export class Tracks extends EventHelper {
     });
   }
 
-  // 将拖动的 segment dom 放回轨道内
-  private putSegmentDomBack(
+  // 将拖动的 segment 放回轨道内
+  private putSegmentBack(
     segment: Segment,
     segmentLeft: number,
     originTrack: HTMLElement
   ) {
+    
     if (originTrack) {
       originTrack.appendChild(segment.dom);
       const placeHolder = getSegmentPlaceholder(originTrack, segment);
@@ -816,6 +820,13 @@ export class Tracks extends EventHelper {
       }
       placeHolder.style.opacity = "0";
       segment.dom.style.left = `${segmentLeft}px`;
+    }
+    if (!this.multiSegmentDraging) {
+      // 拖完后触发回调
+      this.dispatchEvent(
+        { eventType: TRACKS_EVENT_TYPES.DRAG_END },
+        { segment }
+      );
     }
   }
   private getFramestart(x: number): number {
@@ -913,11 +924,11 @@ export class Tracks extends EventHelper {
     向右拖动则 framestart 大的排在前
 
    */
-  getSortedSelectedSegment(selectedSegments: Map<string,TSelectedSegment>, offsetLeft:number /* scrollContainerRect.left - scrollContainer.scrollLeft */){
+  getSortedSelectedSegment(selectedSegments: Map<string, TSelectedSegment>, offsetLeft: number /* scrollContainerRect.left - scrollContainer.scrollLeft */) {
     // 将 selectedSegments Map 转为 Array
     let selectedSegmentArr: TSelectedSegment[] = [...selectedSegments.values()];
     // 只有一个则不需要排序
-    if(selectedSegmentArr.length === 1){
+    if (selectedSegmentArr.length === 1) {
       return selectedSegmentArr;
     }
     selectedSegmentArr = selectedSegmentArr.sort((a, b) => a.segment.framestart - b.segment.framestart)
@@ -927,12 +938,12 @@ export class Tracks extends EventHelper {
     // x = 拖动示意 left - 轨道总体 left 偏移 + 轨道容器 left 滚动偏移
     const x = left - offsetLeft;
     let framestart = this.getFramestart(x);
-    if((framestart - selectedSegmentArr[0].segment.framestart) > 0 ){
+    if ((framestart - selectedSegmentArr[0].segment.framestart) > 0) {
       selectedSegmentArr = selectedSegmentArr.reverse();
     }
     return selectedSegmentArr
   }
-  checkAbsorb(segment: Segment, vt: Track, selectedSegmentArr: TSelectedSegment[], framestart: number){
+  checkAbsorb(segment: Segment, vt: Track, selectedSegmentArr: TSelectedSegment[], framestart: number) {
     // todo: 多个拖动吸附优化
     if (this._adsorbable && (selectedSegmentArr.length < 2)) {
       // 计算吸附与否及对应 framestart 位置
@@ -946,14 +957,14 @@ export class Tracks extends EventHelper {
         this.frameWidth
       );
       // 判断吸附后再判断吸附位置是否有碰撞
-      const frameGroup = vt.getOtherSegments(segment.segmentId).map( segment => [segment.framestart, segment.frameend])
+      const frameGroup = vt.getOtherSegments(segment.segmentId).map(segment => [segment.framestart, segment.frameend])
       if (isAdsorbing && !collisionCheckFrames(_framestart, _framestart + segment.frames, frameGroup)) {
         framestart = _framestart;
       }
     }
     return framestart
   }
-  async createSegment(track: Track, framestart: number, segmentTypeStr: string){
+  async createSegment(track: Track, framestart: number, segmentTypeStr: string) {
     const newSegment = await track.createSegment(
       track.trackId,
       framestart,
@@ -1000,8 +1011,8 @@ export class Tracks extends EventHelper {
         frameend: (frames > 0) ? frames : 0,
         segmentId: NEW_SEGMENT_ID
       });
-      
-      if(frames <= 0){
+
+      if (frames <= 0) {
         segmentCopy.dom.style.width = `${segmentRect.width}px`;
       }
       // 高度变为正在拖动的 segment 高度，因为它的样式可能与轨道内高度不一致
@@ -1043,78 +1054,106 @@ export class Tracks extends EventHelper {
     });
 
     const scrollContainerRect = scrollContainer.getBoundingClientRect();
-    const mousemove = (e: MouseEvent) => {
-      // 移除所胡轨道碰撞前的状态
-      this.tracks.forEach((vt) => {
-        vt.removeStatusClass();
-      });
-      this.hideCoordinateLine();
-      
-      // 多选移动
-      const selectedSegments = this.getSortedSelectedSegment(this.selectedSegments, scrollContainerRect.left + scrollContainer.scrollLeft);
-      for (let selectedSegment of selectedSegments) {
-        let domY = e.y - (startY - selectedSegment.rect.y);
-        const dom = selectedSegment.segment.dom;
-        const leftValue = e.x - (startX - selectedSegment.rect.x);
-        dom.style.left = `${leftValue}px`;
-        dom.style.top = `${domY}px`;
 
-        // Y 轴碰撞
-        const collisionTrack = trackCollisionCheckY(
-          this.tracks,
-          this.selectedSegments.size > 1 ? domY : e.y
-        );
-        this.tracks.forEach( vt => {
-          vt.hidePlaceHolder(selectedSegment.segment)
-        })
-        
-        // 轨道内 x 轴 移动判断
-        collisionTrack?.draging({
-          isCreateNew,
-          scrollContainer,
-          segmentDom: dom,
-          leftValue: this.getX(leftValue, this.scrollContainer),
-          tracks,
-          segment: selectedSegment.segment,
-        });
+    const handleMousemove = (e: MouseEvent) => {
+      this.mousemove(e, {
+        dragTrackContainer,
+        scrollContainerRect,
+        scrollContainer,
+        trackDoms: tracks,
+        segmentRect,
+        startX,
+        startY,
+        isCreateNew,
+      })
+    }
+   
+    const handleMouseup = (e:MouseEvent) => {
+      this.mouseup(e, {
+        dragTrackContainer,
+        scrollContainerRect,
+        scrollContainer,
+        trackDoms: tracks,
+        segmentRect,
+        startX,
+        startY,
+        isCreateNew,
+      })
 
-        // 拖动容器形变
-        if (isCreateNew) {
-          // 如果是新建，则需要形变成标准轨道内 segment 形状
-          if (collisionTrack) {
-            const trackHeight =
-              collisionTrack.dom.getBoundingClientRect().height;
-            dom.style.height = `${trackHeight}px`;
-          } else {
-            // 没有碰到轨道，则变回原来的形状
-            dom.style.height = `${segmentRect.height}px`;
-          }
-        }
-        if (collisionTrack) {
-          this.showCoordinateLine(dom);
-        }
-      }
-
-      
-
-      if (
-        e.clientY > scrollContainerRect.top &&
-        e.clientY <= scrollContainerRect.bottom
-      ) {
-        this.dispatchEvent(
-          { eventType: TRACKS_EVENT_TYPES.DRAGING_OVER },
-          { pointerEvent: e }
-        );
-      }
+      document.removeEventListener("mouseup", handleMouseup);
+      document.removeEventListener("mousemove", handleMousemove);
     };
+    document.addEventListener("mousemove", handleMousemove);
+    document.addEventListener("mouseup", handleMouseup);
+  }
+  mousemove(e: MouseEvent, {scrollContainerRect, scrollContainer, startY, startX, isCreateNew, trackDoms, segmentRect }: TDragEventParams) {
+    // 移除所胡轨道碰撞前的状态
+    this.tracks.forEach((vt) => {
+      vt.removeStatusClass();
+    });
+    this.hideCoordinateLine();
 
-    const mouseup = async (e: MouseEvent) => {
+    // 多选拖动，碰撞检测需要先按位置排序
+    const selectedSegments = this.getSortedSelectedSegment(this.selectedSegments, scrollContainerRect.left + scrollContainer.scrollLeft);
+    for (let selectedSegment of selectedSegments) {
+      const domY = e.y - (startY - selectedSegment.rect.y);
+      const dom = selectedSegment.segment.dom;
+      const leftValue = e.x - (startX - selectedSegment.rect.x);
+      dom.style.left = `${leftValue}px`;
+      dom.style.top = `${domY}px`;
+
+      // Y 轴碰撞
+      const collisionTrack = trackCollisionCheckY(
+        this.tracks,
+        this.selectedSegments.size > 1 ? domY : e.y
+      );
+      this.tracks.forEach(vt => {
+        vt.hidePlaceHolder(selectedSegment.segment)
+      })
+
+      // 轨道内 x 轴 移动判断
+      collisionTrack?.draging({
+        isCreateNew,
+        scrollContainer,
+        segmentDom: dom,
+        leftValue: this.getX(leftValue, this.scrollContainer),
+        tracks: trackDoms,
+        segment: selectedSegment.segment,
+      });
+
+      // 拖动容器形变
+      if (isCreateNew) {
+        // 如果是新建，则需要形变成标准轨道内 segment 形状
+        if (collisionTrack) {
+          const trackHeight = collisionTrack.dom.getBoundingClientRect().height;
+          dom.style.height = `${trackHeight}px`;
+        } else {
+          // 没有碰到轨道，则变回原来的形状
+          dom.style.height = `${segmentRect.height}px`;
+        }
+      }
+      if (collisionTrack) {
+        this.showCoordinateLine(dom);
+      }
+    }
+
+    if (
+      e.clientY > scrollContainerRect.top &&
+      e.clientY <= scrollContainerRect.bottom
+    ) {
+      this.dispatchEvent(
+        { eventType: TRACKS_EVENT_TYPES.DRAGING_OVER },
+        { pointerEvent: e }
+      );
+    }
+  }
+  async mouseup(e: MouseEvent, {dragTrackContainer, scrollContainerRect, scrollContainer, startY, startX, isCreateNew }: TDragEventParams){
       e.stopPropagation();
       startX = e.clientX;
       startY = e.clientY;
       const offsetLeft = scrollContainerRect.left - scrollContainer.scrollLeft
 
-      const selectedSegmentArr = this.getSortedSelectedSegment(this.selectedSegments,  offsetLeft)
+      const selectedSegmentArr = this.getSortedSelectedSegment(this.selectedSegments, offsetLeft)
       for (let { segment, originTrack } of selectedSegmentArr) {
         const dom = segment.dom;
         const { left, y } = dom.getBoundingClientRect();
@@ -1140,7 +1179,7 @@ export class Tracks extends EventHelper {
             if (!r) {
               return;
             }
-            
+
             // 磁吸判断
             framestart = this.checkAbsorb(segment, vt, selectedSegmentArr, framestart);
             // 纯新建
@@ -1159,13 +1198,13 @@ export class Tracks extends EventHelper {
                 segment.originSegmentId = _segment.originSegmentId = segmentId;
                 segment.originTrackId = _segment.originTrackId = segmentTrackId;
                 segment.originParentTrack = _segment.originParentTrack = this.getTrack(segmentTrackId);
-              }else{
+              } else {
                 segment.originSegmentId = '';
                 segment.originTrackId = '';
                 segment.originParentTrack = null;
               }
             }
-            
+
             if (!_segment) {
               console.warn('segment 新建失败');
               return;
@@ -1191,35 +1230,26 @@ export class Tracks extends EventHelper {
         // 如果没有跨轨道拖放成功
         if (originTrack) {
           // 放回原轨道, 原位置
-          this.putSegmentDomBack(
+          this.putSegmentBack(
             segment,
             segment.framestart * this.frameWidth,
             originTrack
           );
-
-          if(!this.multiSegmentDraging){
-            // 拖完后触发回调
-            this.dispatchEvent(
-              { eventType: TRACKS_EVENT_TYPES.DRAG_END },
-              { segment}
-            );
-          }
-          
-        }else{
+        } else {
           segment.parentTrack?.removeSegment(segment, false)
           // 跨轨道拖动触发 TRACKS_EVENT_TYPES.SEGMENT_MOVED 事件
           if (segment.originSegmentId) {
-              
-              this.dispatchEvent(
-                { eventType: TRACKS_EVENT_TYPES.SEGMENT_MOVED },
-                { segment, originTrack: segment.originParentTrack}
-              );
-              segment.dom.style.display = "none";
-              segment.originParentTrack = null;
-              segment.originSegmentId = "";
-              segment.originTrackId = "";
-            }
-          
+
+            this.dispatchEvent(
+              { eventType: TRACKS_EVENT_TYPES.SEGMENT_MOVED },
+              { segment, originTrack: segment.originParentTrack }
+            );
+            segment.dom.style.display = "none";
+            segment.originParentTrack = null;
+            segment.originSegmentId = "";
+            segment.originTrackId = "";
+          }
+
         }
         // 没有新建成功，说明是从外部拖入创建且未成功创建，需要触发 DRAG_END
         if (segmentId === NEW_SEGMENT_ID && !_segment) {
@@ -1228,15 +1258,23 @@ export class Tracks extends EventHelper {
         }
       }
 
-      dragTrackContainer.style.transition = "none";
+      // 清除临时拖动容器
+      this.clearDragTrackContainer(dragTrackContainer, selectedSegmentArr);
+
+      
+
+      this.hideCoordinateLine();
+  }
+  clearDragTrackContainer(dragTrackContainer: HTMLElement, selectedSegmentArr:TSelectedSegment[]){
+    dragTrackContainer.style.transition = "none";
 
       // 清空临时放在拖动层容器内容
       setTimeout(() => {
         if (this.selectedSegments.size) {
           // 多个拖动在此处触发事件
-          if(this.multiSegmentDraging){
-            const segments = selectedSegmentArr.map(selected => selected.segment).filter( segment=> segment.framestart !== segment.prevFrameStart);
-            if(segments.length > 0){
+          if (this.multiSegmentDraging) {
+            const segments = selectedSegmentArr.map(selected => selected.segment).filter(segment => segment.framestart !== segment.prevFrameStart);
+            if (segments.length > 0) {
               // 拖完后触发回调
               this.dispatchEvent(
                 { eventType: TRACKS_EVENT_TYPES.DRAG_END },
@@ -1244,26 +1282,18 @@ export class Tracks extends EventHelper {
               );
             }
 
-            if(this.shiftKey){
+            if (this.shiftKey) {
               this.dispatchEvent(
                 { eventType: TRACKS_EVENT_TYPES.SEGMENT_MULTI_SELECT_END },
                 { segments: selectedSegmentArr.map(selected => selected.segment) }
               );
             }
-          }else{
+          } else {
             this.selectedSegments.clear();
           }
         }
-        
+
       }, 0);
-
-      this.hideCoordinateLine();
-
-      document.removeEventListener("mouseup", mouseup);
-      document.removeEventListener("mousemove", mousemove);
-    };
-    document.addEventListener("mousemove", mousemove);
-    document.addEventListener("mouseup", mouseup);
   }
   getSegmentById(segmentId: string) {
     for (let track of this.tracks) {
@@ -1375,7 +1405,7 @@ export class Tracks extends EventHelper {
     //     segment,
     //   });
     // } else {
-      
+
     // }
     track.addSegment(segment);
     segment.setRange(segment.framestart, segment.frameend);
