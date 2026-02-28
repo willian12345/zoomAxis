@@ -12,6 +12,10 @@ import { TRACKS_EVENT_TYPES, TTrackConfig } from "../../zoomAxis/js/TrackType";
 import { findEndestSegment } from "../../zoomAxis/js/trackUtils";
 import { Tracks } from "../../zoomAxis/js/Tracks";
 import { Segment } from "../../zoomAxis/js/Segment";
+import { tracksData } from './assets/tracksData';
+import {
+  
+} from "../../zoomAxis/js/index";
 
 let timeline: TimelineAxis | null;
 let trackCursor: CursorPointer;
@@ -44,41 +48,7 @@ function App() {
   const [trackScrollWidth, setTrackScrollWidth] = useState(920);
   const [scrollContentWidth, setScrollContentWidth] = useState(920);
   const [trackWidth, setTrackWidth] = useState(920);
-  const [tracks, setTracks] = useState<TTrackConfig[]>([
-    {
-      trackId: 'a',
-      trackText: '轨道组',
-      trackType: '1',
-      color: '#C66136',
-      subTracks: [
-        {
-          trackId: 'a1',
-          trackText: '轨道组轨道一',
-          color: '#6C4ACD',
-          trackType: '2',
-          childOverlapable: true,
-        },
-        {
-          trackId: 'a2',
-          trackText: '轨道组轨道二',
-          color: '#4767E8',
-          trackType: '3',
-        },
-      ]
-    },
-    {
-      trackId: 'b',
-      trackType: '4',
-      color: '#6C4ACD',
-      trackText: '普通轨道一',
-    },
-    {
-      trackId: 'c',
-      trackType: '5',
-      color: '#46A9CB',
-      trackText: '普通轨道二',
-    },
-  ])
+  const [tracks, setTracks] = useState<TTrackConfig[]>(tracksData)
   
   const syncTrackWidth = () => {
     const trackItemWidth = segmentTracks.width();
@@ -229,6 +199,7 @@ function App() {
       timeline,
       segmentDelegate: segmentItemList,
     });
+    
     segmentTracks.addEventListener(TRACKS_EVENT_TYPES.SEGMENT_ADDED, (event) => {
       console.log(event, 'added');
     })
@@ -257,17 +228,19 @@ function App() {
   }
 
   let tempTrackId: string;
-  const handleAddByClick = (trackType: string) => {
+  const handleAddByClick = (segmentTypes: string, trackType?: string) => {
     const trackId = Math.random() + 'newTrack';
     tempTrackId = trackId
     const newTrack = {
-      trackId: trackId,
-      trackText: Math.random() + '',
-      trackType,
-    };
+    trackId: trackId,
+    trackText: Math.random() + '',
+    segmentTypes,
+    trackType: trackType ?? 'normal'
+  };
     segmentTracks?.addTrack(newTrack);
     setTracks([...segmentTracks.tracksConfig]);
   }
+
   useEffect(() => {
     initApp();
     timelineContainer.current?.addEventListener('wheel', handleWheel);

@@ -30,10 +30,12 @@ export const CLASS_NAME_SEGMENT_HANDLE_CONTAINER = 'segment-handle-container'
 
 export const createSegment = (params: TSegmentConstructParams) => {
   const SegmentContentRenderClass = segmentRenderers.getRenderer(params.segmentType);
+  console.log(segmentRenderers,3333)
   if(SegmentContentRenderClass){
     params.segmentRendererConstructor = SegmentContentRenderClass;
   }else{
     params.segmentRendererConstructor = segmentRenderers.getRenderer(-1);
+    console.log('未找到对应的 segment 渲染器', params.segmentRendererConstructor)
   }
   const segment = new Segment(params);
   return segment;

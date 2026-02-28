@@ -67,6 +67,7 @@ export class Segment extends EventHelper{
     }
     this.segmentType = args.segmentType;
     this.name = args.name ?? "";
+    
     this.dom = this.createUI({...args});
     // 额外其它信息
     if (args.extra) {
