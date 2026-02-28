@@ -6,9 +6,10 @@
  * </div>
  */
 import { EventHelper } from "./EventHelper";
-import { TSegmentConstructParams, SegmentType, SegmentRendererConstructor } from "./TrackType";
+import { TSegmentConstructParams, } from "./TrackType";
 import { Track } from "./track/Track";
 import { Keyframe } from "./Keyframe";
+import { SegmentDefaultRenderer} from './segmentRenderer/SegmentDefaultRenderer'
 import { SegmentRenderer} from './segmentRenderer/SegmentRenderer'
 
 let segmentIdIndex = 0;
@@ -81,7 +82,7 @@ export class Segment extends EventHelper{
   }
 
   private createUI(args: TSegmentConstructParams) {
-    this.segmentRenderer = new args.segmentRendererConstructor(args)
+    this.segmentRenderer = args.segmentRendererConstructor ? new args.segmentRendererConstructor(args) : new SegmentDefaultRenderer(args)
     return this.segmentRenderer.wrapper;
   }
   getSegmentLeft(framestart?: number): number {
