@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>视频帧提取测试</title>
+    <style>
+      .container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+      }
+      #preview {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      }
+      .frame-img {
+        width: 120px;
+        height: 68px;
+        border: 1px solid #ddd;
+        object-fit: cover;
+      }
+      .controls {
+        margin: 15px 0;
+      }
+      button {
+        padding: 8px 15px;
+        margin-right: 10px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>视频帧提取测试工具</h2>
+
+      <!-- 文件上传控件 -->
+      <div class="controls">
+        <input type="file" id="videoInput" accept="video/*" />
+        <span
+          >帧率:
+          <input type="number" id="frameRate" value="12" min="1" max="24" />
+          fps</span
+        >
+      </div>
+
+      <!-- 视频预览 -->
+      <video
+        id="video"
+        controls
+        muted
+        style="width: 100%; max-width: 600px"
+      ></video>
+
+      <!-- 帧画面展示区 -->
+      <div>
+        <h3>提取结果：</h3>
+        <div id="preview"></div>
+      </div>
+    </div>
+
+    <script>
+      // 创建图像编码 Worker
+      const encoderWorker = new Worker("js/video-worker.js");
+
+      // 获取DOM元素
+      const video = document.getElementById("video");
+      const preview = document.getElementById("preview");
+      const videoInput = document.getElementById("videoInput");
+      const frameRateInput = document.getElementById("frameRate");
+
+      // Worker 处理消息
+      encoderWorker.onmessage = (e) => {
+        const { type, data, error } = e.data;
+        console.log(type, data, error);
+        if (type === "FRAME_ENCODED") {
+          const { timestamp, blob } = data;
+          const img = document.createElement("img");
+          img.src = URL.createObjectURL(blob);
+          img.title = `${timestamp.toFixed(2)}s`;
+          img.className = "frame-img";
+          preview.appendChild(img);
+        } else if (type === "ERROR") {
+          console.error("Frame encoding error:", error);
+        }
+      };
+
+      // 从视频提取帧并交由 Worker 编码
+      async function extractFramesFromVideo(
+        videoElement,
+        frameRate,
+        startTime,
+        endTime,
+      ) {
+        const frames = [];
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // 设置画布大小与视频一致
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
+
+        const frameInterval = 1 / frameRate;
+
+        for (
+          let currentTime = startTime;
+          currentTime < endTime;
+          currentTime += frameInterval
+        ) {
+          // 设置视频时间点
+          videoElement.currentTime = currentTime;
+
+          // 等待视频跳转到指定时间点
+          await new Promise((resolve) => {
+            const onSeeked = () => {
+              videoElement.removeEventListener("seeked", onSeeked);
+              resolve();
+            };
+            videoElement.addEventListener("seeked", onSeeked, { once: true });
+          });
+
+          // 绘制当前帧到画布
+          ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+          // 获取画布像素数据并发送给 Worker 进行编码
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          encoderWorker.postMessage({
+            canvasData: {
+              width: canvas.width,
+              height: canvas.height,
+              imageData: {
+                data: Array.from(imageData.data), // 转换为普通数组便于序列化
+                width: imageData.width,
+                height: imageData.height,
+              },
+            },
+            timestamp: currentTime,
+            quality: 0.85,
+          });
+        }
+      }
+
+      // 文件选择处理
+      videoInput.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // 清理之前的帧显示
+        preview.innerHTML = "";
+
+        // 创建视频 URL 并设置到 video 元素
+        const videoUrl = URL.createObjectURL(file);
+        video.src = videoUrl;
+
+        // 等待视频元数据加载
+        video.addEventListener(
+          "loadedmetadata",
+          async () => {
+            const frameRate = parseInt(frameRateInput.value) || 12;
+            const duration = Math.min(video.duration, 5); // 最多处理 5 秒
+
+            console.log(
+              `开始提取帧，帧率: ${frameRate}fps，时长: ${duration}s`,
+            );
+
+            try {
+              await extractFramesFromVideo(video, frameRate, 0, duration);
+              console.log("帧提取完成");
+            } catch (error) {
+              console.error("帧提取错误:", error);
+            }
+          },
+          { once: true },
+        );
+      });
+    </script>
+  </body>
+</html>

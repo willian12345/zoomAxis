@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频帧提取测试</title>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        #preview {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .frame-img {
+            width: 120px;
+            height: 68px;
+            border: 1px solid #ddd;
+            object-fit: cover;
+        }
+        .controls {
+            margin: 15px 0;
+        }
+        button {
+            padding: 8px 15px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>视频帧提取测试工具</h2>
+        
+        <!-- 文件上传控件 -->
+        <div class="controls">
+            <input type="file" id="videoInput" accept="video/*">
+            <button onclick="extractFrames()">提取前5秒帧</button>
+            <span>帧率: <input type="number" id="frameRate" value="12" min="1" max="24"> fps</span>
+        </div>
+
+        <!-- 视频预览 -->
+        <video id="video" controls muted style="width: 100%; max-width: 600px; display: none;"></video>
+        
+        <!-- 帧画面展示区 -->
+        <div>
+            <h3>提取结果：</h3>
+            <div id="preview"></div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const video = document.getElementById('video');
+        const preview = document.getElementById('preview');
+
+        // 文件选择处理
+        document.getElementById('videoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // 清理旧数据
+            preview.innerHTML = '';
+            video.src = URL.createObjectURL(file);
+            
+            // 自动跳转到第5秒（便于测试）
+            video.addEventListener('loadedmetadata', () => {
+                if (video.duration >= 5) video.currentTime = 5;
+            });
+        });
+
+        // 核心帧提取函数
+        async function extractFrames() {
+            if (!video.src) {
+                alert('请先选择视频文件');
+                return;
+            }
+
+            // 清空旧结果
+            preview.innerHTML = '';
+            
+            const frameRate = parseInt(document.getElementById('frameRate').value) || 12;
+            const duration = 5; // 固定提取前5秒
+            const startTime = 0;
+            const endTime = Math.min(duration, video.duration);
+
+            // 创建离屏canvas
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 递归提取函数
+            async function captureNext(currentTime) {
+                if (currentTime >= endTime) return;
+                
+                // 跳转到指定时间点
+                video.currentTime = currentTime;
+                
+                // 等待跳转完成（单次监听）
+                await new Promise(resolve => {
+                    const onSeeked = () => {
+                        video.removeEventListener('seeked', onSeeked);
+                        resolve();
+                    };
+                    video.addEventListener('seeked', onSeeked, { once: true });
+                });
+
+                // 设置画布尺寸
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                // 绘制当前帧
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // 转换为图片并显示
+                canvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const img = document.createElement('img');
+                    img.className = 'frame-img';
+                    img.src = url;
+                    img.title = `${currentTime.toFixed(2)}s`;
+                    preview.appendChild(img);
+                }, 'image/webp', 0.85);
+
+                // 递归处理下一帧
+                const nextTime = currentTime + (1 / frameRate);
+                setTimeout(() => captureNext(nextTime), 0);
+            }
+
+            // 开始提取
+            await captureNext(startTime);
+        }
+    </script>
+</body>
+</html>

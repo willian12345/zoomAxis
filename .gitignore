@@ -23,3 +23,24 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# AI generated temporary files and directories
+.catpaw
+.coder
+.codex
+.trae
+.ai
+.chat
+.claude
+.gemini
+.copilot
+.cursor
+.codeium
+.tabnine
+.kodu
+.continue
+.windsurf
+.codeai
+.aider
+.deepseek
+.perplexity
