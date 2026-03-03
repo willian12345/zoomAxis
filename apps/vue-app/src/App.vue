@@ -2,10 +2,7 @@
 import { onMounted, onUnmounted, ref, Ref } from "vue";
 import Cursor from "./components/Cursor.vue";
 
-import {
-  Tracks, Segment, TimelineAxis, TIMELINE_AXIS_EVENT_TYPE, CursorPointer,
-  CURSOR_POINTER_EVENT_TYPE, TRACKS_EVENT_TYPES, TTrackConfig
-} from "../../zoomAxis/js/index";
+import { Tracks, Segment, TimelineAxis, TIMELINE_AXIS_EVENT_TYPE, CursorPointer, CURSOR_POINTER_EVENT_TYPE, TRACKS_EVENT_TYPES, TTrackConfig } from '@ergou/timeline-tracks';
 
 import { tracksData } from './assets/tracksData';
 const tracks: Ref<TTrackConfig[]> = ref(tracksData);
@@ -87,7 +84,7 @@ const handleWheel = (e: WheelEvent) => {
   }
   e.stopPropagation();
   e.preventDefault();
-  
+
   zoomRatio = e.deltaY > 0 ? zoom(true) : zoom(false);
   syncByZoom(zoomRatio);
 };
@@ -135,7 +132,7 @@ const initApp = () => {
   // 初始化时间轴
   timeline = new TimelineAxis({
     el: "canvasStage",
-    tickMarks: 960*2,
+    tickMarks: 960 * 2,
     totalFrames: 960,
     stageWidth: stageWidth.value,
   });

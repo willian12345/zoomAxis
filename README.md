@@ -15,7 +15,7 @@ pnpm i
 
 ## demo vue3.0
 
-进入 packages/vue-app
+进入 apps/vue-app
 
 ```
 pnpm dev
@@ -23,7 +23,7 @@ pnpm dev
 
 ## demo react
 
-进入 packages/react-app
+进入 apps/react-app
 
 ```
 pnpm dev
